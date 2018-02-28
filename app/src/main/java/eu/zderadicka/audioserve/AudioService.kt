@@ -1,9 +1,11 @@
 package eu.zderadicka.audioserve
 
 import android.app.Notification
+import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
 import android.os.ResultReceiver
+import android.support.v4.content.ContextCompat
 import android.support.v4.media.MediaBrowserCompat
 import android.support.v4.media.MediaBrowserCompat.MediaItem
 import android.support.v4.media.MediaBrowserServiceCompat
@@ -132,6 +134,8 @@ class AudioService : MediaBrowserServiceCompat() {
     var isStartedInForeground = false
 
     fun startMe(notification: Notification) {
+        val intent = Intent(this,AudioService::class.java)
+        ContextCompat.startForegroundService(this,intent)
         startForeground(NotificationsManager.NOTIFICATION_ID, notification)
         isStartedInForeground = true
     }
