@@ -1,0 +1,89 @@
+{
+  "files": [
+    {
+      "name": "01 - Chapter I.opus",
+      "path": "Verne, Jules/Around the World in Eighty Days/01 - Chapter I.opus",
+      "meta": {
+        "duration": 617,
+        "bitrate": 32
+      },
+      "trans": false,
+      "mime": "audio/ogg"
+    },
+    {
+      "name": "02 - Chapter II.opus",
+      "path": "Verne, Jules/Around the World in Eighty Days/02 - Chapter II.opus",
+      "meta": {
+        "duration": 495,
+        "bitrate": 32
+      },
+      "trans": false,
+      "mime": "audio/ogg"
+    },
+    {
+      "name": "03 - Chapter III.opus",
+      "path": "Verne, Jules/Around the World in Eighty Days/03 - Chapter III.opus",
+      "meta": {
+        "duration": 803,
+        "bitrate": 32
+      },
+      "trans": false,
+      "mime": "audio/ogg"
+    },
+    {
+      "name": "04 - Chapter IV.opus",
+      "path": "Verne, Jules/Around the World in Eighty Days/04 - Chapter IV.opus",
+      "meta": {
+        "duration": 399,
+        "bitrate": 32
+      },
+      "trans": false,
+      "mime": "audio/ogg"
+    },
+    {
+      "name": "05 - Chapter V.opus",
+      "path": "Verne, Jules/Around the World in Eighty Days/05 - Chapter V.opus",
+      "meta": {
+        "duration": 378,
+        "bitrate": 32
+      },
+      "trans": false,
+      "mime": "audio/ogg"
+    }],
+    "subfolders"
+    :
+    [
+    {
+    "name": "Adams Douglas",
+    "path": "Adams Douglas"
+    },
+    {
+    "name": "Arbes Jakub",
+    "path": "Arbes Jakub"
+    },
+    {
+    "name": "Bjork Samuel",
+    "path": "Bjork Samuel"
+    },
+    {
+    "name": "Bretano Clemens",
+    "path": "Bretano Clemens"
+    },
+    {
+    "name": "Erben Vaclav",
+    "path": "Erben Vaclav"
+    }
+    ],
+    "cover"
+    :
+    {
+      "path": "Verne, Jules/225px-Félix_Nadar_1820-1910_portraits_Jules_Verne_(restoration).jpg",
+      "mime": "image/jpeg"
+    },
+    "description"
+    :
+    {
+      "path": "Verne, Jules/author.html",
+      "mime": "text/html"
+    }
+    }
