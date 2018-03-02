@@ -16,7 +16,6 @@ import android.widget.TextView
 import eu.zderadicka.audioserve.net.ApiClient
 
 
-// TODO: Rename parameter arguments, choose names that match
 // the fragment initialization parameters, e.g. ARG_ITEM_NUMBER
 const val ARG_FOLDER_PATH = "folder-path"
 const val ARG_FOLDER_NAME = "folder-name"
@@ -87,7 +86,6 @@ interface OnFolderItemClicked {
  *
  */
 class FolderFragment : Fragment() {
-    // TODO: Rename and change types of parameters
     private lateinit var folderId: String
     private lateinit var folderName: String
     private var collIndex: Int = 0
