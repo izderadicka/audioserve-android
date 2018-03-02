@@ -134,7 +134,7 @@ class NotificationsManager(private val mService: AudioService) {
             builder.addAction(mPrevAction)
         }
 
-        builder.addAction(if (state.state == PlaybackStateCompat.STATE_PLAYING) mPauseAction else mPlayAction)
+        builder.addAction(if (state.state != PlaybackStateCompat.STATE_PLAYING )  mPlayAction else mPauseAction)
 
         // If skip to prev action is enabled.
         if (state.actions and PlaybackStateCompat.ACTION_SKIP_TO_NEXT != 0L) {

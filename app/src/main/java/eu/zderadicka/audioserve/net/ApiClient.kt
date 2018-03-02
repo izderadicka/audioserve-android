@@ -18,8 +18,9 @@ import java.nio.file.Path
 
 private const val LOG_TAG = "ApiClient"
 
-//private const val BASE_URI = "http://192.168.1.32:3000/"
-private const val BASE_URI = "http://10.163.36.141:3000/"
+private const val BASE_URI = "http://192.168.1.32:3000/"
+//private const val BASE_URI = "http://10.163.38.180:3000/"
+//private const val BASE_URI = "http://192.168.43.233:3000/"
 
 fun UriFromMediaId(mediaId: String): Uri {
     return Uri.parse(BASE_URI+mediaId)
