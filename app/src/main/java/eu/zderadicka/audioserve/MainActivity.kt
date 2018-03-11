@@ -112,7 +112,7 @@ class MainActivity : AppCompatActivity(),
 
     private fun onMediaServiceConnected() {
         controllerFragment.onMediaServiceConnected()
-        folderFragment.onMediaServiceConnect()
+        folderFragment.onMediaServiceConnected()
 
     }
 

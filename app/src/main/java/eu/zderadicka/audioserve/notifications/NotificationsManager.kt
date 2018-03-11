@@ -141,7 +141,7 @@ class NotificationsManager(private val mService: AudioService) {
             builder.addAction(mNextAction)
         }
 
-
+//TODO Make notification to be able to swipe away and add stop playback
 
         return builder
     }

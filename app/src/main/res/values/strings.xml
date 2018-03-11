@@ -12,4 +12,6 @@
     <string name="label_pause">Pause</string>
     <string name="label_next">Next</string>
     <string name="label_previous">Previous</string>
+    <string name="media_browser_error">Media browser error</string>
+    <string name="empty_folder">Empty folder</string>
 </resources>

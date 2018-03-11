@@ -5,6 +5,7 @@ import android.content.Context
 import android.os.Bundle
 import android.support.v4.media.MediaBrowserCompat
 import android.support.v4.media.MediaBrowserCompat.MediaItem
+import android.support.v4.media.MediaMetadataCompat
 import android.support.v4.media.session.MediaControllerCompat
 import android.support.v7.widget.LinearLayoutManager
 import android.support.v7.widget.RecyclerView
@@ -13,6 +14,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
+import android.widget.Toast
 import eu.zderadicka.audioserve.net.ApiClient
 
 
@@ -22,12 +24,14 @@ const val ARG_FOLDER_NAME = "folder-name"
 const val ARG_COLLECTION_INDEX = "collections-index"
 private const val LOG_TAG = "FolderFragment"
 
+//TODO icon for item type - folder or audio file
+// TODO hightlight and icon for currently played icon
+// TODO show also :  duration and bitrate and transcoding
 class FolderItemViewHolder(itemView: View, val viewType: Int, val clickCB: (Int) -> Unit) : RecyclerView.ViewHolder(itemView) {
 
-    lateinit var itemName: TextView
+    var itemName: TextView = itemView.findViewById(R.id.folderItemName)
 
     init {
-        itemName = itemView.findViewById(R.id.folderItemName)
         itemView.setOnClickListener { clickCB(adapterPosition) }
     }
 }
@@ -36,7 +40,10 @@ class FolderAdapter(val context: Context,
                     private val itemCb: (MediaItem) -> Unit)
     : RecyclerView.Adapter<FolderItemViewHolder>() {
 
-    private var items: MutableList<MediaItem>? = null
+    private var items: List<MediaItem>? = null
+    internal var nowPlaying: Int = -1
+    private var pendingMediaId: String? = null  // if we got now playing metadata, but list is not loaded yet
+    private val idMap: HashMap<String,Int> = HashMap()
 
     override fun onCreateViewHolder(parent: ViewGroup?, viewType: Int): FolderItemViewHolder {
         val inflater = LayoutInflater.from(parent?.context)
@@ -61,11 +68,34 @@ class FolderAdapter(val context: Context,
         val item = items?.get(position)
         if (item == null) return
         holder!!.itemName.text = item.description.title
+        if (position == nowPlaying) {
+            holder.itemView.setBackgroundColor(context.resources.getColor(R.color.colorAccent))
+        } else {
+            holder.itemView.setBackgroundColor(context.resources.getColor(R.color.background_material_light))
+        }
     }
 
-    fun changeData(newData: MutableList<MediaItem>) {
+    fun changeData(newData: List<MediaItem>) {
         items = newData
+        idMap.clear()
+        for (i in 0 until newData.size) {
+            idMap.put(newData.get(i).mediaId!!, i)
+        }
         notifyDataSetChanged()
+        if (pendingMediaId != null) updateNowPlaying(pendingMediaId!!)
+    }
+
+    fun updateNowPlaying(mediaId: String): Int {
+
+        val idx = idMap.get(mediaId)
+        nowPlaying = if (idx == null) -1 else idx
+        if (nowPlaying >= 0 ) {
+            notifyDataSetChanged()
+            pendingMediaId = null
+        } else {
+            pendingMediaId = mediaId
+        }
+        return nowPlaying
     }
 }
 
@@ -76,16 +106,8 @@ interface OnFolderItemClicked {
 }
 
 
-/**
- * A simple [Fragment] subclass.
- * Activities that contain this fragment must implement the
- * [FolderFragment.OnFragmentInteractionListener] interface
- * to handle interaction events.
- * Use the [FolderFragment.newInstance] factory method to
- * create an instance of this fragment.
- *
- */
-class FolderFragment : Fragment() {
+
+class FolderFragment : MediaFragment() {
     private lateinit var folderId: String
     private lateinit var folderName: String
     private var collIndex: Int = 0
@@ -93,17 +115,44 @@ class FolderFragment : Fragment() {
     private lateinit var adapter: FolderAdapter
 
     private lateinit var folderView: RecyclerView
+// TODO highlight currently played item - save latest meta and on playing find item and highlight
+    override val mCallback = object: MediaControllerCompat.Callback() {
+
+        override fun onMetadataChanged(metadata: MediaMetadataCompat?) {
+            if (metadata == null) {
+                return
+            }
+            Log.d(LOG_TAG, "Received metadata state change to mediaId=${metadata.description.mediaId} song=${metadata.description.title}")
+            if (metadata.description.mediaId != null) {
+                adapter.updateNowPlaying(metadata.description.mediaId!!)
+                scrollToNowPlaying()
+            } else {
+                Log.w(LOG_TAG,"Metadata should always contain mediaID :  ${metadata.description}")
+            }
+        }
+
+    }
+
+    private fun scrollToNowPlaying() {
+        if (adapter.nowPlaying >= 0)
+            folderView.scrollToPosition(adapter.nowPlaying)
+    }
 
     private val subscribeCallback = object : MediaBrowserCompat.SubscriptionCallback() {
         override fun onChildrenLoaded(parentId: String, children: MutableList<MediaItem>) {
             Log.d(LOG_TAG, "Received folder listing ${children.size} items")
             super.onChildrenLoaded(parentId, children)
+            if (children.size==0) {
+                Toast.makeText(this@FolderFragment.context,R.string.empty_folder, Toast.LENGTH_LONG)
+            }
             this@FolderFragment.adapter.changeData(children)
+            scrollToNowPlaying()
         }
 
         override fun onError(parentId: String) {
             super.onError(parentId)
             Log.e(LOG_TAG, "Error loading folder ${parentId}")
+            Toast.makeText(this@FolderFragment.context,R.string.media_browser_error, Toast.LENGTH_LONG)
         }
     }
 
@@ -150,13 +199,10 @@ class FolderFragment : Fragment() {
         listener = null
     }
 
-    override fun onStart() {
-        super.onStart()
-        onMediaServiceConnect()
-    }
 
     private var listenersConnected = false
-    fun onMediaServiceConnect() {
+    override fun onMediaServiceConnected() {
+        super.onMediaServiceConnected()
         Log.d(LOG_TAG, "onMediaServiceConnect ${listener?.mediaBrowser}")
         if (listener?.mediaBrowser != null && ! listenersConnected) {
             listener?.mediaBrowser?.subscribe(folderId, subscribeCallback)
