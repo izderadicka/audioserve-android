@@ -78,8 +78,14 @@ class PlayerController(private val service: AudioService)
 
     }
 
+    override fun onPause(player: Player?) {
+        super.onPause(player)
+        needResume = false
+    }
+
     override fun onStop(player: Player) {
         Log.d(LOG_TAG, "Stoping play")
+        needResume = false
         super.onStop(player)
         service.stopForeground(true)
         service.stopSelf()

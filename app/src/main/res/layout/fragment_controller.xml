@@ -38,7 +38,7 @@
         android:layout_marginEnd="8dp"
         android:layout_marginStart="8dp"
         app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toStartOf="@+id/totalTimeView"
+        app:layout_constraintEnd_toStartOf="@+id/trackTimeView"
         app:layout_constraintStart_toEndOf="@+id/currentTimeView" />
 
     <ImageView
@@ -63,7 +63,7 @@
         tools:text="1:00:00" />
 
     <TextView
-        android:id="@+id/totalTimeView"
+        android:id="@+id/trackTimeView"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginBottom="8dp"
