@@ -39,9 +39,11 @@ import eu.zderadicka.audioserve.notifications.NotificationsManager
 
 private const val LOG_TAG = "audioserve-service"
 private const val TIME_AFTER_WHICH_NOT_RESUMING = 20 * 60 * 1000
+private const val FF_MS = 30 * 1000L
+private const val REWIND_MS = 15 * 1000L
 
 class PlayerController(private val service: AudioService)
-    : DefaultPlaybackController() {
+    : DefaultPlaybackController(REWIND_MS, FF_MS, MediaSessionConnector.DEFAULT_REPEAT_TOGGLE_MODES) {
 
     private val am: AudioManager =  service.getSystemService(Context.AUDIO_SERVICE) as AudioManager;
     private var needResume = false
@@ -57,8 +59,9 @@ class PlayerController(private val service: AudioService)
                 needResume = false
             }
             else -> {
-                onPause(currentPlayer)
-                needResume = true
+                // resume only if it was playing
+                needResume = service.session.controller.playbackState.state == PlaybackStateCompat.STATE_PLAYING
+                super.onPause(currentPlayer)
                 timeInterrupted = System.currentTimeMillis()
             }
         }
@@ -78,7 +81,7 @@ class PlayerController(private val service: AudioService)
 
     }
 
-    override fun onPause(player: Player?) {
+    override fun onPause(player: Player) {
         super.onPause(player)
         needResume = false
     }
@@ -90,6 +93,10 @@ class PlayerController(private val service: AudioService)
         service.stopForeground(true)
         service.stopSelf()
         am.abandonAudioFocus(focusCallback)
+    }
+
+    override fun onFastForward(player: Player?) {
+        super.onFastForward(player)
     }
 
 }
@@ -208,6 +215,7 @@ class AudioService : MediaBrowserServiceCompat() {
         connector = MediaSessionConnector(session, PlayerController(this))
         connector.setPlayer(player, preparer)
         connector.setQueueNavigator(queueManager)
+
 
         Log.d(LOG_TAG, "Audioservice created")
 

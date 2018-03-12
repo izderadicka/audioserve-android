@@ -14,10 +14,8 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.view.animation.LinearInterpolator
-import android.widget.ImageView
-import android.widget.SeekBar
-import android.widget.TextView
-import android.widget.Toast
+import android.widget.*
+
 //import kotlinx.android.synthetic.main.fragment_controller.*
 
 
@@ -60,6 +58,23 @@ class ControllerFragment : MediaFragment() {
 
             this@ControllerFragment.canPlay = enablePlay
 
+            // control buttons
+
+            fun enableButton(btn: View, action: Long) {
+                if (state.actions and action > 0) {
+                    btn.visibility = View.VISIBLE
+                } else {
+                    btn.visibility = View.INVISIBLE
+                }
+            }
+
+            enableButton(skipNextButton, PlaybackStateCompat.ACTION_SKIP_TO_NEXT)
+            enableButton(skipPreviousButton, PlaybackStateCompat.ACTION_SKIP_TO_PREVIOUS)
+            enableButton(fastForwardButton, PlaybackStateCompat.ACTION_FAST_FORWARD)
+            enableButton(rewindButton, PlaybackStateCompat.ACTION_REWIND)
+
+
+
             // seekBar animation
 
             //reset current
@@ -68,7 +83,8 @@ class ControllerFragment : MediaFragment() {
             val progress = state.position.toInt() ?: 0
             seekBar.progress = progress
             if (state.state == PlaybackStateCompat.STATE_PLAYING) {
-                val timeToEnd = (seekBar.max - progress) / state.playbackSpeed
+                var timeToEnd = (seekBar.max - progress) / state.playbackSpeed
+                if (timeToEnd < 0) timeToEnd = 0F
                 Log.d(LOG_TAG, "Setting Animator to ${seekBar.progress} to ${seekBar.max} timeToEnd $timeToEnd")
                 progressAnimator = ValueAnimator.ofInt(seekBar.progress, seekBar.max).setDuration(timeToEnd.toLong())
                 progressAnimator!!.interpolator = LinearInterpolator()
@@ -113,6 +129,11 @@ class ControllerFragment : MediaFragment() {
     lateinit var seekBar: SeekBar
     lateinit var currentTimeView: TextView
     lateinit var trackTimeView: TextView
+    lateinit var skipPreviousButton: ImageView
+    lateinit var skipNextButton: ImageView
+    lateinit var fastForwardButton: ImageView
+    lateinit var rewindButton: ImageView
+
     var progressAnimator: ValueAnimator? = null
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?,
@@ -123,6 +144,11 @@ class ControllerFragment : MediaFragment() {
         seekBar = view.findViewById(R.id.seekBar)
         currentTimeView = view.findViewById(R.id.currentTimeView)
         trackTimeView = view.findViewById(R.id.trackTimeView)
+        skipNextButton = view.findViewById(R.id.skipNextButton)
+        skipPreviousButton = view.findViewById(R.id.skipPreviousButton)
+        rewindButton = view.findViewById(R.id.rewindButton)
+        fastForwardButton = view.findViewById(R.id.fastForwardButton)
+
         seekBar.setOnSeekBarChangeListener(object: SeekBar.OnSeekBarChangeListener {
             override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
                 currentTimeView.text = DateUtils.formatElapsedTime(progress.toLong()/ 1000)
@@ -147,6 +173,22 @@ class ControllerFragment : MediaFragment() {
                 mediaController?.transportControls?.pause()
             }
 
+        }
+
+        skipNextButton.setOnClickListener {
+            mediaController?.transportControls?.skipToNext()
+        }
+
+        skipPreviousButton.setOnClickListener {
+            mediaController?.transportControls?.skipToPrevious()
+        }
+
+        rewindButton.setOnClickListener{
+            mediaController?.transportControls?.rewind()
+        }
+
+        fastForwardButton.setOnClickListener {
+            mediaController?.transportControls?.fastForward()
         }
 
         return view
