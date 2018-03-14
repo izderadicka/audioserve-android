@@ -40,7 +40,12 @@ class ControllerFragment : MediaFragment() {
 
             var enablePlay = false
             when (state.state) {
-                PlaybackStateCompat.STATE_PAUSED, PlaybackStateCompat.STATE_STOPPED -> enablePlay = true
+                PlaybackStateCompat.STATE_NONE -> {
+                    Log.d(LOG_TAG, "AudioService is stopped")
+                    // TODO - do something about it -  it means audioservice is stopped - to start playing again need to prepare media again
+                }
+                PlaybackStateCompat.STATE_PAUSED,
+                PlaybackStateCompat.STATE_STOPPED-> enablePlay = true
                 PlaybackStateCompat.STATE_ERROR -> {
                     Log.e(LOG_TAG, "error playbackstate:  ${state.errorMessage}")
                     Toast.makeText(activity, state.errorMessage, Toast.LENGTH_LONG).show()

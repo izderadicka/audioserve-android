@@ -23,33 +23,33 @@ import eu.zderadicka.audioserve.R
 
 class NotificationsManager(private val mService: AudioService) {
 
-    private val mPlayAction: NotificationCompat.Action
-    private val mPauseAction: NotificationCompat.Action
-    private val mNextAction: NotificationCompat.Action
-    private val mPrevAction: NotificationCompat.Action
+    private val playAction: NotificationCompat.Action
+    private val pauseAction: NotificationCompat.Action
+    private val nextAction: NotificationCompat.Action
+    private val prevAction: NotificationCompat.Action
     private val notificationManager: NotificationManager = mService.getSystemService(Context.NOTIFICATION_SERVICE)!! as NotificationManager
 
     init {
 
-        mPlayAction = NotificationCompat.Action(
+        playAction = NotificationCompat.Action(
                 android.R.drawable.ic_media_play,
                 mService.getString(R.string.label_play),
                 MediaButtonReceiver.buildMediaButtonPendingIntent(
                         mService,
                         PlaybackStateCompat.ACTION_PLAY))
-        mPauseAction = NotificationCompat.Action(
+        pauseAction = NotificationCompat.Action(
                 android.R.drawable.ic_media_pause,
                 mService.getString(R.string.label_pause),
                 MediaButtonReceiver.buildMediaButtonPendingIntent(
                         mService,
                         PlaybackStateCompat.ACTION_PAUSE))
-        mNextAction = NotificationCompat.Action(
+        nextAction = NotificationCompat.Action(
                 android.R.drawable.ic_media_next,
                 mService.getString(R.string.label_next),
                 MediaButtonReceiver.buildMediaButtonPendingIntent(
                         mService,
                         PlaybackStateCompat.ACTION_SKIP_TO_NEXT))
-        mPrevAction = NotificationCompat.Action(
+        prevAction = NotificationCompat.Action(
                 android.R.drawable.ic_media_previous,
                 mService.getString(R.string.label_previous),
                 MediaButtonReceiver.buildMediaButtonPendingIntent(
@@ -65,29 +65,22 @@ class NotificationsManager(private val mService: AudioService) {
         Log.d(LOG_TAG, "onDestroy: ")
     }
 
-    fun sendNotification() {
-        if(mService.isStartedInForeground) {
+    fun sendNotification(needStart:Boolean = false) {
+        if (mService.isStartedInForeground || ! needStart) {
             notificationManager.notify(NOTIFICATION_ID, getNotification())
         } else {
             mService.startMe(getNotification())
         }
 
 
-
     }
+
     private fun getNotification(): Notification {
-        val description = getMeta().description
+        val description = mService.session.controller.metadata.description
         val state = mService.session.controller.playbackState
         val token = mService.sessionToken!!
         val builder = buildNotification(state, token, description)
         return builder.build()
-    }
-
-    private fun getMeta(): MediaMetadataCompat {
-        return MediaMetadataCompat.Builder()
-                .putString(MediaMetadataCompat.METADATA_KEY_TITLE, "Dummy for now")
-                .putString(MediaMetadataCompat.METADATA_KEY_DISPLAY_SUBTITLE, " Lorem i psum ...")
-                .build()
     }
 
 
@@ -96,17 +89,29 @@ class NotificationsManager(private val mService: AudioService) {
                                   description: MediaDescriptionCompat): NotificationCompat.Builder {
 
         // Create the (mandatory) notification channel when running on Android Oreo.
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            createChannel()
+        }
 
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                createChannel()
-            }
-
-
+        var playIndex = 0
         val builder = NotificationCompat.Builder(mService, CHANNEL_ID)
+        // If skip to next action is enabled.
+        if (state.actions and PlaybackStateCompat.ACTION_SKIP_TO_PREVIOUS != 0L) {
+            builder.addAction(prevAction)
+            playIndex+=1
+        }
+
+        builder.addAction(if (state.state != PlaybackStateCompat.STATE_PLAYING) playAction else pauseAction)
+
+        // If skip to prev action is enabled.
+        if (state.actions and PlaybackStateCompat.ACTION_SKIP_TO_NEXT != 0L) {
+            builder.addAction(nextAction)
+        }
+
         builder.setStyle(
                 android.support.v4.media.app.NotificationCompat.MediaStyle()
                         .setMediaSession(token)
-                        .setShowActionsInCompactView(0)
+                        .setShowActionsInCompactView(playIndex)
                         // For backwards compatibility with Android L and earlier.
                         .setShowCancelButton(true)
                         .setCancelButtonIntent(
@@ -114,7 +119,7 @@ class NotificationsManager(private val mService: AudioService) {
                                         mService,
                                         PlaybackStateCompat.ACTION_STOP)))
                 .setColor(ContextCompat.getColor(mService, R.color.primary_material_dark))
-                .setSmallIcon(R.mipmap.ic_launcher)
+                .setSmallIcon(R.drawable.ic_logo_inverse_24dp)
                 // Pending intent that is fired when user clicks on notification.
                 .setContentIntent(createContentIntent())
                 // Title - Usually Song name.
@@ -129,20 +134,6 @@ class NotificationsManager(private val mService: AudioService) {
                 // Show controls on lock screen even when user hides sensitive content.
                 .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
 
-        // If skip to next action is enabled.
-        if (state.actions and PlaybackStateCompat.ACTION_SKIP_TO_PREVIOUS != 0L) {
-            builder.addAction(mPrevAction)
-        }
-
-        builder.addAction(if (state.state != PlaybackStateCompat.STATE_PLAYING )  mPlayAction else mPauseAction)
-
-        // If skip to prev action is enabled.
-        if (state.actions and PlaybackStateCompat.ACTION_SKIP_TO_NEXT != 0L) {
-            builder.addAction(mNextAction)
-        }
-
-//TODO Make notification to be able to swipe away and add stop playback
-
         return builder
     }
 
@@ -151,19 +142,21 @@ class NotificationsManager(private val mService: AudioService) {
     private fun createChannel() {
         if (notificationManager.getNotificationChannel(CHANNEL_ID) == null) {
             // The user-visible name of the channel.
-            val name = "MediaSession"
+            val name = "Audioserve"
             // The user-visible description of the channel.
-            val description = "MediaSession and MediaPlayer"
+            val description = "Audioserve playback notification channel"
             val importance = NotificationManager.IMPORTANCE_LOW
             val mChannel = NotificationChannel(CHANNEL_ID, name, importance)
             // Configure the notification channel.
             mChannel.description = description
-            mChannel.enableLights(true)
-            // Sets the notification light color for notifications posted to this
-            // channel, if the device supports this feature.
-            mChannel.lightColor = Color.RED
-            mChannel.enableVibration(true)
-            mChannel.vibrationPattern = longArrayOf(100, 200, 300, 400, 500, 400, 300, 200, 400)
+            /* TODO - I do not think we need lights or vibrations but can reconsider later
+             mChannel.enableLights(true)
+             // Sets the notification light color for notifications posted to this
+             // channel, if the device supports this feature.
+             mChannel.lightColor = Color.RED
+             mChannel.enableVibration(true)
+             mChannel.vibrationPattern = longArrayOf(100, 200, 300, 400, 500, 400, 300, 200, 400)
+             */
             notificationManager.createNotificationChannel(mChannel)
             Log.d(LOG_TAG, "createChannel: New channel created")
         } else {

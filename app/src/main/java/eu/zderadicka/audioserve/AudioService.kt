@@ -77,12 +77,11 @@ class PlayerController(private val service: AudioService)
         if (result == AudioManager.AUDIOFOCUS_REQUEST_GRANTED) {
             super.onPlay(player)
         }
-
-
     }
 
     override fun onPause(player: Player) {
         super.onPause(player)
+        service.pauseMe()
         needResume = false
     }
 
@@ -90,8 +89,7 @@ class PlayerController(private val service: AudioService)
         Log.d(LOG_TAG, "Stoping play")
         needResume = false
         super.onStop(player)
-        service.stopForeground(true)
-        service.stopSelf()
+        service.stopMe()
         am.abandonAudioFocus(focusCallback)
     }
 
@@ -163,14 +161,13 @@ class AudioService : MediaBrowserServiceCompat() {
             super.onPlaybackStateChanged(state)
             Log.d(LOG_TAG, "Playback state changed in service ${state}")
             when(state.state) {
-                PlaybackStateCompat.STATE_PLAYING,
-                        PlaybackStateCompat.STATE_PAUSED -> notifManager.sendNotification()
+                PlaybackStateCompat.STATE_PLAYING -> notifManager.sendNotification(true)
+                PlaybackStateCompat.STATE_PAUSED -> notifManager.sendNotification()
                 PlaybackStateCompat.STATE_BUFFERING -> {
 
                     if (skipToQueueItem >= 0) {
                         val timeline = player.currentTimeline
                         if (!timeline.isEmpty) {
-
                             //No need to skip to 0, as this is default start
                             if (0 < skipToQueueItem && skipToQueueItem < timeline.windowCount) {
                                 player.seekTo(skipToQueueItem, C.TIME_UNSET)
@@ -221,18 +218,32 @@ class AudioService : MediaBrowserServiceCompat() {
 
     }
     var isStartedInForeground = false
+    var isStarted = false
 
     fun startMe(notification: Notification) {
-        val intent = Intent(this,AudioService::class.java)
-        ContextCompat.startForegroundService(this,intent)
+
+        if (!isStarted) {
+            val intent = Intent(this,AudioService::class.java)
+            ContextCompat.startForegroundService(this,intent)
+            isStarted = true
+        }
         startForeground(NotificationsManager.NOTIFICATION_ID, notification)
         isStartedInForeground = true
     }
 
     fun stopMe() {
         stopForeground(true)
-        stopSelf()
         isStartedInForeground = false
+        stopSelf()
+        isStarted = false
+
+    }
+
+    fun pauseMe() {
+        Log.d(LOG_TAG, "Pausing service - stopForeground")
+        stopForeground(false)
+        isStartedInForeground = false
+
     }
 
 
