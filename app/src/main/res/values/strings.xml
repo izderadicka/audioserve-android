@@ -14,4 +14,8 @@
     <string name="label_previous">Previous</string>
     <string name="media_browser_error">Media browser error</string>
     <string name="empty_folder">Empty folder</string>
+    <string name="pref_server_url_title">Server URL</string>
+    <string name="pref_shared_secret_title">Shared secret</string>
+    <string name="pref_shared_secret_summary_set">Secret is set</string>
+    <string name="pref_shared_secret_summary_empty">Shared secret is empty!</string>
 </resources>

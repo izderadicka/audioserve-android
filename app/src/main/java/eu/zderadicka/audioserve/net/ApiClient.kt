@@ -8,6 +8,7 @@ import com.android.volley.Request
 import android.util.LruCache
 import android.graphics.Bitmap
 import android.net.Uri
+import android.preference.PreferenceManager
 import android.util.Log
 import com.android.volley.toolbox.StringRequest
 import eu.zderadicka.audioserve.data.AudioFolder
@@ -18,40 +19,35 @@ import java.nio.file.Path
 
 private const val LOG_TAG = "ApiClient"
 
-//private const val BASE_URI = "http://192.168.1.32:3000/"
-private const val BASE_URI = "http://10.163.36.141:3000/"
-//private const val BASE_URI = "http://192.168.43.233:3000/"
+//internal fun audioUri(path: String) : Uri {
+//    val segments = path.split("/")
+//    val builder =  Uri.parse(BASE_URI).buildUpon()
+//    builder.appendPath("audio")
+//    for (s in segments) builder.appendPath(s)
+//    return builder.build()
+//}
 
-fun UriFromMediaId(mediaId: String): Uri {
-    return Uri.parse(BASE_URI+mediaId)
-}
-
-
-internal fun audioUri(path: String) : Uri {
-    val segments = path.split("/")
-    val builder =  Uri.parse(BASE_URI).buildUpon()
-    builder.appendPath("audio")
-    for (s in segments) builder.appendPath(s)
-    return builder.build()
-}
-
-class ApiClient private constructor(context: Context) {
+class ApiClient private constructor(val context: Context) {
     private var mRequestQueue: RequestQueue? = null
     val imageLoader: ImageLoader
+    val baseURL: String
 
     // getApplicationContext() is key, it keeps you from leaking the
     // Activity or BroadcastReceiver if someone passes one in.
     val requestQueue: RequestQueue
         get() {
             if (mRequestQueue == null) {
-                mRequestQueue = Volley.newRequestQueue(mCtx.getApplicationContext())
+                mRequestQueue = Volley.newRequestQueue(context.getApplicationContext())
             }
             return mRequestQueue!!
         }
 
     init {
-        mCtx = context
-        mRequestQueue = requestQueue
+
+       baseURL = PreferenceManager.getDefaultSharedPreferences(context).getString("pref_server_url", null)
+       if (baseURL == null || baseURL.length == 0) {
+           Log.w(LOG_TAG, "BaseURL is empty!")
+       }
 
         imageLoader = ImageLoader(mRequestQueue,
                 object : ImageLoader.ImageCache {
@@ -81,9 +77,13 @@ class ApiClient private constructor(context: Context) {
         addToRequestQueue(request)
     }
 
+    fun uriFromMediaId(mediaId: String): Uri {
+        return Uri.parse(baseURL+mediaId)
+    }
+
 
     fun loadFolder(folder: String = "", collection: Int, callback: (AudioFolder?) -> Unit) {
-        var uri = BASE_URI
+        var uri = baseURL
         if (collection>0) {
             uri+="$collection/"
         }
@@ -99,13 +99,13 @@ class ApiClient private constructor(context: Context) {
     }
 
     fun loadCollections(callback: (ArrayList<String>) -> Unit) {
-        val uri = BASE_URI + "collections"
+        val uri = baseURL + "collections"
         sendRequest(uri, ::parseCollectionsFromJson, callback)
     }
 
     companion object {
         private var mInstance: ApiClient? = null
-        private lateinit var mCtx: Context
+
 
         @Synchronized
         fun getInstance(context: Context): ApiClient {

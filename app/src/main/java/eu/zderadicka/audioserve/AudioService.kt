@@ -33,7 +33,6 @@ import com.google.android.exoplayer2.trackselection.DefaultTrackSelector
 import com.google.android.exoplayer2.upstream.DefaultDataSourceFactory
 import eu.zderadicka.audioserve.data.ITEM_TYPE_FOLDER
 import eu.zderadicka.audioserve.net.ApiClient
-import eu.zderadicka.audioserve.net.UriFromMediaId
 import eu.zderadicka.audioserve.notifications.NotificationsManager
 
 
@@ -106,6 +105,7 @@ class AudioService : MediaBrowserServiceCompat() {
     lateinit var notifManager:NotificationsManager
     private var playQueue: List<MediaItem> = ArrayList<MediaItem>()
     private var skipToQueueItem = -1
+    private lateinit var apiClient: ApiClient
 
     private val preparer = object : MediaSessionConnector.PlaybackPreparer {
         override fun onPrepareFromSearch(query: String?, extras: Bundle?) {
@@ -135,9 +135,9 @@ class AudioService : MediaBrowserServiceCompat() {
                     "audioserve"))
             skipToQueueItem = findIndexInQueue(mediaId)
 
-            var source: MediaSource = sourceFactory.createMediaSource(UriFromMediaId(mediaId))
+            var source: MediaSource = sourceFactory.createMediaSource(apiClient.uriFromMediaId(mediaId))
             if (skipToQueueItem >= 0) {
-                val ms = playQueue.map { sourceFactory.createMediaSource(UriFromMediaId(it.mediaId!!)) }.toTypedArray()
+                val ms = playQueue.map { sourceFactory.createMediaSource(apiClient.uriFromMediaId(it.mediaId!!)) }.toTypedArray()
                 source = ConcatenatingMediaSource(*ms)
                 player.currentTimeline
             }
@@ -213,6 +213,8 @@ class AudioService : MediaBrowserServiceCompat() {
         connector.setPlayer(player, preparer)
         connector.setQueueNavigator(queueManager)
 
+        apiClient = ApiClient.getInstance(this)
+
 
         Log.d(LOG_TAG, "Audioservice created")
 
@@ -261,7 +263,7 @@ class AudioService : MediaBrowserServiceCompat() {
         } else if (parentId == MEDIA_ROOT_TAG) {
             Log.d(LOG_TAG, "Requesting listing of root of media")
             result.detach()
-            ApiClient.getInstance(this).loadCollections {
+            apiClient.loadCollections {
                 val list = it.mapIndexed { idx, coll ->
                     val b = Bundle()
                     b.putBoolean(ITEM_IS_COLLECTION, true)
@@ -287,7 +289,7 @@ class AudioService : MediaBrowserServiceCompat() {
             }
 
             result.detach()
-            ApiClient.getInstance(this).loadFolder(folder, index) {
+            apiClient.loadFolder(folder, index) {
                 if (it != null) {
                     result.sendResult(it.mediaItems)
                     playQueue = it.playableItems

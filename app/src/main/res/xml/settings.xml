@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <EditTextPreference
+        android:key="pref_server_url"
+        android:selectAllOnFocus="true"
+        android:singleLine="true"
+        android:title="@string/pref_server_url_title" />
+    <EditTextPreference
+        android:key="pref_shared_secret"
+        android:password="true"
+        android:selectAllOnFocus="true"
+        android:singleLine="true"
+        android:title="@string/pref_shared_secret_title" />
+</PreferenceScreen>
