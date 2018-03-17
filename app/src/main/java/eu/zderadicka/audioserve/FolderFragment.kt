@@ -1,6 +1,5 @@
 package eu.zderadicka.audioserve
 
-import android.support.v4.app.Fragment
 import android.content.Context
 import android.os.Bundle
 import android.support.v4.media.MediaBrowserCompat
@@ -15,7 +14,6 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
 import android.widget.Toast
-import eu.zderadicka.audioserve.net.ApiClient
 
 
 // the fragment initialization parameters, e.g. ARG_ITEM_NUMBER
@@ -100,7 +98,7 @@ class FolderAdapter(val context: Context,
 }
 
 
-interface OnFolderItemClicked {
+interface MediaActivity {
     fun onItemClicked(item: MediaItem)
     val mediaBrowser: MediaBrowserCompat
 }
@@ -111,7 +109,7 @@ class FolderFragment : MediaFragment() {
     private lateinit var folderId: String
     private lateinit var folderName: String
     private var collIndex: Int = 0
-    private var listener: OnFolderItemClicked? = null
+    private var mediaActivity: MediaActivity? = null
     private lateinit var adapter: FolderAdapter
 
     private lateinit var folderView: RecyclerView
@@ -143,7 +141,7 @@ class FolderFragment : MediaFragment() {
             Log.d(LOG_TAG, "Received folder listing ${children.size} items")
             super.onChildrenLoaded(parentId, children)
             if (children.size==0) {
-                Toast.makeText(this@FolderFragment.context,R.string.empty_folder, Toast.LENGTH_LONG)
+                Toast.makeText(this@FolderFragment.context,R.string.empty_folder, Toast.LENGTH_LONG).show()
             }
             this@FolderFragment.adapter.changeData(children)
             scrollToNowPlaying()
@@ -152,7 +150,7 @@ class FolderFragment : MediaFragment() {
         override fun onError(parentId: String) {
             super.onError(parentId)
             Log.e(LOG_TAG, "Error loading folder ${parentId}")
-            Toast.makeText(this@FolderFragment.context,R.string.media_browser_error, Toast.LENGTH_LONG)
+            Toast.makeText(this@FolderFragment.context,R.string.media_browser_error, Toast.LENGTH_LONG).show()
         }
     }
 
@@ -172,40 +170,33 @@ class FolderFragment : MediaFragment() {
         folderView.layoutManager = LinearLayoutManager(context)
 
         adapter = FolderAdapter(context!!) {
-            listener?.onItemClicked(it)
+            mediaActivity?.onItemClicked(it)
         }
         folderView.adapter = adapter
 
-//        ApiClient.getInstance(context!!).loadFolder(folderId) {
-//           it?.mediaItems?.let {adapter.changeData(it)}
-//        }
-
-        // Inflate the layout for this fragment
+        if (context is MediaActivity) {
+            mediaActivity = context as MediaActivity
+        } else {
+            throw RuntimeException(context.toString() + " must implement MediaActivity")
+        }
         return view
     }
 
 
-    override fun onAttach(context: Context) {
-        super.onAttach(context)
-        if (context is OnFolderItemClicked) {
-            listener = context
-        } else {
-            throw RuntimeException(context.toString() + " must implement OnFolderItemClicked")
-        }
-    }
 
-    override fun onDetach() {
-        super.onDetach()
-        listener = null
+
+    override fun onDestroyView() {
+        super.onDestroyView()
+        mediaActivity = null
     }
 
 
     private var listenersConnected = false
     override fun onMediaServiceConnected() {
         super.onMediaServiceConnected()
-        Log.d(LOG_TAG, "onMediaServiceConnect ${listener?.mediaBrowser}")
-        if (listener?.mediaBrowser != null && ! listenersConnected) {
-            listener?.mediaBrowser?.subscribe(folderId, subscribeCallback)
+        Log.d(LOG_TAG, "onMediaServiceConnect ${mediaActivity?.mediaBrowser}")
+        if (mediaActivity?.mediaBrowser != null && ! listenersConnected) {
+            mediaActivity?.mediaBrowser?.subscribe(folderId, subscribeCallback)
             listenersConnected = true
         }
     }
@@ -213,9 +204,15 @@ class FolderFragment : MediaFragment() {
     override fun onStop() {
         super.onStop()
         if (listenersConnected) {
-            listener?.mediaBrowser?.unsubscribe(folderId, subscribeCallback)
+            mediaActivity?.mediaBrowser?.unsubscribe(folderId, subscribeCallback)
             listenersConnected = false
         }
+    }
+
+
+    fun reload() {
+        mediaActivity?.mediaBrowser?.unsubscribe(folderId, subscribeCallback)
+        mediaActivity?.mediaBrowser?.subscribe(folderId, subscribeCallback)
     }
 
 

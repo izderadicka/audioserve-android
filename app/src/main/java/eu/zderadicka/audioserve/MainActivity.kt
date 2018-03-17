@@ -21,9 +21,11 @@ private const val LOG_TAG = "Main"
 
 class MainActivity : AppCompatActivity(),
         NavigationView.OnNavigationItemSelectedListener,
-        OnFolderItemClicked {
+        MediaActivity {
 
-    private lateinit var folderFragment: FolderFragment
+    private val folderFragment: FolderFragment?
+    get() = supportFragmentManager.findFragmentById(R.id.folderContainer) as FolderFragment
+
     private lateinit var mBrowser: MediaBrowserCompat
     private lateinit var controllerFragment: ControllerFragment
 
@@ -53,8 +55,8 @@ class MainActivity : AppCompatActivity(),
 
         if (item.isBrowsable) {
 
-            folderFragment = FolderFragment.newInstance(item.mediaId!!, item.description.title?.toString()?:"unknown")
-            supportFragmentManager.beginTransaction().replace(R.id.folderContainer, folderFragment)
+            val newFragment = FolderFragment.newInstance(item.mediaId!!, item.description.title?.toString()?:"unknown")
+            supportFragmentManager.beginTransaction().replace(R.id.folderContainer, newFragment)
                     .addToBackStack(item.mediaId)
                     .commit()
 
@@ -92,13 +94,9 @@ class MainActivity : AppCompatActivity(),
 
         if (savedInstanceState == null) {
 
-            folderFragment = FolderFragment.newInstance(AudioService.MEDIA_ROOT_TAG, getString(R.string.collections_title))
+            val newFragment = FolderFragment.newInstance(AudioService.MEDIA_ROOT_TAG, getString(R.string.collections_title))
 
-            supportFragmentManager.beginTransaction().add(R.id.folderContainer, folderFragment).commit()
-        } else {
-            val fragment = supportFragmentManager.findFragmentById(R.id.folderContainer)
-            if (fragment == null) Log.e(LOG_TAG, "Restored Fragment is null")
-            folderFragment = fragment as FolderFragment
+            supportFragmentManager.beginTransaction().add(R.id.folderContainer, newFragment).commit()
         }
 
         controllerFragment = supportFragmentManager.findFragmentById(R.id.playerControls) as ControllerFragment
@@ -113,7 +111,7 @@ class MainActivity : AppCompatActivity(),
 
     private fun onMediaServiceConnected() {
         controllerFragment.onMediaServiceConnected()
-        folderFragment.onMediaServiceConnected()
+        folderFragment?.onMediaServiceConnected()
 
     }
 
@@ -143,7 +141,10 @@ class MainActivity : AppCompatActivity(),
         // automatically handle clicks on the Home/Up button, so long
         // as you specify a parent activity in AndroidManifest.xml.
         when (item.itemId) {
-            R.id.action_settings -> return true
+            R.id.action_reload -> {
+                folderFragment?.reload()
+                return true
+            }
             else -> return super.onOptionsItemSelected(item)
         }
     }

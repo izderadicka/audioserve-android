@@ -3,11 +3,13 @@ package eu.zderadicka.audioserve
 import android.app.Notification
 import android.content.Context
 import android.content.Intent
+import android.content.SharedPreferences
 import android.media.AudioManager
 import android.net.Uri
 import android.os.Bundle
 import android.os.Process
 import android.os.ResultReceiver
+import android.preference.PreferenceManager
 import android.support.v4.content.ContextCompat
 import android.support.v4.media.MediaBrowserCompat
 import android.support.v4.media.MediaBrowserCompat.MediaItem
@@ -33,9 +35,10 @@ import com.google.android.exoplayer2.trackselection.DefaultTrackSelector
 import com.google.android.exoplayer2.upstream.DefaultDataSourceFactory
 import eu.zderadicka.audioserve.data.ITEM_TYPE_FOLDER
 import eu.zderadicka.audioserve.net.ApiClient
+import eu.zderadicka.audioserve.net.ApiError
 import eu.zderadicka.audioserve.notifications.NotificationsManager
 
-
+const val ERROR_NAME_KEY = "API_ERROR"
 private const val LOG_TAG = "audioserve-service"
 private const val TIME_AFTER_WHICH_NOT_RESUMING = 20 * 60 * 1000
 private const val FF_MS = 30 * 1000L
@@ -191,6 +194,13 @@ class AudioService : MediaBrowserServiceCompat() {
         }
     }
 
+    private val prefsListener = object: SharedPreferences.OnSharedPreferenceChangeListener {
+        override fun onSharedPreferenceChanged(sharedPreferences: SharedPreferences?, key: String?) {
+            apiClient.loadPreferences()
+        }
+
+    }
+
     private lateinit var queueManager:QueueManager
 
     companion object {
@@ -214,6 +224,8 @@ class AudioService : MediaBrowserServiceCompat() {
         connector.setQueueNavigator(queueManager)
 
         apiClient = ApiClient.getInstance(this)
+
+        PreferenceManager.getDefaultSharedPreferences(this).registerOnSharedPreferenceChangeListener(prefsListener)
 
 
         Log.d(LOG_TAG, "Audioservice created")
@@ -251,55 +263,73 @@ class AudioService : MediaBrowserServiceCompat() {
 
     override fun onDestroy() {
         super.onDestroy()
+        PreferenceManager.getDefaultSharedPreferences(this).unregisterOnSharedPreferenceChangeListener(prefsListener)
         player.release()
         session.release()
 
         Log.d(LOG_TAG, "Audioservice destroyed")
     }
 
+
     override fun onLoadChildren(parentId: String, result: MediaBrowserServiceCompat.Result<List<MediaBrowserCompat.MediaItem>>) {
+        fun checkError(err:ApiError) {
+//            val details = Bundle()
+//            details.putString(ERROR_NAME_KEY, err.name)
+            Log.e(LOG_TAG, "Api returned error: ${err.name}")
+
+            result.sendResult(null)
+        }
+
         if (parentId == EMPTY_ROOT_TAG) {
             result.sendResult(ArrayList())
         } else if (parentId == MEDIA_ROOT_TAG) {
             Log.d(LOG_TAG, "Requesting listing of root of media")
             result.detach()
-            apiClient.loadCollections {
-                val list = it.mapIndexed { idx, coll ->
-                    val b = Bundle()
-                    b.putBoolean(ITEM_IS_COLLECTION, true)
-                    val meta = MediaDescriptionCompat.Builder()
-                            .setMediaId(COLLECTION_PREFIX + idx)
-                            .setTitle(coll)
-                            .build()
-                    MediaItem(meta, MediaItem.FLAG_BROWSABLE)
+            apiClient.loadCollections { cols, err ->
+                if (err != null) {
+                    checkError(err)
+                } else {
+                    val list = cols!!.mapIndexed { idx, coll ->
+                        val b = Bundle()
+                        b.putBoolean(ITEM_IS_COLLECTION, true)
+                        val meta = MediaDescriptionCompat.Builder()
+                                .setMediaId(COLLECTION_PREFIX + idx)
+                                .setTitle(coll)
+                                .build()
+                        MediaItem(meta, MediaItem.FLAG_BROWSABLE)
+                    }
+                    result.sendResult(list)
                 }
-                result.sendResult(list)
 
             }
 
-        } else  {
+        } else {
             var index = 0
             var folder = parentId
             if (parentId.startsWith(COLLECTION_PREFIX)) {
                 index = parentId.substring(COLLECTION_PREFIX.length).toInt()
                 folder = ITEM_TYPE_FOLDER + "/"
                 Log.d(LOG_TAG, "Requesting listing of collection ${index}")
-            } else  {
+            } else {
                 Log.d(LOG_TAG, "Requesting listing of folder ${parentId}")
             }
 
             result.detach()
-            apiClient.loadFolder(folder, index) {
-                if (it != null) {
-                    result.sendResult(it.mediaItems)
-                    playQueue = it.playableItems
+            apiClient.loadFolder(folder, index) { it, err ->
+                if (err != null) {
+                    checkError(err)
                 } else {
-                    Log.e(LOG_TAG, "Null audiofolder $folder")
-                    result.sendResult(null)
+                    if (it != null) {
+                        result.sendResult(it.mediaItems)
+                        playQueue = it.playableItems
+                    } else {
+                        Log.e(LOG_TAG, "Null audiofolder $folder")
+                        result.sendResult(null)
+                    }
                 }
-            }
 
             }
+        }
 
 
     }

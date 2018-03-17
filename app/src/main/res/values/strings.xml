@@ -18,4 +18,5 @@
     <string name="pref_shared_secret_title">Shared secret</string>
     <string name="pref_shared_secret_summary_set">Secret is set</string>
     <string name="pref_shared_secret_summary_empty">Shared secret is empty!</string>
+    <string name="action_reload">Reload</string>
 </resources>

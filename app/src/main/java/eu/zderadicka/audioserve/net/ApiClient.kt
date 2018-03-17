@@ -3,19 +3,39 @@ package eu.zderadicka.audioserve.net
 import android.content.Context
 import com.android.volley.toolbox.ImageLoader
 import com.android.volley.toolbox.Volley
-import com.android.volley.RequestQueue
-import com.android.volley.Request
 import android.util.LruCache
 import android.graphics.Bitmap
 import android.net.Uri
 import android.preference.PreferenceManager
 import android.util.Log
+import com.android.volley.*
 import com.android.volley.toolbox.StringRequest
 import eu.zderadicka.audioserve.data.AudioFolder
 import eu.zderadicka.audioserve.data.parseCollectionsFromJson
 import eu.zderadicka.audioserve.data.parseFolderfromJson
 import java.io.File
 import java.nio.file.Path
+
+
+enum class ApiError {
+    Network,
+    UnauthorizedAccess,
+    Server,
+    Unknown;
+
+    companion object {
+        fun fromResponseError(err: VolleyError):ApiError =
+            if (err is TimeoutError || err is NoConnectionError) {
+                ApiError.Network
+            } else if (err is AuthFailureError) {
+                ApiError.UnauthorizedAccess
+            } else if (err is NetworkError || err is ServerError || err is ParseError) {
+                ApiError.Server
+            } else {
+                ApiError.Unknown
+            }
+    }
+}
 
 private const val LOG_TAG = "ApiClient"
 
@@ -30,7 +50,7 @@ private const val LOG_TAG = "ApiClient"
 class ApiClient private constructor(val context: Context) {
     private var mRequestQueue: RequestQueue? = null
     val imageLoader: ImageLoader
-    val baseURL: String
+    lateinit var baseURL: String
 
     // getApplicationContext() is key, it keeps you from leaking the
     // Activity or BroadcastReceiver if someone passes one in.
@@ -42,12 +62,18 @@ class ApiClient private constructor(val context: Context) {
             return mRequestQueue!!
         }
 
+    @Synchronized fun loadPreferences() {
+        baseURL = PreferenceManager.getDefaultSharedPreferences(context).getString("pref_server_url", null)
+        if (baseURL == null || baseURL.length == 0) {
+            Log.w(LOG_TAG, "BaseURL is empty!")
+        } else {
+            Log.d(LOG_TAG, "Client base URL is $baseURL")
+        }
+    }
+
     init {
 
-       baseURL = PreferenceManager.getDefaultSharedPreferences(context).getString("pref_server_url", null)
-       if (baseURL == null || baseURL.length == 0) {
-           Log.w(LOG_TAG, "BaseURL is empty!")
-       }
+       loadPreferences()
 
         imageLoader = ImageLoader(mRequestQueue,
                 object : ImageLoader.ImageCache {
@@ -67,12 +93,15 @@ class ApiClient private constructor(val context: Context) {
         requestQueue.add(req)
     }
 
-    private fun <T>sendRequest(uri:String, convert: (String) -> T, callback: (T) -> Unit) {
+    private fun <T>sendRequest(uri:String, convert: (String) -> T, callback: (T?, ApiError?) -> Unit) {
         val request = StringRequest(uri,
                 {val v = convert(it)
-                    callback(v)
+                    callback(v,null)
                 },
-                {Log.e(LOG_TAG, "Network Error ${it}")})
+                {Log.e(LOG_TAG, "Network Error $it")
+                    callback(null, ApiError.fromResponseError(it))
+                }
+                )
 
         addToRequestQueue(request)
     }
@@ -82,7 +111,7 @@ class ApiClient private constructor(val context: Context) {
     }
 
 
-    fun loadFolder(folder: String = "", collection: Int, callback: (AudioFolder?) -> Unit) {
+    fun loadFolder(folder: String = "", collection: Int, callback: (AudioFolder?, ApiError?) -> Unit) {
         var uri = baseURL
         if (collection>0) {
             uri+="$collection/"
@@ -98,7 +127,7 @@ class ApiClient private constructor(val context: Context) {
         }, callback)
     }
 
-    fun loadCollections(callback: (ArrayList<String>) -> Unit) {
+    fun loadCollections(callback: (ArrayList<String>?, ApiError?) -> Unit) {
         val uri = baseURL + "collections"
         sendRequest(uri, ::parseCollectionsFromJson, callback)
     }
@@ -107,7 +136,7 @@ class ApiClient private constructor(val context: Context) {
         private var mInstance: ApiClient? = null
 
 
-        @Synchronized
+        @Synchronized @JvmStatic
         fun getInstance(context: Context): ApiClient {
             if (mInstance == null) {
                 mInstance = ApiClient(context)
