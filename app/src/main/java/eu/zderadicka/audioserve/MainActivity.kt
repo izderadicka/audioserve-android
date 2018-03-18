@@ -27,6 +27,8 @@ class MainActivity : AppCompatActivity(),
     get() = supportFragmentManager.findFragmentById(R.id.folderContainer) as FolderFragment
 
     private lateinit var mBrowser: MediaBrowserCompat
+
+    // TODO - hide controllerFragment if not playing
     private lateinit var controllerFragment: ControllerFragment
 
     private val mediaServiceConnectionCallback = object : MediaBrowserCompat.ConnectionCallback() {

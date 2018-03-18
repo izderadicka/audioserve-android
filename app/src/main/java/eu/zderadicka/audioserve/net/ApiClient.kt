@@ -38,7 +38,7 @@ enum class ApiError {
 
 private const val LOG_TAG = "ApiClient"
 
-fun encodeSecret(secret: String):String {
+internal fun encodeSecret(secret: String):String {
     val secretBytes = secret.toByteArray(Charset.forName("UTF-8"))
     val randBytes = ByteArray(32)
     val rng = SecureRandom()
@@ -47,8 +47,8 @@ fun encodeSecret(secret: String):String {
     val md = MessageDigest.getInstance("SHA-256")
     md.update(concatedBytes)
     val digest = md.digest()
-    val res = Base64.encodeToString(randBytes,Base64.DEFAULT).trim() + "|" +
-            Base64.encodeToString(digest, Base64.DEFAULT).trim()
+    val res = Base64.encodeToString(randBytes,Base64.NO_WRAP) + "|" +
+            Base64.encodeToString(digest, Base64.NO_WRAP)
 
     return res
 

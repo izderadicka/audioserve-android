@@ -166,6 +166,8 @@ class ControllerFragment : MediaFragment() {
             }
 
             override fun onStopTrackingTouch(seekBar: SeekBar?) {
+                //TODO - disable seek for transcoded media
+                //TODO - longer term solution -  use extra data to seek on server - e.g start new media with offset
                 mediaController?.transportControls?.seekTo(seekBar?.progress!!.toLong())
             }
 
