@@ -156,8 +156,9 @@ class MainActivity : AppCompatActivity(),
                 val intent = Intent(this, SettingsActivity::class.java)
                 startActivity(intent)
             }
-            R.id.nav_gallery -> {
-
+            R.id.nav_exit -> {
+                //TODO -  better exit - stop playing and also stop background service
+                finish()
             }
             R.id.nav_slideshow -> {
 

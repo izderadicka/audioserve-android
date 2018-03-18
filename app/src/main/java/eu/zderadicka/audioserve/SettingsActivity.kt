@@ -7,6 +7,7 @@ import android.os.Bundle
 import android.preference.EditTextPreference
 import android.preference.Preference
 import android.preference.PreferenceFragment
+import android.widget.Toast
 import java.net.URL
 
 
@@ -23,15 +24,17 @@ class SettingsFragment: PreferenceFragment(), SharedPreferences.OnSharedPreferen
 
         // validate url
         findPreference("pref_server_url").setOnPreferenceChangeListener { preference, newValue ->
-            try {
+
+            val ok = try {
                 val uri = Uri.parse(newValue as String)
                 uri != null && (uri.scheme == "http" || uri.scheme == "https")
                 && uri.host != null
+                && uri.path.endsWith("/")
             } catch (e: Exception) {
                 false
             }
-
-
+            if (! ok) Toast.makeText(activity,getString(R.string.pref_server_url_error_msg), Toast.LENGTH_LONG).show()
+            ok
         }
     }
 

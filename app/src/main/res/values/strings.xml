@@ -19,4 +19,6 @@
     <string name="pref_shared_secret_summary_set">Secret is set</string>
     <string name="pref_shared_secret_summary_empty">Shared secret is empty!</string>
     <string name="action_reload">Reload</string>
+    <string name="action_exit">Exit</string>
+    <string name="pref_server_url_error_msg">Server URL must be http or https and path should end with /</string>
 </resources>

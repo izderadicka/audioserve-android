@@ -33,6 +33,8 @@ import com.google.android.exoplayer2.source.ExtractorMediaSource
 import com.google.android.exoplayer2.source.MediaSource
 import com.google.android.exoplayer2.trackselection.DefaultTrackSelector
 import com.google.android.exoplayer2.upstream.DefaultDataSourceFactory
+import com.google.android.exoplayer2.upstream.DefaultHttpDataSourceFactory
+import com.google.android.exoplayer2.upstream.HttpDataSource
 import eu.zderadicka.audioserve.data.ITEM_TYPE_FOLDER
 import eu.zderadicka.audioserve.net.ApiClient
 import eu.zderadicka.audioserve.net.ApiError
@@ -95,10 +97,6 @@ class PlayerController(private val service: AudioService)
         am.abandonAudioFocus(focusCallback)
     }
 
-    override fun onFastForward(player: Player?) {
-        super.onFastForward(player)
-    }
-
 }
 
 class AudioService : MediaBrowserServiceCompat() {
@@ -133,9 +131,11 @@ class AudioService : MediaBrowserServiceCompat() {
 
         override fun onPrepareFromMediaId(mediaId: String, extras: Bundle?) {
             Log.d(LOG_TAG, "Preparing mediaId $mediaId")
-            mediaId ?: return
-            val sourceFactory = ExtractorMediaSource.Factory(DefaultDataSourceFactory(applicationContext,
-                    "audioserve"))
+            val dsFactory = DefaultHttpDataSourceFactory("audioserve")
+            if (apiClient.token != null) {
+                dsFactory.defaultRequestProperties.set("Authorization", "Bearer ${apiClient.token}")
+            }
+            val sourceFactory = ExtractorMediaSource.Factory(dsFactory)
             skipToQueueItem = findIndexInQueue(mediaId)
 
             var source: MediaSource = sourceFactory.createMediaSource(apiClient.uriFromMediaId(mediaId))
@@ -223,6 +223,19 @@ class AudioService : MediaBrowserServiceCompat() {
         connector.setPlayer(player, preparer)
         connector.setQueueNavigator(queueManager)
 
+        //TODO - implement error messages as per
+        /*
+        messageProvider = new MediaSessionConnector.ErrorMessageProvider() {
+  @Override
+  public Pair<Integer, String> getErrorMessage(
+      ExoPlaybackException playbackException) {
+    return getHumanReadableError(playbackException);
+  }
+}
+
+mediaSessionConnector.setErrorMessageProvider(messageProvider);
+         */
+
         apiClient = ApiClient.getInstance(this)
 
         PreferenceManager.getDefaultSharedPreferences(this).registerOnSharedPreferenceChangeListener(prefsListener)
@@ -272,12 +285,15 @@ class AudioService : MediaBrowserServiceCompat() {
 
 
     override fun onLoadChildren(parentId: String, result: MediaBrowserServiceCompat.Result<List<MediaBrowserCompat.MediaItem>>) {
-        fun checkError(err:ApiError) {
-//            val details = Bundle()
-//            details.putString(ERROR_NAME_KEY, err.name)
-            Log.e(LOG_TAG, "Api returned error: ${err.name}")
+        fun <T>checkError(res: T?, err:ApiError?, cb: (T)-> Unit) {
 
-            result.sendResult(null)
+            if (err != null) {
+                Log.e(LOG_TAG, "Api returned error: ${err.name}")
+                //TODO - handle unauthorised access??
+                result.sendResult(null)
+            } else {
+                cb(res!!)
+            }
         }
 
         if (parentId == EMPTY_ROOT_TAG) {
@@ -286,10 +302,8 @@ class AudioService : MediaBrowserServiceCompat() {
             Log.d(LOG_TAG, "Requesting listing of root of media")
             result.detach()
             apiClient.loadCollections { cols, err ->
-                if (err != null) {
-                    checkError(err)
-                } else {
-                    val list = cols!!.mapIndexed { idx, coll ->
+               checkError(cols, err){
+                    val list = it.mapIndexed { idx, coll ->
                         val b = Bundle()
                         b.putBoolean(ITEM_IS_COLLECTION, true)
                         val meta = MediaDescriptionCompat.Builder()
@@ -316,16 +330,10 @@ class AudioService : MediaBrowserServiceCompat() {
 
             result.detach()
             apiClient.loadFolder(folder, index) { it, err ->
-                if (err != null) {
-                    checkError(err)
-                } else {
-                    if (it != null) {
+                checkError(it, err)
+                {
                         result.sendResult(it.mediaItems)
                         playQueue = it.playableItems
-                    } else {
-                        Log.e(LOG_TAG, "Null audiofolder $folder")
-                        result.sendResult(null)
-                    }
                 }
 
             }

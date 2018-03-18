@@ -47,8 +47,9 @@ class ControllerFragment : MediaFragment() {
                 PlaybackStateCompat.STATE_PAUSED,
                 PlaybackStateCompat.STATE_STOPPED-> enablePlay = true
                 PlaybackStateCompat.STATE_ERROR -> {
-                    Log.e(LOG_TAG, "error playbackstate:  ${state.errorMessage}")
-                    Toast.makeText(activity, state.errorMessage, Toast.LENGTH_LONG).show()
+                    val msg = state.errorMessage?:"Playback error"
+                    Log.e(LOG_TAG, "error playbackstate:  $msg")
+                    Toast.makeText(activity, msg, Toast.LENGTH_LONG).show()
                 }
             }
 
