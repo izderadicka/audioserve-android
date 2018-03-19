@@ -85,7 +85,7 @@ class ControllerFragment : MediaFragment() {
             //reset current
             cancelProgressAnimator()
 
-            val progress = state.position.toInt() ?: 0
+            val progress = state.position.toInt()
             seekBar.progress = progress
             if (state.state == PlaybackStateCompat.STATE_PLAYING) {
                 var timeToEnd = (seekBar.max - progress) / state.playbackSpeed

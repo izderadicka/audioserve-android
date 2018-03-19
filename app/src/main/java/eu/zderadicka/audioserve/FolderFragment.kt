@@ -21,7 +21,7 @@ import eu.zderadicka.audioserve.utils.ifStoppedOrDead
 // the fragment initialization parameters, e.g. ARG_ITEM_NUMBER
 const val ARG_FOLDER_PATH = "folder-path"
 const val ARG_FOLDER_NAME = "folder-name"
-const val ARG_COLLECTION_INDEX = "collections-index"
+
 private const val LOG_TAG = "FolderFragment"
 
 //TODO icon for item type - folder or audio file
@@ -121,7 +121,7 @@ interface TopActivity {
 class FolderFragment : MediaFragment() {
     private lateinit var folderId: String
     private lateinit var folderName: String
-    private var collIndex: Int = 0
+
     private var mediaActivity: MediaActivity? = null
     private lateinit var adapter: FolderAdapter
 
@@ -180,7 +180,6 @@ class FolderFragment : MediaFragment() {
         arguments?.let {
             folderId = it.getString(ARG_FOLDER_PATH)
             folderName = it.getString(ARG_FOLDER_NAME)
-            collIndex = it.getInt(ARG_COLLECTION_INDEX)
         }
     }
     // TODO -  remember scroll position and return to it after back
@@ -245,12 +244,12 @@ class FolderFragment : MediaFragment() {
          *
          */
         @JvmStatic
-        fun newInstance(folderPath: String, folderName: String, collectionsIndex: Int = 0) =
+        fun newInstance(folderPath: String, folderName: String) =
                 FolderFragment().apply {
                     arguments = Bundle().apply {
                         putString(ARG_FOLDER_NAME, folderName)
                         putString(ARG_FOLDER_PATH, folderPath)
-                        putInt(ARG_COLLECTION_INDEX, 0)
+
                     }
                 }
     }
