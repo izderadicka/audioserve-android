@@ -6,6 +6,7 @@ import android.support.v4.media.MediaBrowserCompat
 import android.support.v4.media.MediaBrowserCompat.MediaItem
 import android.support.v4.media.MediaMetadataCompat
 import android.support.v4.media.session.MediaControllerCompat
+import android.support.v4.media.session.PlaybackStateCompat
 import android.support.v7.widget.LinearLayoutManager
 import android.support.v7.widget.RecyclerView
 import android.util.Log
@@ -14,6 +15,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
 import android.widget.Toast
+import eu.zderadicka.audioserve.utils.ifStoppedOrDead
 
 
 // the fragment initialization parameters, e.g. ARG_ITEM_NUMBER
@@ -95,12 +97,23 @@ class FolderAdapter(val context: Context,
         }
         return nowPlaying
     }
+
+    fun resetNowPlaying() {
+        if (nowPlaying >= 0) {
+            nowPlaying = -1
+            notifyDataSetChanged()
+        }
+    }
 }
 
 
 interface MediaActivity {
     fun onItemClicked(item: MediaItem)
     val mediaBrowser: MediaBrowserCompat
+}
+
+interface TopActivity {
+    fun setFolderTitle(title: String)
 }
 
 
@@ -129,9 +142,17 @@ class FolderFragment : MediaFragment() {
             }
         }
 
+    override  fun onPlaybackStateChanged(state: PlaybackStateCompat?) {
+        super.onPlaybackStateChanged(state)
+        ifStoppedOrDead(state,
+                {
+            adapter.resetNowPlaying()
+        })
     }
 
-    private fun scrollToNowPlaying() {
+    }
+
+    fun scrollToNowPlaying() {
         if (adapter.nowPlaying >= 0)
             folderView.scrollToPosition(adapter.nowPlaying)
     }
@@ -174,10 +195,11 @@ class FolderFragment : MediaFragment() {
         }
         folderView.adapter = adapter
 
-        if (context is MediaActivity) {
+        if (context is MediaActivity && context is TopActivity) {
             mediaActivity = context as MediaActivity
+            (context as TopActivity).setFolderTitle(folderName)
         } else {
-            throw RuntimeException(context.toString() + " must implement MediaActivity")
+            throw RuntimeException(context.toString() + " must implement MediaActivity, TopActivity")
         }
         return view
     }

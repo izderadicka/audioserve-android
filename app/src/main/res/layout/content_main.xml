@@ -15,15 +15,20 @@
         android:layout_height="0dp"
         android:layout_weight="1" />
 
-
+    <FrameLayout
+        android:id="@+id/playerControlsContainer"
+        android:layout_width="match_parent"
+        android:layout_height="80dp"
+        android:visibility="gone">
     <fragment
         android:id="@+id/playerControls"
         android:layout_width="match_parent"
-        android:layout_height="80dp"
-        android:visibility="visible"
+        android:layout_height="match_parent"
+
         android:name="eu.zderadicka.audioserve.ControllerFragment"
 
         />
+    </FrameLayout>
 
 
 

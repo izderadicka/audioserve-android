@@ -128,14 +128,13 @@ class AudioService : MediaBrowserServiceCompat() {
         private fun findIndexInQueue(mediaId: String): Int {
             return playQueue.indexOfFirst { it.mediaId == mediaId }
         }
-
+        private val dsFactory = DefaultHttpDataSourceFactory("audioserve")
+        private val sourceFactory = ExtractorMediaSource.Factory(dsFactory)
         override fun onPrepareFromMediaId(mediaId: String, extras: Bundle?) {
             Log.d(LOG_TAG, "Preparing mediaId $mediaId")
-            val dsFactory = DefaultHttpDataSourceFactory("audioserve")
             if (apiClient.token != null) {
                 dsFactory.defaultRequestProperties.set("Authorization", "Bearer ${apiClient.token}")
             }
-            val sourceFactory = ExtractorMediaSource.Factory(dsFactory)
             skipToQueueItem = findIndexInQueue(mediaId)
 
             var source: MediaSource = sourceFactory.createMediaSource(apiClient.uriFromMediaId(mediaId))

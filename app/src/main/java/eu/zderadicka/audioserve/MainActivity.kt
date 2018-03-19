@@ -15,16 +15,23 @@ import android.view.MenuItem
 import kotlinx.android.synthetic.main.activity_main.*
 import kotlinx.android.synthetic.main.app_bar_main.*
 import android.support.v4.media.session.MediaControllerCompat
+import android.support.v4.media.session.PlaybackStateCompat
+import android.view.View
+import eu.zderadicka.audioserve.utils.ifStoppedOrDead
+import eu.zderadicka.audioserve.utils.isStoppedOrDead
+import kotlinx.android.synthetic.main.content_main.*
 
 
 private const val LOG_TAG = "Main"
 
 class MainActivity : AppCompatActivity(),
         NavigationView.OnNavigationItemSelectedListener,
-        MediaActivity {
+        MediaActivity,
+    TopActivity,
+    ControllerHolder{
 
     private val folderFragment: FolderFragment?
-    get() = supportFragmentManager.findFragmentById(R.id.folderContainer) as FolderFragment
+        get() = supportFragmentManager.findFragmentById(R.id.folderContainer) as FolderFragment
 
     private lateinit var mBrowser: MediaBrowserCompat
 
@@ -53,11 +60,27 @@ class MainActivity : AppCompatActivity(),
 
     }
 
+    private val mCallback = object : MediaControllerCompat.Callback() {
+        override fun onPlaybackStateChanged(state: PlaybackStateCompat?) {
+            if (state == null) return
+            super.onPlaybackStateChanged(state)
+            ifStoppedOrDead(state,
+                    {
+                        playerControlsContainer.visibility = View.GONE
+                    },
+                    {
+                        playerControlsContainer.visibility = View.VISIBLE
+                    })
+
+        }
+    }
+
     override fun onItemClicked(item: MediaBrowserCompat.MediaItem) {
 
         if (item.isBrowsable) {
-
-            val newFragment = FolderFragment.newInstance(item.mediaId!!, item.description.title?.toString()?:"unknown")
+            stopPlayback()
+            val newFragment = FolderFragment.newInstance(item.mediaId!!, item.description.title?.toString()
+                    ?: "unknown")
             supportFragmentManager.beginTransaction().replace(R.id.folderContainer, newFragment)
                     .addToBackStack(item.mediaId)
                     .commit()
@@ -73,10 +96,15 @@ class MainActivity : AppCompatActivity(),
 
     }
 
-    override val mediaBrowser: MediaBrowserCompat
-    get() {
-        return this.mBrowser
+    private fun stopPlayback() {
+        mediaController?.transportControls?.stop()
+
     }
+
+    override val mediaBrowser: MediaBrowserCompat
+        get() {
+            return this.mBrowser
+        }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -104,7 +132,7 @@ class MainActivity : AppCompatActivity(),
         controllerFragment = supportFragmentManager.findFragmentById(R.id.playerControls) as ControllerFragment
 
         mBrowser = MediaBrowserCompat(this, ComponentName(this, AudioService::class.java),
-                mediaServiceConnectionCallback,null)
+                mediaServiceConnectionCallback, null)
         mBrowser.connect()
 
 
@@ -114,6 +142,30 @@ class MainActivity : AppCompatActivity(),
     private fun onMediaServiceConnected() {
         controllerFragment.onMediaServiceConnected()
         folderFragment?.onMediaServiceConnected()
+        registerMediaCallback()
+
+    }
+
+
+    private val mediaController: MediaControllerCompat?
+        get() {
+            return MediaControllerCompat.getMediaController(this)
+        }
+
+    private fun registerMediaCallback() {
+        mediaController?.registerCallback(mCallback)
+        //update with current state
+        mCallback.onPlaybackStateChanged(mediaController?.playbackState)
+    }
+
+    override fun onStop() {
+        super.onStop()
+        mediaController?.unregisterCallback(mCallback)
+    }
+
+    override fun onStart() {
+        super.onStart()
+        registerMediaCallback()
 
     }
 
@@ -128,6 +180,7 @@ class MainActivity : AppCompatActivity(),
         if (drawer_layout.isDrawerOpen(GravityCompat.START)) {
             drawer_layout.closeDrawer(GravityCompat.START)
         } else {
+            stopPlayback()
             super.onBackPressed()
         }
     }
@@ -159,7 +212,7 @@ class MainActivity : AppCompatActivity(),
                 startActivity(intent)
             }
             R.id.nav_exit -> {
-                //TODO -  better exit - stop playing and also stop background service
+                mediaController?.transportControls?.stop()
                 finish()
             }
             R.id.nav_slideshow -> {
@@ -180,5 +233,12 @@ class MainActivity : AppCompatActivity(),
         return true
     }
 
+    override fun setFolderTitle(title: String) {
+        this.title = title
+    }
 
+
+    override fun onControllerClick() {
+        folderFragment?.scrollToNowPlaying()
+    }
 }

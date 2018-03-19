@@ -1,13 +1,13 @@
 package eu.zderadicka.audioserve.net
 
 import android.content.Context
-import com.android.volley.toolbox.Volley
 import android.net.Uri
 import android.preference.PreferenceManager
 import android.util.Base64
 import android.util.Log
 import com.android.volley.*
 import com.android.volley.toolbox.StringRequest
+import com.android.volley.toolbox.Volley
 import eu.zderadicka.audioserve.data.AudioFolder
 import eu.zderadicka.audioserve.data.parseCollectionsFromJson
 import eu.zderadicka.audioserve.data.parseFolderfromJson
@@ -181,7 +181,7 @@ class ApiClient private constructor(val context: Context) {
     companion object {
         @Volatile private var instance: ApiClient? = null
 
-        @Synchronized @JvmStatic
+        @JvmStatic
         fun getInstance(context: Context): ApiClient =
             instance?: synchronized(this) {
                 instance = ApiClient(context)

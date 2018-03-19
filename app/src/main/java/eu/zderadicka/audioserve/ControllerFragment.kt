@@ -21,10 +21,9 @@ import android.widget.*
 
 private const val LOG_TAG = "ControllerFragment"
 
-/**
- * A simple [Fragment] subclass.
- *
- */
+interface ControllerHolder {
+    fun onControllerClick()
+}
 class ControllerFragment : MediaFragment() {
     var canPlay = false
 
@@ -67,7 +66,7 @@ class ControllerFragment : MediaFragment() {
             // control buttons
 
             fun enableButton(btn: View, action: Long) {
-                if (state.actions and action > 0) {
+                if (state.actions and action == action) {
                     btn.visibility = View.VISIBLE
                 } else {
                     btn.visibility = View.INVISIBLE
@@ -76,8 +75,8 @@ class ControllerFragment : MediaFragment() {
 
             enableButton(skipNextButton, PlaybackStateCompat.ACTION_SKIP_TO_NEXT)
             enableButton(skipPreviousButton, PlaybackStateCompat.ACTION_SKIP_TO_PREVIOUS)
-            enableButton(fastForwardButton, PlaybackStateCompat.ACTION_FAST_FORWARD)
-            enableButton(rewindButton, PlaybackStateCompat.ACTION_REWIND)
+            enableButton(fastForwardButton, PlaybackStateCompat.ACTION_FAST_FORWARD or PlaybackStateCompat.ACTION_SEEK_TO)
+            enableButton(rewindButton, PlaybackStateCompat.ACTION_REWIND or PlaybackStateCompat.ACTION_SEEK_TO)
 
 
 
@@ -99,6 +98,13 @@ class ControllerFragment : MediaFragment() {
                 }
                 progressAnimator!!.start()
 
+            }
+
+            //enable seekbar only if can seek
+            if (state.actions and PlaybackStateCompat.ACTION_SEEK_TO > 0) {
+                seekBar.isEnabled = true
+            } else {
+                seekBar.isEnabled = false
             }
         }
 
@@ -141,6 +147,8 @@ class ControllerFragment : MediaFragment() {
     lateinit var rewindButton: ImageView
 
     var progressAnimator: ValueAnimator? = null
+
+    lateinit var holder: ControllerHolder
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?,
                               savedInstanceState: Bundle?): View? {
@@ -197,6 +205,20 @@ class ControllerFragment : MediaFragment() {
 
         fastForwardButton.setOnClickListener {
             mediaController?.transportControls?.fastForward()
+        }
+
+        if (context is ControllerHolder) {
+            holder = context as ControllerHolder
+        } else {
+            throw IllegalStateException("Containing activity must implement ControllerHolder")
+        }
+
+        currentTimeView.setOnClickListener({
+            holder.onControllerClick()
+        })
+
+        trackTimeView.setOnClickListener {
+            holder.onControllerClick()
         }
 
         return view
