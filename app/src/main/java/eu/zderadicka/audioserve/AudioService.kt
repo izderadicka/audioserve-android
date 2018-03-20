@@ -46,59 +46,6 @@ private const val TIME_AFTER_WHICH_NOT_RESUMING = 20 * 60 * 1000
 private const val FF_MS = 30 * 1000L
 private const val REWIND_MS = 15 * 1000L
 
-class PlayerController(private val service: AudioService)
-    : DefaultPlaybackController(REWIND_MS, FF_MS, MediaSessionConnector.DEFAULT_REPEAT_TOGGLE_MODES) {
-
-    private val am: AudioManager =  service.getSystemService(Context.AUDIO_SERVICE) as AudioManager;
-    private var needResume = false
-    private var timeInterrupted = 0L
-    private val notifManager: NotificationsManager = service.notifManager
-    private val currentPlayer = service.player
-    private var focusCallback: AudioManager.OnAudioFocusChangeListener = AudioManager.OnAudioFocusChangeListener { focusChange ->
-        when (focusChange) {
-            AudioManager.AUDIOFOCUS_GAIN -> {
-                if (needResume && System.currentTimeMillis() - timeInterrupted <= TIME_AFTER_WHICH_NOT_RESUMING) {
-                    onPlay(currentPlayer)
-                }
-                needResume = false
-            }
-            else -> {
-                // resume only if it was playing
-                needResume = service.session.controller.playbackState.state == PlaybackStateCompat.STATE_PLAYING
-                super.onPause(currentPlayer)
-                timeInterrupted = System.currentTimeMillis()
-            }
-        }
-    }
-
-    init {
-
-    }
-
-    override fun onPlay(player: Player) {
-        Log.d(LOG_TAG, "Playback started")
-        val result = am.requestAudioFocus(focusCallback, AudioManager.STREAM_MUSIC, AudioManager.AUDIOFOCUS_GAIN)
-        if (result == AudioManager.AUDIOFOCUS_REQUEST_GRANTED) {
-            super.onPlay(player)
-        }
-    }
-
-    override fun onPause(player: Player) {
-        super.onPause(player)
-        service.pauseMe()
-        needResume = false
-    }
-
-    override fun onStop(player: Player) {
-        Log.d(LOG_TAG, "Stoping play")
-        needResume = false
-        super.onStop(player)
-        service.session.isActive = false
-        service.stopMe()
-        am.abandonAudioFocus(focusCallback)
-    }
-
-}
 
 class AudioService : MediaBrowserServiceCompat() {
     lateinit var session: MediaSessionCompat
@@ -108,6 +55,65 @@ class AudioService : MediaBrowserServiceCompat() {
     private var playQueue: List<MediaItem> = ArrayList<MediaItem>()
     private var skipToQueueItem = -1
     private lateinit var apiClient: ApiClient
+
+    private val playerController = object: DefaultPlaybackController(REWIND_MS, FF_MS, MediaSessionConnector.DEFAULT_REPEAT_TOGGLE_MODES) {
+
+        private val am: AudioManager by lazy {
+            this@AudioService.getSystemService(Context.AUDIO_SERVICE) as AudioManager
+        }
+        private var needResume = false
+        private var timeInterrupted = 0L
+        private var focusCallback: AudioManager.OnAudioFocusChangeListener = AudioManager.OnAudioFocusChangeListener { focusChange ->
+            Log.d(LOG_TAG, "Audio Focus changed to $focusChange")
+            when (focusChange) {
+                AudioManager.AUDIOFOCUS_GAIN -> {
+                    if (needResume && System.currentTimeMillis() - timeInterrupted <= TIME_AFTER_WHICH_NOT_RESUMING) {
+                        onPlay(player)
+                    }
+                    needResume = false
+                }
+                else -> {
+                    // resume only if it was playing
+                    needResume = session.controller.playbackState.state == PlaybackStateCompat.STATE_PLAYING
+                    super.onPause(player)
+                    timeInterrupted = System.currentTimeMillis()
+                }
+            }
+        }
+
+        init {
+            Log.d(LOG_TAG, "Initializing PlayerController")
+
+        }
+
+        override fun onPlay(player: Player) {
+            Log.d(LOG_TAG, "Playback started")
+            if (requestAudioFocus()) {
+                super.onPlay(player)
+            }
+        }
+
+        fun requestAudioFocus(): Boolean {
+            val result = am.requestAudioFocus(focusCallback, AudioManager.STREAM_MUSIC, AudioManager.AUDIOFOCUS_GAIN)
+            return result == AudioManager.AUDIOFOCUS_REQUEST_GRANTED
+        }
+
+        override fun onPause(player: Player) {
+            super.onPause(player)
+            pauseMe()
+            needResume = false
+        }
+
+        override fun onStop(player: Player) {
+            Log.d(LOG_TAG, "Stoping play")
+            needResume = false
+            super.onStop(player)
+            session.isActive = false
+            stopMe()
+            am.abandonAudioFocus(focusCallback)
+        }
+    }
+
 
     private val preparer = object : MediaSessionConnector.PlaybackPreparer {
         override fun onPrepareFromSearch(query: String?, extras: Bundle?) {
@@ -151,7 +157,9 @@ class AudioService : MediaBrowserServiceCompat() {
             }
 
             player.prepare(source)
-
+            if (player.playWhenReady) {
+                playerController.requestAudioFocus()
+            }
         }
 
         override fun onPrepareFromUri(uri: Uri?, extras: Bundle?) {
@@ -224,7 +232,7 @@ class AudioService : MediaBrowserServiceCompat() {
 
         sessionToken = session.sessionToken
         notifManager  = NotificationsManager(this)
-        connector = MediaSessionConnector(session, PlayerController(this))
+        connector = MediaSessionConnector(session, playerController)
         connector.setPlayer(player, preparer)
         connector.setQueueNavigator(queueManager)
 
