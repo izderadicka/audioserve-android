@@ -93,6 +93,7 @@ class PlayerController(private val service: AudioService)
         Log.d(LOG_TAG, "Stoping play")
         needResume = false
         super.onStop(player)
+        service.session.isActive = false
         service.stopMe()
         am.abandonAudioFocus(focusCallback)
     }
@@ -128,9 +129,14 @@ class AudioService : MediaBrowserServiceCompat() {
         private fun findIndexInQueue(mediaId: String): Int {
             return playQueue.indexOfFirst { it.mediaId == mediaId }
         }
+
+
         private val dsFactory = DefaultHttpDataSourceFactory("audioserve")
         private val sourceFactory = ExtractorMediaSource.Factory(dsFactory)
         override fun onPrepareFromMediaId(mediaId: String, extras: Bundle?) {
+            if (! session.isActive ) {
+                session.isActive = true
+            }
             Log.d(LOG_TAG, "Preparing mediaId $mediaId")
             if (apiClient.token != null) {
                 dsFactory.defaultRequestProperties.set("Authorization", "Bearer ${apiClient.token}")
@@ -276,8 +282,14 @@ mediaSessionConnector.setErrorMessageProvider(messageProvider);
     override fun onDestroy() {
         super.onDestroy()
         PreferenceManager.getDefaultSharedPreferences(this).unregisterOnSharedPreferenceChangeListener(prefsListener)
-        player.release()
-        session.release()
+        try {
+
+            session.isActive = false
+            session.release()
+            player.release()
+        } catch (e:Exception) {
+            Log.e(LOG_TAG, "Error while destroying AudioService")
+        }
 
         Log.d(LOG_TAG, "Audioservice destroyed")
     }
