@@ -32,12 +32,18 @@ import com.google.android.exoplayer2.source.ConcatenatingMediaSource
 import com.google.android.exoplayer2.source.ExtractorMediaSource
 import com.google.android.exoplayer2.source.MediaSource
 import com.google.android.exoplayer2.trackselection.DefaultTrackSelector
+import com.google.android.exoplayer2.upstream.DataSpec
 import com.google.android.exoplayer2.upstream.DefaultDataSourceFactory
 import com.google.android.exoplayer2.upstream.DefaultHttpDataSourceFactory
 import com.google.android.exoplayer2.upstream.HttpDataSource
+import com.google.android.exoplayer2.upstream.cache.CacheDataSource
+import com.google.android.exoplayer2.upstream.cache.CacheDataSourceFactory
+import com.google.android.exoplayer2.upstream.cache.LeastRecentlyUsedCacheEvictor
+import com.google.android.exoplayer2.upstream.cache.SimpleCache
 import eu.zderadicka.audioserve.data.ITEM_TYPE_FOLDER
 import eu.zderadicka.audioserve.net.ApiClient
 import eu.zderadicka.audioserve.net.ApiError
+import eu.zderadicka.audioserve.net.CacheManager
 import eu.zderadicka.audioserve.notifications.NotificationsManager
 
 const val ERROR_NAME_KEY = "API_ERROR"
@@ -136,9 +142,17 @@ class AudioService : MediaBrowserServiceCompat() {
             return playQueue.indexOfFirst { it.mediaId == mediaId }
         }
 
+        lateinit var dsFactory: DefaultHttpDataSourceFactory
+        lateinit var sourceFactory: ExtractorMediaSource.Factory
+        
+        fun initSourceFactory(cm: CacheManager) {
 
-        private val dsFactory = DefaultHttpDataSourceFactory("audioserve")
-        private val sourceFactory = ExtractorMediaSource.Factory(dsFactory)
+             dsFactory = DefaultHttpDataSourceFactory("audioserve")
+             cm.upstreamFactory = dsFactory
+             sourceFactory = ExtractorMediaSource.Factory(cm.sourceFactory)
+            
+        }
+
         override fun onPrepareFromMediaId(mediaId: String, extras: Bundle?) {
             if (! session.isActive ) {
                 session.isActive = true
@@ -215,6 +229,7 @@ class AudioService : MediaBrowserServiceCompat() {
     }
 
     private lateinit var queueManager:QueueManager
+    private  lateinit var cacheManager: CacheManager
 
     companion object {
         const val MEDIA_ROOT_TAG = "__AUDIOSERVE_ROOT__"
@@ -233,6 +248,8 @@ class AudioService : MediaBrowserServiceCompat() {
         sessionToken = session.sessionToken
         notifManager  = NotificationsManager(this)
         connector = MediaSessionConnector(session, playerController)
+        cacheManager = CacheManager(this)
+        preparer.initSourceFactory(cacheManager)
         connector.setPlayer(player, preparer)
         connector.setQueueNavigator(queueManager)
 
