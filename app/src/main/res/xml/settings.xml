@@ -12,4 +12,19 @@
         android:selectAllOnFocus="true"
         android:singleLine="true"
         android:title="@string/pref_shared_secret_title" />
+    <Preference android:title="@string/pref_test_connection_title"
+        android:key="pref_test_connection"
+        android:summary="@string/pref_test_connection_summary"/>
+    <EditTextPreference
+        android:key="pref_cache_size"
+        android:selectAllOnFocus="true"
+        android:singleLine="true"
+        android:title="@string/pref_cache_size_title"
+        android:defaultValue="@string/pref_clear_cache_default"/>
+    <Preference android:title="@string/pref_clear_cache_title"
+        android:key="pref_clear_cache"
+        android:summary="@string/pref_clear_cache_summary"
+        />
+
+
 </PreferenceScreen>

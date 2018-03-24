@@ -1,15 +1,19 @@
 package eu.zderadicka.audioserve.net
 
 import android.content.Context
+import android.preference.PreferenceManager
 import android.util.Log
 import com.google.android.exoplayer2.upstream.DataSink
 import com.google.android.exoplayer2.upstream.DataSource
 import com.google.android.exoplayer2.upstream.DataSpec
 import com.google.android.exoplayer2.upstream.FileDataSourceFactory
 import com.google.android.exoplayer2.upstream.cache.*
+import java.io.File
 
 private const val LOG_TAG: String = "CacheManager"
-private const val MAX_CACHED_FILE_SIZE: Long =  100*1024*1024
+private const val MAX_CACHED_FILE_SIZE: Long =  250*1024*1024
+private const val DEFAULT_CACHE_SIZE_MB: Int = 500
+private const val DEFAULT_CACHE_DIR = "exoplayer"
 
 
 class MyCacheDataSink(val cacheDataSink: CacheDataSink) : DataSink by cacheDataSink {
@@ -41,7 +45,10 @@ class CacheManager(val context: Context) {
     }
     init {
         val dir = context.applicationContext.cacheDir
-        cache =  SimpleCache(context.applicationContext.cacheDir, LeastRecentlyUsedCacheEvictor(200 * 1024 * 1024))
+        val cacheSize: Long = PreferenceManager.getDefaultSharedPreferences(context).getString("pref_cache_size",
+                DEFAULT_CACHE_SIZE_MB.toString()).toLong() * 1024 * 1024
+        cache =  SimpleCache(File(context.applicationContext.cacheDir, DEFAULT_CACHE_DIR),
+                LeastRecentlyUsedCacheEvictor(cacheSize))
         Log.d(LOG_TAG, "Cache initialized in directory ${dir.absolutePath}")
 
 
@@ -54,6 +61,16 @@ class CacheManager(val context: Context) {
                 MyCacheDataSinkFactory(cache, MAX_CACHED_FILE_SIZE),
                 0,
                 cacheEventListener)
+    }
+
+    companion object {
+        @Synchronized fun clearCache(context: Context) {
+            try {
+                File(context.applicationContext.cacheDir, DEFAULT_CACHE_DIR).deleteRecursively()
+            } catch (e: Exception) {
+                Log.e(LOG_TAG, "Cannot delete cache due  error $e")
+            }
+        }
     }
 
 

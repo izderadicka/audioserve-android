@@ -18,7 +18,6 @@ import android.support.v4.media.session.MediaControllerCompat
 import android.support.v4.media.session.PlaybackStateCompat
 import android.view.View
 import eu.zderadicka.audioserve.utils.ifStoppedOrDead
-import eu.zderadicka.audioserve.utils.isStoppedOrDead
 import kotlinx.android.synthetic.main.content_main.*
 
 
@@ -35,7 +34,6 @@ class MainActivity : AppCompatActivity(),
 
     private lateinit var mBrowser: MediaBrowserCompat
 
-    // TODO - hide controllerFragment if not playing
     private lateinit var controllerFragment: ControllerFragment
 
     private val mediaServiceConnectionCallback = object : MediaBrowserCompat.ConnectionCallback() {
@@ -85,6 +83,7 @@ class MainActivity : AppCompatActivity(),
                     .addToBackStack(item.mediaId)
                     .commit()
 
+
         } else if (item.isPlayable) {
             Log.d(LOG_TAG, "Requesting play of ${item.mediaId}")
             val ctl = MediaControllerCompat.getMediaController(this).transportControls
@@ -106,6 +105,8 @@ class MainActivity : AppCompatActivity(),
             return this.mBrowser
         }
 
+    private lateinit var drawerToggle:ActionBarDrawerToggle
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
@@ -116,11 +117,20 @@ class MainActivity : AppCompatActivity(),
                     .setAction("Action", null).show()
         }
 
-        val toggle = ActionBarDrawerToggle(
+
+
+        drawerToggle  = ActionBarDrawerToggle(
                 this, drawer_layout, toolbar, R.string.navigation_drawer_open, R.string.navigation_drawer_close)
-        drawer_layout.addDrawerListener(toggle)
-        toggle.syncState()
+        drawer_layout.addDrawerListener(drawerToggle)
+        drawerToggle.setHomeAsUpIndicator(R.drawable.ic_arrow_back_white)
+        drawerToggle.syncState()
+        drawerToggle.setToolbarNavigationClickListener {
+            onBackPressed()
+        }
+
+
         nav_view.setNavigationItemSelectedListener(this)
+
 
         if (savedInstanceState == null) {
 
@@ -134,6 +144,12 @@ class MainActivity : AppCompatActivity(),
         mBrowser = MediaBrowserCompat(this, ComponentName(this, AudioService::class.java),
                 mediaServiceConnectionCallback, null)
         mBrowser.connect()
+
+    }
+
+
+    private fun showUpNavigation() {
+        drawerToggle.isDrawerIndicatorEnabled=supportFragmentManager.getBackStackEntryCount() < 1
 
 
     }
@@ -195,11 +211,14 @@ class MainActivity : AppCompatActivity(),
         // Handle action bar item clicks here. The action bar will
         // automatically handle clicks on the Home/Up button, so long
         // as you specify a parent activity in AndroidManifest.xml.
+        Log.d(LOG_TAG, "Clicked menu item id ${item.itemId} which is resource ${getResources().getResourceName(item.itemId)}")
         when (item.itemId) {
             R.id.action_reload -> {
                 folderFragment?.reload()
                 return true
             }
+
+
             else -> return super.onOptionsItemSelected(item)
         }
     }
@@ -235,6 +254,7 @@ class MainActivity : AppCompatActivity(),
 
     override fun setFolderTitle(title: String) {
         this.title = title
+        showUpNavigation()
     }
 
 

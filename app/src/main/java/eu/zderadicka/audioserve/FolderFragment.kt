@@ -25,7 +25,7 @@ const val ARG_FOLDER_NAME = "folder-name"
 private const val LOG_TAG = "FolderFragment"
 
 //TODO icon for item type - folder or audio file
-// TODO hightlight and icon for currently played icon
+// TODO icon for currently played icon - that ice equlizer bar from Universal player
 // TODO show also :  duration and bitrate and transcoding
 class FolderItemViewHolder(itemView: View, val viewType: Int, val clickCB: (Int) -> Unit) : RecyclerView.ViewHolder(itemView) {
 
@@ -126,7 +126,6 @@ class FolderFragment : MediaFragment() {
     private lateinit var adapter: FolderAdapter
 
     private lateinit var folderView: RecyclerView
-// TODO highlight currently played item - save latest meta and on playing find item and highlight
     override val mCallback = object: MediaControllerCompat.Callback() {
 
         override fun onMetadataChanged(metadata: MediaMetadataCompat?) {

@@ -6,11 +6,14 @@ import android.preference.PreferenceManager
 import android.util.Base64
 import android.util.Log
 import com.android.volley.*
+import com.android.volley.toolbox.HttpHeaderParser
 import com.android.volley.toolbox.StringRequest
 import com.android.volley.toolbox.Volley
 import eu.zderadicka.audioserve.data.AudioFolder
 import eu.zderadicka.audioserve.data.parseCollectionsFromJson
 import eu.zderadicka.audioserve.data.parseFolderfromJson
+import java.io.File
+import java.io.UnsupportedEncodingException
 import java.nio.charset.Charset
 import java.security.MessageDigest
 import java.security.SecureRandom
@@ -37,6 +40,10 @@ enum class ApiError {
 }
 
 private const val LOG_TAG = "ApiClient"
+
+private const val API_REQUEST_TAG = "API"
+private const val CACHE_SOFT_TTL: Long = 5 * 60 * 1000
+private const val CACHE_MAX_TTL: Long = 24 * 3600 * 1000
 
 internal fun encodeSecret(secret: String):String {
     val secretBytes = secret.toByteArray(Charset.forName("UTF-8"))
@@ -76,7 +83,7 @@ class ApiClient private constructor(val context: Context) {
 
         }
 
-    @Synchronized fun loadPreferences() {
+    @Synchronized fun loadPreferences(cb: ((ApiError?) -> Unit)? = null) {
         baseURL = PreferenceManager.getDefaultSharedPreferences(context).getString("pref_server_url", "")
         if (baseURL.length == 0) {
             Log.w(LOG_TAG, "BaseURL is empty!")
@@ -86,7 +93,12 @@ class ApiClient private constructor(val context: Context) {
         }
 
         login {
-            Log.d(LOG_TAG, "Successfully logged into server")
+            if (it == null) {
+                Log.d(LOG_TAG, "Successfully logged into server")
+            }
+            if (cb != null) {
+                cb(it)
+            }
         }
     }
 
@@ -115,8 +127,29 @@ class ApiClient private constructor(val context: Context) {
                 }
                 return headers
             }
+
+            override  fun parseNetworkResponse(response: NetworkResponse?): Response<String> {
+                var parsed: String
+                if (response == null || response.data == null || response.data.size == 0) {
+                    return Response.error(VolleyError("Empty response"))
+                }
+                try {
+                    val charset = Charset.forName(HttpHeaderParser.parseCharset(response.headers))
+                    parsed = String(response.data, charset)
+                } catch (e: UnsupportedEncodingException) {
+                    parsed = String(response.data)
+                }
+                val cacheEntry = HttpHeaderParser.parseCacheHeaders(response)
+                val now = System.currentTimeMillis()
+                cacheEntry.softTtl = now + CACHE_SOFT_TTL
+                cacheEntry.ttl = now + CACHE_MAX_TTL
+
+                return Response.success(parsed, cacheEntry)
+            }
         }
 
+        request.setShouldCache(true)
+        request.tag = API_REQUEST_TAG
         addToRequestQueue(request)
     }
 
@@ -146,14 +179,15 @@ class ApiClient private constructor(val context: Context) {
         sendRequest(uri, ::parseCollectionsFromJson, callback)
     }
 
-    fun login(cb: (String) -> Unit) {
+    fun login(cb: (ApiError?) -> Unit) {
         val request = object: StringRequest(Request.Method.POST,baseURL+"authenticate",
                 {
-                    cb(it)
+                    cb(null)
                     token = it
                 },
                 {
                     Log.e(LOG_TAG, "Login error: $it")
+                    cb(ApiError.fromResponseError(it))
                 })
         {
             override fun getParams(): MutableMap<String, String>? {
@@ -180,6 +214,17 @@ class ApiClient private constructor(val context: Context) {
 
     companion object {
         @Volatile private var instance: ApiClient? = null
+
+        @Synchronized fun clearCache(context: Context) {
+            //FIXME - this is a complete adhoc hack per now
+            try {
+                for (f in File(context.applicationContext.cacheDir, "volley").listFiles()) {
+                    f.deleteRecursively()
+                }
+            } catch (e: Exception) {
+                Log.e(LOG_TAG, "Cannot delete API cache due error $e")
+            }
+        }
 
         @JvmStatic
         fun getInstance(context: Context): ApiClient =

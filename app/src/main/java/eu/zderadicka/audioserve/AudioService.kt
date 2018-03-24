@@ -53,16 +53,40 @@ private const val FF_MS = 30 * 1000L
 private const val REWIND_MS = 15 * 1000L
 
 
+private class ResultWrapper(val result: MediaBrowserServiceCompat.Result<List<MediaBrowserCompat.MediaItem>>) {
+    private var resultSent = false
+
+    fun detach() {
+        result.detach()
+    }
+
+    @Synchronized
+    fun sendResult(res: List<MediaBrowserCompat.MediaItem>?) {
+        if (!resultSent) {
+            result.sendResult(res)
+            resultSent = true
+        } else {
+            Log.w(LOG_TAG, "Second attempt to send result - probably from cache refresh")
+        }
+    }
+
+    val isDone: Boolean
+        get() {
+            return resultSent
+        }
+}
+
+
 class AudioService : MediaBrowserServiceCompat() {
     lateinit var session: MediaSessionCompat
     private lateinit var connector: MediaSessionConnector
     lateinit var player: ExoPlayer
-    lateinit var notifManager:NotificationsManager
+    lateinit var notifManager: NotificationsManager
     private var playQueue: List<MediaItem> = ArrayList<MediaItem>()
     private var skipToQueueItem = -1
     private lateinit var apiClient: ApiClient
 
-    private val playerController = object: DefaultPlaybackController(REWIND_MS, FF_MS, MediaSessionConnector.DEFAULT_REPEAT_TOGGLE_MODES) {
+    private val playerController = object : DefaultPlaybackController(REWIND_MS, FF_MS, MediaSessionConnector.DEFAULT_REPEAT_TOGGLE_MODES) {
 
         private val am: AudioManager by lazy {
             this@AudioService.getSystemService(Context.AUDIO_SERVICE) as AudioManager
@@ -144,17 +168,17 @@ class AudioService : MediaBrowserServiceCompat() {
 
         lateinit var dsFactory: DefaultHttpDataSourceFactory
         lateinit var sourceFactory: ExtractorMediaSource.Factory
-        
+
         fun initSourceFactory(cm: CacheManager) {
 
-             dsFactory = DefaultHttpDataSourceFactory("audioserve")
-             cm.upstreamFactory = dsFactory
-             sourceFactory = ExtractorMediaSource.Factory(cm.sourceFactory)
-            
+            dsFactory = DefaultHttpDataSourceFactory("audioserve")
+            cm.upstreamFactory = dsFactory
+            sourceFactory = ExtractorMediaSource.Factory(cm.sourceFactory)
+
         }
 
         override fun onPrepareFromMediaId(mediaId: String, extras: Bundle?) {
-            if (! session.isActive ) {
+            if (!session.isActive) {
                 session.isActive = true
             }
             Log.d(LOG_TAG, "Preparing mediaId $mediaId")
@@ -186,11 +210,11 @@ class AudioService : MediaBrowserServiceCompat() {
 
     }
 
-    private val sessionCallback = object: MediaControllerCompat.Callback() {
+    private val sessionCallback = object : MediaControllerCompat.Callback() {
         override fun onPlaybackStateChanged(state: PlaybackStateCompat) {
             super.onPlaybackStateChanged(state)
             Log.d(LOG_TAG, "Playback state changed in service ${state}")
-            when(state.state) {
+            when (state.state) {
                 PlaybackStateCompat.STATE_PLAYING -> notifManager.sendNotification(true)
                 PlaybackStateCompat.STATE_PAUSED -> notifManager.sendNotification()
                 PlaybackStateCompat.STATE_BUFFERING -> {
@@ -202,7 +226,7 @@ class AudioService : MediaBrowserServiceCompat() {
                             if (0 < skipToQueueItem && skipToQueueItem < timeline.windowCount) {
                                 player.seekTo(skipToQueueItem, C.TIME_UNSET)
                             }
-                            skipToQueueItem=-1
+                            skipToQueueItem = -1
                         }
                     }
 
@@ -211,9 +235,9 @@ class AudioService : MediaBrowserServiceCompat() {
         }
     }
 
-    inner class QueueManager(val session: MediaSessionCompat) :TimelineQueueNavigator(session) {
+    inner class QueueManager(val session: MediaSessionCompat) : TimelineQueueNavigator(session) {
         override fun getMediaDescription(windowIndex: Int): MediaDescriptionCompat {
-            if (windowIndex>=0 && windowIndex<playQueue.size) {
+            if (windowIndex >= 0 && windowIndex < playQueue.size) {
                 return playQueue.get(windowIndex).description
             } else {
                 throw IllegalArgumentException("windowIndex is $windowIndex, but queue size is ${playQueue.size}")
@@ -221,15 +245,15 @@ class AudioService : MediaBrowserServiceCompat() {
         }
     }
 
-    private val prefsListener = object: SharedPreferences.OnSharedPreferenceChangeListener {
+    private val prefsListener = object : SharedPreferences.OnSharedPreferenceChangeListener {
         override fun onSharedPreferenceChanged(sharedPreferences: SharedPreferences?, key: String?) {
             apiClient.loadPreferences()
         }
 
     }
 
-    private lateinit var queueManager:QueueManager
-    private  lateinit var cacheManager: CacheManager
+    private lateinit var queueManager: QueueManager
+    private lateinit var cacheManager: CacheManager
 
     companion object {
         const val MEDIA_ROOT_TAG = "__AUDIOSERVE_ROOT__"
@@ -246,7 +270,7 @@ class AudioService : MediaBrowserServiceCompat() {
         queueManager = QueueManager(session)
 
         sessionToken = session.sessionToken
-        notifManager  = NotificationsManager(this)
+        notifManager = NotificationsManager(this)
         connector = MediaSessionConnector(session, playerController)
         cacheManager = CacheManager(this)
         preparer.initSourceFactory(cacheManager)
@@ -274,14 +298,15 @@ mediaSessionConnector.setErrorMessageProvider(messageProvider);
         Log.d(LOG_TAG, "Audioservice created")
 
     }
+
     var isStartedInForeground = false
     var isStarted = false
 
     fun startMe(notification: Notification) {
 
         if (!isStarted) {
-            val intent = Intent(this,AudioService::class.java)
-            ContextCompat.startForegroundService(this,intent)
+            val intent = Intent(this, AudioService::class.java)
+            ContextCompat.startForegroundService(this, intent)
             isStarted = true
         }
         startForeground(NotificationsManager.NOTIFICATION_ID, notification)
@@ -312,7 +337,7 @@ mediaSessionConnector.setErrorMessageProvider(messageProvider);
             session.isActive = false
             session.release()
             player.release()
-        } catch (e:Exception) {
+        } catch (e: Exception) {
             Log.e(LOG_TAG, "Error while destroying AudioService")
         }
 
@@ -321,14 +346,19 @@ mediaSessionConnector.setErrorMessageProvider(messageProvider);
 
 
     override fun onLoadChildren(parentId: String, result: MediaBrowserServiceCompat.Result<List<MediaBrowserCompat.MediaItem>>) {
-        fun <T>checkError(res: T?, err:ApiError?, cb: (T)-> Unit) {
 
-            if (err != null) {
-                Log.e(LOG_TAG, "Api returned error: ${err.name}")
-                //TODO - handle unauthorised access??
-                result.sendResult(null)
-            } else {
-                cb(res!!)
+        @Suppress("NAME_SHADOWING")
+        val result = ResultWrapper(result)
+
+        fun <T> checkError(res: T?, err: ApiError?, cb: (T) -> Unit) {
+            if (!result.isDone) {
+                if (err != null) {
+                    Log.e(LOG_TAG, "Api returned error: ${err.name}")
+                    //TODO - handle unauthorised access??
+                    result.sendResult(null)
+                } else {
+                    cb(res!!)
+                }
             }
         }
 
@@ -338,7 +368,7 @@ mediaSessionConnector.setErrorMessageProvider(messageProvider);
             Log.d(LOG_TAG, "Requesting listing of root of media")
             result.detach()
             apiClient.loadCollections { cols, err ->
-               checkError(cols, err){
+                checkError(cols, err) {
                     val list = it.mapIndexed { idx, coll ->
                         val b = Bundle()
                         b.putBoolean(ITEM_IS_COLLECTION, true)
@@ -368,8 +398,8 @@ mediaSessionConnector.setErrorMessageProvider(messageProvider);
             apiClient.loadFolder(folder, index) { it, err ->
                 checkError(it, err)
                 {
-                        result.sendResult(it.mediaItems)
-                        playQueue = it.playableItems
+                    result.sendResult(it.mediaItems)
+                    playQueue = it.playableItems
                 }
 
             }

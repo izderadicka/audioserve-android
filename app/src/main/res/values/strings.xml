@@ -21,4 +21,13 @@
     <string name="action_reload">Reload</string>
     <string name="action_exit">Exit</string>
     <string name="pref_server_url_error_msg">Server URL must be http or https and path should end with /</string>
+    <string name="pref_test_connection_title">Test Connection</string>
+    <string name="pref_test_connection_summary">Click to test that server connection is working</string>
+    <string name="connection_working">Connection is working</string>
+    <string name="connection_error">Connection error: %1$s</string>
+    <string name="unknown_error">Unknown</string>
+    <string name="pref_cache_size_title">Media cache size (MB)</string>
+    <string name="pref_clear_cache_title">Clear cache</string>
+    <string name="pref_clear_cache_summary">Click here to clear the cache</string>
+    <string name="pref_clear_cache_default" translatable="false">500</string>
 </resources>

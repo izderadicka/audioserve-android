@@ -41,7 +41,7 @@ class ControllerFragment : MediaFragment() {
             when (state.state) {
                 PlaybackStateCompat.STATE_NONE -> {
                     Log.d(LOG_TAG, "AudioService is stopped")
-                    // TODO - do something about it -  it means audioservice is stopped - to start playing again need to prepare media again
+                    enablePlay = false
                 }
                 PlaybackStateCompat.STATE_PAUSED,
                 PlaybackStateCompat.STATE_STOPPED-> enablePlay = true
@@ -49,6 +49,7 @@ class ControllerFragment : MediaFragment() {
                     val msg = state.errorMessage?:"Playback error"
                     Log.e(LOG_TAG, "error playbackstate:  $msg")
                     Toast.makeText(activity, msg, Toast.LENGTH_LONG).show()
+                    enablePlay = true // TODO - check if work - hoping to be able to try again
                 }
             }
 
@@ -134,9 +135,6 @@ class ControllerFragment : MediaFragment() {
         super.onStop()
         Log.d(LOG_TAG,"ControllerFragment.onStop")
     }
-    //TODO add support for previous and next buttons
-    //TODO add support for move forward and back (seek about 1 minute)
-    //TODO add support for seek bar and current total time - see MediaSession demo for guidance - need to read duration from meta
     lateinit var playPauseButton: ImageView
     lateinit var seekBar: SeekBar
     lateinit var currentTimeView: TextView
@@ -174,8 +172,7 @@ class ControllerFragment : MediaFragment() {
             }
 
             override fun onStopTrackingTouch(seekBar: SeekBar?) {
-                //TODO - disable seek for transcoded media
-                //TODO - longer term solution -  use extra data to seek on server - e.g start new media with offset
+                //TODO - transcoded media seek - longer term solution -  use extra data to seek on server - e.g start new media with offset
                 mediaController?.transportControls?.seekTo(seekBar?.progress!!.toLong())
             }
 
