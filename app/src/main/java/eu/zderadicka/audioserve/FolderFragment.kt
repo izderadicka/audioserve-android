@@ -15,17 +15,23 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageView
+import android.widget.ProgressBar
 import android.widget.TextView
 import android.widget.Toast
 import eu.zderadicka.audioserve.data.METADATA_KEY_BITRATE
 import eu.zderadicka.audioserve.data.METADATA_KEY_DURATION
 import eu.zderadicka.audioserve.data.METADATA_KEY_TRANSCODED
 import eu.zderadicka.audioserve.utils.ifStoppedOrDead
+import android.os.Parcelable
+
+
 
 
 // the fragment initialization parameters, e.g. ARG_ITEM_NUMBER
 const val ARG_FOLDER_PATH = "folder-path"
 const val ARG_FOLDER_NAME = "folder-name"
+
+const val FOLDER_VIEW_STATE_KEY = "eu.zderadicka.audiserve.folderViewKey"
 
 const val ITEM_TYPE_FOLDER = 0
 const val ITEM_TYPE_FILE = 1
@@ -34,7 +40,6 @@ private const val LOG_TAG = "FolderFragment"
 
 //TODO icon for item type - folder or audio file
 // TODO icon for currently played icon - that ice equlizer bar from Universal player
-// TODO show also :  duration and bitrate and transcoding
 class FolderItemViewHolder(itemView: View, val viewType: Int, val clickCB: (Int) -> Unit) : RecyclerView.ViewHolder(itemView) {
 
     var itemName: TextView = itemView.findViewById(R.id.folderItemName)
@@ -176,6 +181,7 @@ class FolderFragment : MediaFragment() {
     private lateinit var adapter: FolderAdapter
 
     private lateinit var folderView: RecyclerView
+    private lateinit var loadingProgress: ProgressBar
     override val mCallback = object: MediaControllerCompat.Callback() {
 
         override fun onMetadataChanged(metadata: MediaMetadataCompat?) {
@@ -215,12 +221,14 @@ class FolderFragment : MediaFragment() {
             }
             this@FolderFragment.adapter.changeData(children)
             scrollToNowPlaying()
+            doneLoading()
         }
 
         override fun onError(parentId: String) {
             super.onError(parentId)
             Log.e(LOG_TAG, "Error loading folder ${parentId}")
             Toast.makeText(this@FolderFragment.context,R.string.media_browser_error, Toast.LENGTH_LONG).show()
+            doneLoading(true)
         }
     }
 
@@ -231,7 +239,6 @@ class FolderFragment : MediaFragment() {
             folderName = it.getString(ARG_FOLDER_NAME)
         }
     }
-    // TODO -  remember scroll position and return to it after back
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?,
                               savedInstanceState: Bundle?): View? {
         val view = inflater.inflate(R.layout.fragment_folder, container, false)
@@ -249,6 +256,8 @@ class FolderFragment : MediaFragment() {
         } else {
             throw RuntimeException(context.toString() + " must implement MediaActivity, TopActivity")
         }
+
+        loadingProgress = view.findViewById(R.id.progressBar)
         return view
     }
 
@@ -256,8 +265,49 @@ class FolderFragment : MediaFragment() {
 
 
     override fun onDestroyView() {
+        Log.d(LOG_TAG, "OnDestroyView")
         super.onDestroyView()
         mediaActivity = null
+        // save folderView scrolling state for immediate back
+        folderViewState = getFolderViewState()
+    }
+
+    private fun startLoading() {
+        mediaActivity?.mediaBrowser?.subscribe(folderId, subscribeCallback)
+        loadingProgress.visibility = View.VISIBLE
+        folderView.visibility = View.INVISIBLE
+    }
+
+    private fun doneLoading(error: Boolean = false) {
+        loadingProgress.visibility = View.INVISIBLE
+        folderView.visibility = View.VISIBLE
+
+        if (!error && folderViewState!= null) {
+            folderView.getLayoutManager().onRestoreInstanceState(folderViewState)
+        }
+    }
+
+    private var folderViewState: Parcelable? = null
+
+    override fun onSaveInstanceState(outState: Bundle) {
+        Log.d(LOG_TAG, "onSaveInstanceState")
+        super.onSaveInstanceState(outState)
+        //fragment is going to be destroyed - save state
+        Log.d(LOG_TAG, "Have folderViewState")
+        outState.putParcelable(FOLDER_VIEW_STATE_KEY, getFolderViewState())
+
+    }
+
+    private fun getFolderViewState(): Parcelable =
+        folderView.getLayoutManager().onSaveInstanceState()
+
+
+    override fun onViewStateRestored(savedInstanceState: Bundle?) {
+        super.onViewStateRestored(savedInstanceState)
+        // This is not just return from backstack - we're recreating instance so should restore state
+        if (folderViewState == null) {
+            folderViewState = savedInstanceState?.getParcelable(FOLDER_VIEW_STATE_KEY)
+        }
     }
 
 
@@ -266,7 +316,7 @@ class FolderFragment : MediaFragment() {
         super.onMediaServiceConnected()
         Log.d(LOG_TAG, "onMediaServiceConnect ${mediaActivity?.mediaBrowser}")
         if (mediaActivity?.mediaBrowser != null && ! listenersConnected) {
-            mediaActivity?.mediaBrowser?.subscribe(folderId, subscribeCallback)
+            startLoading()
             listenersConnected = true
         }
     }
@@ -281,7 +331,7 @@ class FolderFragment : MediaFragment() {
 
 
     fun reload() {
-        mediaActivity?.mediaBrowser?.unsubscribe(folderId, subscribeCallback)
+        startLoading()
         mediaActivity?.mediaBrowser?.subscribe(folderId, subscribeCallback)
     }
 
