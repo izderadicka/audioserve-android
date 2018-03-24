@@ -8,6 +8,7 @@ import java.io.File
 
 const val METADATA_KEY_DURATION = MediaMetadataCompat.METADATA_KEY_DURATION
 const val METADATA_KEY_BITRATE = "eu.zderadicka.audioserve.bitrate"
+const val METADATA_KEY_TRANSCODED = "eu.zderadicka.audioserve.transcoded"
 
 const val ITEM_TYPE_FOLDER = "folder"
 const val ITEM_TYPE_AUDIOFILE = "audio"
@@ -61,16 +62,18 @@ class AudioFolder(name: String, path: String, val subfolders: ArrayList<Subfolde
     }
 
     private fun fileToItem(f: AudioFile): MediaItem {
+        val extras = Bundle()
         val descBuilder = MediaDescriptionCompat.Builder()
                 .setMediaId(prefixPath(f.path, ITEM_TYPE_AUDIOFILE))
                 .setTitle(f.name)
                 .setSubtitle(File(f.path).parent)
         if (f.meta != null) {
-            val extras = Bundle()
             extras.putLong(METADATA_KEY_DURATION, f.meta.duration.toLong() * 1000) // in miliseconds
             extras.putInt(METADATA_KEY_BITRATE, f.meta.bitrate)
-            descBuilder.setExtras(extras)
+
         }
+        extras.putBoolean(METADATA_KEY_TRANSCODED, f.transcoded)
+        descBuilder.setExtras(extras)
         return MediaItem(descBuilder.build(), MediaItem.FLAG_PLAYABLE)
     }
 

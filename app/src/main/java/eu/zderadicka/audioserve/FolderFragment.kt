@@ -9,18 +9,26 @@ import android.support.v4.media.session.MediaControllerCompat
 import android.support.v4.media.session.PlaybackStateCompat
 import android.support.v7.widget.LinearLayoutManager
 import android.support.v7.widget.RecyclerView
+import android.text.format.DateUtils
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.ImageView
 import android.widget.TextView
 import android.widget.Toast
+import eu.zderadicka.audioserve.data.METADATA_KEY_BITRATE
+import eu.zderadicka.audioserve.data.METADATA_KEY_DURATION
+import eu.zderadicka.audioserve.data.METADATA_KEY_TRANSCODED
 import eu.zderadicka.audioserve.utils.ifStoppedOrDead
 
 
 // the fragment initialization parameters, e.g. ARG_ITEM_NUMBER
 const val ARG_FOLDER_PATH = "folder-path"
 const val ARG_FOLDER_NAME = "folder-name"
+
+const val ITEM_TYPE_FOLDER = 0
+const val ITEM_TYPE_FILE = 1
 
 private const val LOG_TAG = "FolderFragment"
 
@@ -30,11 +38,22 @@ private const val LOG_TAG = "FolderFragment"
 class FolderItemViewHolder(itemView: View, val viewType: Int, val clickCB: (Int) -> Unit) : RecyclerView.ViewHolder(itemView) {
 
     var itemName: TextView = itemView.findViewById(R.id.folderItemName)
+    var durationView: TextView? = null
+    var bitRateView: TextView? = null
+    var transcodedIcon: ImageView? = null
+    var isFile = false
 
     init {
         itemView.setOnClickListener { clickCB(adapterPosition) }
+        if (viewType == ITEM_TYPE_FILE) {
+            durationView = itemView.findViewById(R.id.durationView)
+            bitRateView = itemView.findViewById(R.id.bitRateView)
+            transcodedIcon = itemView.findViewById(R.id.transcodedIcon)
+            isFile = true
+        }
     }
 }
+
 
 class FolderAdapter(val context: Context,
                     private val itemCb: (MediaItem) -> Unit)
@@ -47,8 +66,13 @@ class FolderAdapter(val context: Context,
 
     override fun onCreateViewHolder(parent: ViewGroup?, viewType: Int): FolderItemViewHolder {
         val inflater = LayoutInflater.from(parent?.context)
-        val view = inflater.inflate(R.layout.folder_item, parent, false)
+        var viewId = R.layout.folder_item
+        if (viewType == ITEM_TYPE_FILE) {
+            viewId = R.layout.file_item
+        }
+        val view = inflater.inflate(viewId, parent, false)
         return FolderItemViewHolder(view, viewType, this::onItemClicked)
+
     }
 
     private fun onItemClicked(index: Int) {
@@ -64,15 +88,41 @@ class FolderAdapter(val context: Context,
         return items?.size ?: 0
     }
 
+    override fun getItemViewType(position: Int): Int {
+        val item = items?.get(position)
+        return if (item != null && item.isPlayable) {
+            ITEM_TYPE_FILE
+        } else {
+            ITEM_TYPE_FOLDER
+        }
+    }
+
     override fun onBindViewHolder(holder: FolderItemViewHolder?, position: Int) {
         val item = items?.get(position)
         if (item == null) return
         holder!!.itemName.text = item.description.title
         if (position == nowPlaying) {
-            holder.itemView.setBackgroundColor(context.resources.getColor(R.color.colorAccent))
+            holder.itemView.setBackgroundColor(context.resources.getColor(R.color.colorAccentLight))
         } else {
             holder.itemView.setBackgroundColor(context.resources.getColor(R.color.background_material_light))
         }
+
+        if (holder.isFile && item.isPlayable) {
+            holder.durationView?.text =
+                    DateUtils.formatElapsedTime((item.description.extras?.getLong(METADATA_KEY_DURATION)?:0)/1000L)
+            holder.bitRateView?.text =
+                    item.description.extras?.getInt(METADATA_KEY_BITRATE)?.toString()?:"?"
+
+            if (item.description.extras?.getBoolean(METADATA_KEY_TRANSCODED)?: false) {
+                holder.transcodedIcon?.visibility = View.VISIBLE
+            } else {
+                holder.transcodedIcon?.visibility = View.INVISIBLE
+            }
+
+
+        }
+
+
     }
 
     fun changeData(newData: List<MediaItem>) {
