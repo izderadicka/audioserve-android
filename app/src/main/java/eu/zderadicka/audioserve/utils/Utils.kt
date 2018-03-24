@@ -1,11 +1,14 @@
 package eu.zderadicka.audioserve.utils
 
 import android.support.v4.media.session.PlaybackStateCompat
+import android.util.Log
+import java.io.File
+
+private const val LOG_TAG = "Utils"
 
 fun isStoppedOrDead(state: PlaybackStateCompat): Boolean {
     return state.state == PlaybackStateCompat.STATE_NONE
             || state.state == PlaybackStateCompat.STATE_STOPPED
-            || state.state == PlaybackStateCompat.STATE_ERROR
 }
 
 fun ifStoppedOrDead(state: PlaybackStateCompat?, then: ()-> Unit, else_: (() -> Unit)? = null) {
@@ -16,3 +19,5 @@ fun ifStoppedOrDead(state: PlaybackStateCompat?, then: ()-> Unit, else_: (() -> 
         else_()
     }
 }
+
+
