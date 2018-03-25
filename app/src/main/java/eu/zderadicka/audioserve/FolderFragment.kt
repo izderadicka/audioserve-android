@@ -272,6 +272,7 @@ class FolderFragment : MediaFragment() {
         folderViewState = getFolderViewState()
     }
 
+    //TODO - consider additional caching here to minimize network need
     private fun startLoading() {
         mediaActivity?.mediaBrowser?.subscribe(folderId, subscribeCallback)
         loadingProgress.visibility = View.VISIBLE
@@ -284,6 +285,7 @@ class FolderFragment : MediaFragment() {
 
         if (!error && folderViewState!= null) {
             folderView.getLayoutManager().onRestoreInstanceState(folderViewState)
+            folderViewState = null
         }
     }
 
