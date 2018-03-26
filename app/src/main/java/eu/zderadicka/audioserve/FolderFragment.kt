@@ -334,6 +334,7 @@ class FolderFragment : MediaFragment() {
 
     fun reload() {
         startLoading()
+        mediaActivity?.mediaBrowser?.unsubscribe(folderId, subscribeCallback)
         mediaActivity?.mediaBrowser?.subscribe(folderId, subscribeCallback)
     }
 

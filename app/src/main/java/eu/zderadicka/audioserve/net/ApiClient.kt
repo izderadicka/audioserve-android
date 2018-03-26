@@ -42,6 +42,7 @@ enum class ApiError {
 private const val LOG_TAG = "ApiClient"
 
 private const val API_REQUEST_TAG = "API"
+private const val LOGIN_REQUEST_TAG = "LOGIN"
 private const val CACHE_SOFT_TTL: Long = 5 * 60 * 1000
 private const val CACHE_MAX_TTL: Long = 24 * 3600 * 1000
 
@@ -74,6 +75,11 @@ class ApiClient private constructor(val context: Context) {
 
     lateinit var baseURL: String
     var token:String? = null
+    // as login is asynchronous need to handle cases where fists requests are send before login
+    // but also consider offline case when login fails always - so store first request here and send
+    // after login success or failure
+    var loginDone = false
+    val  unsentRequests: ArrayList<Request<*>> = ArrayList()
 
 
     // getApplicationContext() is key, it keeps you from leaking the
@@ -107,7 +113,18 @@ class ApiClient private constructor(val context: Context) {
     }
 
     fun <T> addToRequestQueue(req: Request<T>) {
-        requestQueue.add(req)
+        if (!loginDone) {
+            Log.w(LOG_TAG, "Client is not authorised yet")
+            if (unsentRequests.size < 10) {
+                unsentRequests.add(req)
+            } else {
+                Log.e(LOG_TAG, "Too many requests waiting for login")
+                req.deliverError(VolleyError("Waiting for login too long"))
+            }
+
+        } else {
+            requestQueue.add(req)
+        }
     }
 
     private fun <T>sendRequest(uri:String, convert: (String) -> T, callback: (T?, ApiError?) -> Unit) {
@@ -116,7 +133,12 @@ class ApiClient private constructor(val context: Context) {
                     callback(v,null)
                 },
                 {Log.e(LOG_TAG, "Network Error $it")
-                    callback(null, ApiError.fromResponseError(it))
+                    var err = ApiError.fromResponseError(it)
+                    if (err == ApiError.UnauthorizedAccess && token==null) {
+                        // started offline - try again to log in
+                        login{}
+                    }
+                    callback(null, err)
                 }
                 )
         {
@@ -180,14 +202,25 @@ class ApiClient private constructor(val context: Context) {
     }
 
     fun login(cb: (ApiError?) -> Unit) {
+        fun afterLogin() {
+            synchronized(this@ApiClient) {
+                loginDone = true
+                for (r in unsentRequests) {
+                    requestQueue.add(r)
+                }
+                unsentRequests.clear()
+            }
+        }
         val request = object: StringRequest(Request.Method.POST,baseURL+"authenticate",
                 {
                     cb(null)
                     token = it
+                    afterLogin()
                 },
                 {
                     Log.e(LOG_TAG, "Login error: $it")
                     cb(ApiError.fromResponseError(it))
+                    afterLogin()
                 })
         {
             override fun getParams(): MutableMap<String, String>? {
@@ -208,7 +241,8 @@ class ApiClient private constructor(val context: Context) {
         }
 
         request.setShouldCache(false)
-        addToRequestQueue(request)
+        request.tag = LOGIN_REQUEST_TAG
+        requestQueue.add(request)
 
     }
 

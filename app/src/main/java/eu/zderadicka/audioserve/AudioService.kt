@@ -21,7 +21,6 @@ import android.support.v4.media.session.PlaybackStateCompat
 import android.support.v4.media.session.PlaybackStateCompat.ACTION_PLAY_FROM_MEDIA_ID
 import android.support.v4.media.session.PlaybackStateCompat.ACTION_PREPARE_FROM_MEDIA_ID
 import android.util.Log
-import com.google.android.exoplayer2.C
 import com.google.android.exoplayer2.ExoPlayer
 import com.google.android.exoplayer2.ExoPlayerFactory
 import com.google.android.exoplayer2.Player
@@ -32,21 +31,13 @@ import com.google.android.exoplayer2.source.ConcatenatingMediaSource
 import com.google.android.exoplayer2.source.ExtractorMediaSource
 import com.google.android.exoplayer2.source.MediaSource
 import com.google.android.exoplayer2.trackselection.DefaultTrackSelector
-import com.google.android.exoplayer2.upstream.DataSpec
-import com.google.android.exoplayer2.upstream.DefaultDataSourceFactory
 import com.google.android.exoplayer2.upstream.DefaultHttpDataSourceFactory
-import com.google.android.exoplayer2.upstream.HttpDataSource
-import com.google.android.exoplayer2.upstream.cache.CacheDataSource
-import com.google.android.exoplayer2.upstream.cache.CacheDataSourceFactory
-import com.google.android.exoplayer2.upstream.cache.LeastRecentlyUsedCacheEvictor
-import com.google.android.exoplayer2.upstream.cache.SimpleCache
 import eu.zderadicka.audioserve.data.ITEM_TYPE_FOLDER
 import eu.zderadicka.audioserve.net.ApiClient
 import eu.zderadicka.audioserve.net.ApiError
 import eu.zderadicka.audioserve.net.CacheManager
 import eu.zderadicka.audioserve.notifications.NotificationsManager
 
-const val ERROR_NAME_KEY = "API_ERROR"
 private const val LOG_TAG = "audioserve-service"
 private const val TIME_AFTER_WHICH_NOT_RESUMING = 20 * 60 * 1000
 private const val FF_MS = 30 * 1000L
@@ -82,8 +73,8 @@ class AudioService : MediaBrowserServiceCompat() {
     private lateinit var connector: MediaSessionConnector
     lateinit var player: ExoPlayer
     lateinit var notifManager: NotificationsManager
+    private var currentFolder : List<MediaItem> = ArrayList<MediaItem>()
     private var playQueue: List<MediaItem> = ArrayList<MediaItem>()
-    private var skipToQueueItem = -1
     private lateinit var apiClient: ApiClient
 
     private val playerController = object : DefaultPlaybackController(REWIND_MS, FF_MS, MediaSessionConnector.DEFAULT_REPEAT_TOGGLE_MODES) {
@@ -162,8 +153,8 @@ class AudioService : MediaBrowserServiceCompat() {
             return null
         }
 
-        private fun findIndexInQueue(mediaId: String): Int {
-            return playQueue.indexOfFirst { it.mediaId == mediaId }
+        private fun findIndexInFolder(mediaId: String): Int {
+            return currentFolder.indexOfFirst { it.mediaId == mediaId }
         }
 
         lateinit var dsFactory: DefaultHttpDataSourceFactory
@@ -185,13 +176,16 @@ class AudioService : MediaBrowserServiceCompat() {
             if (apiClient.token != null) {
                 dsFactory.defaultRequestProperties.set("Authorization", "Bearer ${apiClient.token}")
             }
-            skipToQueueItem = findIndexInQueue(mediaId)
+            val folderPosition = findIndexInFolder(mediaId)
 
-            var source: MediaSource = sourceFactory.createMediaSource(apiClient.uriFromMediaId(mediaId))
-            if (skipToQueueItem >= 0) {
+            var source: MediaSource
+            if (folderPosition >= 0) {
+                playQueue = currentFolder.slice(folderPosition until currentFolder.size)
                 val ms = playQueue.map { sourceFactory.createMediaSource(apiClient.uriFromMediaId(it.mediaId!!)) }.toTypedArray()
                 source = ConcatenatingMediaSource(*ms)
                 player.currentTimeline
+            } else {
+                source = sourceFactory.createMediaSource(apiClient.uriFromMediaId(mediaId))
             }
 
             player.prepare(source)
@@ -217,25 +211,11 @@ class AudioService : MediaBrowserServiceCompat() {
             when (state.state) {
                 PlaybackStateCompat.STATE_PLAYING -> notifManager.sendNotification(true)
                 PlaybackStateCompat.STATE_PAUSED -> notifManager.sendNotification()
-                PlaybackStateCompat.STATE_BUFFERING -> {
-
-                    if (skipToQueueItem >= 0) {
-                        val timeline = player.currentTimeline
-                        if (!timeline.isEmpty) {
-                            //No need to skip to 0, as this is default start
-                            if (0 < skipToQueueItem && skipToQueueItem < timeline.windowCount) {
-                                player.seekTo(skipToQueueItem, C.TIME_UNSET)
-                            }
-                            skipToQueueItem = -1
-                        }
-                    }
-
-                }
             }
         }
     }
 
-    inner class QueueManager(val session: MediaSessionCompat) : TimelineQueueNavigator(session) {
+    inner class QueueManager(session: MediaSessionCompat) : TimelineQueueNavigator(session) {
         override fun getMediaDescription(windowIndex: Int): MediaDescriptionCompat {
             if (windowIndex >= 0 && windowIndex < playQueue.size) {
                 return playQueue.get(windowIndex).description
@@ -399,7 +379,7 @@ mediaSessionConnector.setErrorMessageProvider(messageProvider);
                 checkError(it, err)
                 {
                     result.sendResult(it.mediaItems)
-                    playQueue = it.playableItems
+                    currentFolder = it.playableItems
                 }
 
             }
