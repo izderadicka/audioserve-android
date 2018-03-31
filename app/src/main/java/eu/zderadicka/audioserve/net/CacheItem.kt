@@ -6,9 +6,9 @@ import java.util.HashSet
 import kotlin.properties.Delegates
 
 const val UNKNOWN_LENGTH: Long = -1L
-const val TMP_FILE_SUFFIX = ".\$TMP\$"
+internal const val TMP_FILE_SUFFIX = ".\$TMP\$"
 
-class CacheItem(val uriPath: String, val cacheDir: File, val pathPrefix: String? = null) : Closeable {
+class CacheItem(val path: String, val cacheDir: File, changeListener: Listener? = null) : Closeable {
 
     enum class State {
         Empty,
@@ -21,18 +21,18 @@ class CacheItem(val uriPath: String, val cacheDir: File, val pathPrefix: String?
         property, oldValue, newValue ->
         fireListeners(newValue)
     }
+    private set
+
     var cachedLength: Long = 0
+        private set
     var totalLength: Long = UNKNOWN_LENGTH
+        private set
     private var position: Long = 0
     private var appendStream: OutputStream? = null
     private var readStream: InputStream? = null
     private val listeners: HashSet<Listener> = HashSet()
 
     val itemPath by lazy {
-        var path = uriPath
-        if (pathPrefix != null && path.startsWith(pathPrefix)) {
-            path = path.substring(pathPrefix.length)
-        }
         File(cacheDir, path)
     }
 
@@ -41,16 +41,25 @@ class CacheItem(val uriPath: String, val cacheDir: File, val pathPrefix: String?
     }
 
     var lastUsed: Long = 0
-        private set(v: Long) {
-            field = v
+        private set
+
+    val knownLength: Long
+        get() {
+            return if (totalLength>0) totalLength else cachedLength
+        }
+
+    val unused: Boolean
+        get() = synchronized(this) {
+            appendStream == null && readStream == null
         }
 
 
     init {
+        if (changeListener!= null) {
+            addListener(changeListener)
+        }
         initilize()
     }
-
-
 
     private fun updateLastUsed() {
         lastUsed = System.currentTimeMillis()
@@ -71,12 +80,38 @@ class CacheItem(val uriPath: String, val cacheDir: File, val pathPrefix: String?
 
     }
 
+    public fun destroy() {
+        var dir: File? = null
+        if (itemPath.isFile) {
+            dir = itemPath.parentFile
+            itemPath.delete()
+        }
+        else if (itemTempPath.isFile) {
+            dir = itemTempPath.parentFile
+            itemTempPath.delete()
+        }
+
+        state = State.Empty
+        cachedLength = 0
+        totalLength = UNKNOWN_LENGTH
+
+        fun deleteEmptyDirs(dir: File) {
+            if (dir == cacheDir) return
+            if (dir.isDirectory && dir.list().size==0) dir.delete()
+            deleteEmptyDirs(dir.parentFile)
+        }
+
+        if (dir!= null) deleteEmptyDirs(dir)
+        listeners.clear()
+
+    }
+
     fun addListener(l:Listener) = synchronized(this@CacheItem) {listeners.add(l)}
     fun removeListener(l:Listener) = synchronized(this@CacheItem) {listeners.remove(l)}
 
     private fun fireListeners(newValue: State) = synchronized(this) {
         for (l in listeners) {
-            l.onChange(uriPath, newValue)
+            l.onItemChange(path, newValue)
         }
     }
 
@@ -202,6 +237,6 @@ class CacheItem(val uriPath: String, val cacheDir: File, val pathPrefix: String?
         }
 
         interface Listener {
-            fun onChange(path: String, state:State)
+            fun onItemChange(path: String, state:State)
         }
     }

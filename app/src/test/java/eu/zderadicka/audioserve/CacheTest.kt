@@ -21,6 +21,7 @@ private const val TEST_PATH = "/audio/author/book/chapter1.mp3"
 @Throws(IOException::class)
 fun copyFile(sourceFile: File, destFile: File) {
     if (!destFile.exists()) {
+        destFile.parentFile.mkdirs()
         destFile.createNewFile()
     }
 
@@ -67,7 +68,7 @@ fun bytesToHex(bytes: ByteArray): String {
     return String(hexChars).toLowerCase()
 }
 
-class CacheTest {
+open class BaseCacheTest {
 
     var tmpDir: File? = null
 
@@ -77,16 +78,28 @@ class CacheTest {
 
     }
 
-    @Test
-    fun testInstantiation() {
-        val cacheItem = CacheItem("/audio/author/book/chapter1.opus", tmpDir!!)
-        assertEquals(CacheItem.State.Empty, cacheItem.state )
+    @After
+    fun cleanup() {
+        tmpDir?.deleteRecursively()
+
     }
 
     val testFile:File by lazy {
         val srcFileUrl = javaClass.classLoader.getResource("test.mp3")
         File(srcFileUrl.toURI())
     }
+
+}
+
+class CacheTest:BaseCacheTest() {
+
+
+    @Test
+    fun testInstantiation() {
+        val cacheItem = CacheItem("/audio/author/book/chapter1.opus", tmpDir!!)
+        assertEquals(CacheItem.State.Empty, cacheItem.state )
+    }
+
 
     val testFileHash by lazy {
        calcHash(testFile)
@@ -103,7 +116,6 @@ class CacheTest {
 
 
         val dest =  File(tmpDir, TEST_PATH)
-        dest.parentFile.mkdirs()
         copyFile(testFile, dest)
 
         val cacheItem = CacheItem(TEST_PATH, tmpDir!!)
@@ -123,6 +135,10 @@ class CacheTest {
 
         assertArrayEquals(testFileHash, digest.digest())
         assertEquals(testFile.length(), len)
+
+        cacheItem.destroy()
+        assertEquals(CacheItem.State.Empty, cacheItem.state)
+        assertFalse(dest.exists())
     }
     
 
@@ -185,7 +201,7 @@ class CacheTest {
         }, "readThread")
 
         cacheItem.addListener(object: CacheItem.Listener{
-            override fun onChange(path: String, state: CacheItem.State) {
+            override fun onItemChange(path: String, state: CacheItem.State) {
                 println("Write state changed to ${state.name}")
                 if (state == CacheItem.State.Filling) {
                     try {
@@ -224,13 +240,5 @@ class CacheTest {
     @Test
     fun testSlowRead() {
         testWriteAndRead(1, 10)
-    }
-    
-    
-
-    @After
-    fun cleanup() {
-        tmpDir?.deleteRecursively()
-
     }
 }
