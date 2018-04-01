@@ -8,6 +8,7 @@ import android.support.test.runner.AndroidJUnit4
 import android.util.Log
 import eu.zderadicka.audioserve.net.ApiClient
 import eu.zderadicka.audioserve.net.FileCache
+import org.junit.After
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -21,6 +22,7 @@ class CacheLoadTest {
     lateinit var tmpDir:File
     lateinit var ctx: Context
     val cond: ConditionVariable = ConditionVariable()
+
     @Before
     fun prepare() {
         ctx = InstrumentationRegistry.getTargetContext()
@@ -29,6 +31,7 @@ class CacheLoadTest {
 
 
     }
+
     @Test
     fun testLoad() {
         Log.i(LOG_TAG,"Test of cache load")
@@ -46,7 +49,7 @@ class CacheLoadTest {
             assertNull(it)
         }
 
-        cond.block(2000)
+        cond.block(3000)
 
         assertNotNull(client.token)
         val cacheMaxSize: Long = 100 * 1024 * 1024
@@ -54,7 +57,8 @@ class CacheLoadTest {
 
         // size is 2,591,233 bytes
         val ps = arrayListOf("/audio/Verne, Jules/Around the World in Eighty Days/01 - Chapter I.opus",
-                "/audio/Stevenson, Robert Louis/Treasure Island/01 - 00 - Dedication & Introductory Poem.mp3")
+                "/audio/Stevenson, Robert Louis/Treasure Island/01 - 00 - Dedication & Introductory Poem.mp3",
+        "/1/audio/Adams Douglas/Douglas Adams - Stoparuv pruvodce galaxii (2008)/00.uvod.mp3")
         var counter = ps.size
         val listener = object: FileCache.Listener {
             override fun onCacheChange(path: String, status: FileCache.Status) {
@@ -66,12 +70,13 @@ class CacheLoadTest {
             }
             
         }
+        cache.addListener(listener)
         cond.close()
         for (p in ps) {
             cache.addToCache(p)
         }
 
-        cond.block(5000)
+        cond.block(6000)
 
         for ((i,p) in ps.withIndex()) {
             assertEquals(FileCache.Status.FullyCached, cache.checkCache(p))
@@ -85,6 +90,7 @@ class CacheLoadTest {
 
     }
 
+    @After
     fun cleanUp() {
         tmpDir.deleteRecursively()
 
