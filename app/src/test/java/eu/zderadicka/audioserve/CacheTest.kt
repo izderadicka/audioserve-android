@@ -12,7 +12,6 @@ import java.io.FileOutputStream
 import java.io.IOException
 import java.nio.channels.FileChannel
 import java.nio.file.Files
-import java.nio.file.Files.size
 import java.security.MessageDigest
 
 
@@ -142,7 +141,7 @@ class CacheTest:BaseCacheTest() {
     }
     
 
-    private fun testWriteAndRead(writeDelay: Long = 0, readDelay: Long = 0 ) {
+    private fun testWriteAndRead(writeDelay: Long = 0, readDelay: Long = 0, randomInterrupts: Double = -1.0 ) {
 
         val cacheItem = CacheItem(TEST_PATH, tmpDir!!)
         assertEquals(CacheItem.State.Empty, cacheItem.state )
@@ -151,23 +150,37 @@ class CacheTest:BaseCacheTest() {
             val bufSize = 1024
             val buf = ByteArray(bufSize)
             println("Started write thread")
-            cacheItem.openForAppend()
-            println("Cache Item opened for append")
-            FileInputStream(testFile).use {
-                while (true) {
-                    val read = it.read(buf, 0, bufSize)
-                    println("Read  $read from input file")
-                    if (writeDelay>0) Thread.sleep(writeDelay)
-                    if (read >= 0) {
-                        cacheItem.write(buf, 0, read)
-                        println("Written to cache file")
-                    } else {
-                        break
-                    }
+            outer@ while(true) {
+                cacheItem.openForAppend()
+                println("Cache Item opened for append")
+                FileInputStream(testFile).use {
+                    it.skip(cacheItem.cachedLength)
+                    while (true) {
+                        val read = it.read(buf, 0, bufSize)
+                        println("Read  $read from input file")
+                        if (writeDelay > 0) Thread.sleep(writeDelay)
+                        if (read >= 0) {
+                            cacheItem.write(buf, 0, read)
+                            println("Written to cache file")
+                            if (Math.random() <= randomInterrupts) {
+                                println("Closing in the middle of write")
+                                break
+                            }
+                        } else {
+                            break
+                        }
 
+                    }
+                }
+
+                if (cacheItem.cachedLength == testFile.length()) {
+                    cacheItem.closeForAppend(true)
+                    break
+                } else {
+                    cacheItem.closeForAppend(false)
                 }
             }
-            cacheItem.closeForAppend(true)
+
         }, "writeThread")
 
         var readBytes = 0L
@@ -206,8 +219,10 @@ class CacheTest:BaseCacheTest() {
                 if (state == CacheItem.State.Filling) {
                     try {
                         println("Running reader thread")
-                        readThread.start()
-                        println("Reader thread started")
+                        if (! readThread.isAlive) {
+                            readThread.start()
+                            println("Reader thread started")
+                        }
                     } catch (e: Throwable) {
                         println("Error starting reader thread: $e")
                     }
@@ -228,8 +243,71 @@ class CacheTest:BaseCacheTest() {
     }
 
     @Test
+    fun testRewriteFromScratch() {
+        var counter = 0
+        val listener = object: CacheItem.Listener {
+            override fun onItemChange(path: String, state: CacheItem.State) {
+                counter++
+                println("Status change to $state")
+            }
+
+        }
+        val cacheItem = CacheItem(TEST_PATH, tmpDir!!, listener)
+        assertEquals(CacheItem.State.Empty, cacheItem.state )
+
+        class Loader(val limit: Long = 0, val forceNew: Boolean = false): Runnable {
+            override fun run() {
+                testFile.inputStream().use {
+                    val buf = ByteArray(2000)
+                    cacheItem.openForAppend(forceNew)
+                    var totalRead = 0L
+                    while (true) {
+                        val read = it.read(buf)
+                        if (read > 0) {
+                            cacheItem.write(buf, 0, read)
+                            totalRead+=read
+                            if (limit>0 && totalRead > limit) break
+
+                        } else {
+                            break
+                        }
+                    }
+                    cacheItem.closeForAppend(cacheItem.cachedLength == testFile.length())
+                }
+            }
+
+        }
+
+        val writer1 = Thread(Loader(4321))
+
+
+        writer1.start()
+        writer1.join()
+
+        assertEquals(CacheItem.State.Exists, cacheItem.state)
+        assertEquals(6000, cacheItem.cachedLength)
+
+        val writer2 = Thread(Loader(forceNew = true))
+
+        writer2.start()
+        writer2.join()
+
+        assertEquals(CacheItem.State.Complete, cacheItem.state)
+        assertEquals(4, counter)
+        assertArrayEquals(testFileHash, calcHash(File(tmpDir, TEST_PATH)))
+
+
+
+    }
+
+    @Test
     fun testFastRW() {
         testWriteAndRead()
+    }
+
+    @Test
+    fun testWithInterrupts() {
+        testWriteAndRead(randomInterrupts = 0.2)
     }
 
     @Test

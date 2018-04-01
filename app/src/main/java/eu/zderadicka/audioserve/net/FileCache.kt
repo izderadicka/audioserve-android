@@ -6,6 +6,7 @@ import java.net.HttpURLConnection
 import java.net.URL
 import java.util.concurrent.ArrayBlockingQueue
 import java.util.concurrent.BlockingDeque
+import java.util.concurrent.BlockingQueue
 import kotlin.math.max
 
 private const val LOG_TAG = "FileCache"
@@ -112,7 +113,7 @@ class CacheIndex(val maxCacheSize: Long, private val changeListener: CacheItem.L
 
 }
 
-class FileCache(val cacheDir: File, val maxCacheSize: Long, val baseUrl: String) : CacheItem.Listener {
+class FileCache(val cacheDir: File, val maxCacheSize: Long, val baseUrl: String, token:String) : CacheItem.Listener {
 
     enum class Status {
         NotCached,
@@ -123,9 +124,13 @@ class FileCache(val cacheDir: File, val maxCacheSize: Long, val baseUrl: String)
     private val index = CacheIndex(maxCacheSize, this, true)
     private val listeners = HashSet<Listener>()
     private val queue = ArrayBlockingQueue<CacheItem>(MAX_CACHE_FILES)
+    private val loaderThread:Thread
 
     init {
         index.loadFromDir(cacheDir)
+        loaderThread = Thread(FileLoader(queue = queue,baseUrl = baseUrl,token = token), "Loader Thread")
+        loaderThread.isDaemon = true
+        loaderThread.start()
     }
 
     val numberOfFiles: Int
@@ -150,6 +155,12 @@ class FileCache(val cacheDir: File, val maxCacheSize: Long, val baseUrl: String)
         } catch (e: IllegalStateException) {
             Log.e(LOG_TAG, "Cannot queue $path for loading")
         }
+    }
+
+    fun stopAllLoading() = synchronized(this) {
+        queue.clear()
+        loaderThread.interrupt()
+
     }
 
     private fun itemStateConv(state: CacheItem.State?) =
@@ -179,14 +190,16 @@ class FileCache(val cacheDir: File, val maxCacheSize: Long, val baseUrl: String)
 
 private const val LOADER_BUFFER_SIZE = 10 * 1024
 
-class FileLoader(private val queue: BlockingDeque<CacheItem>, private val baseUrl: String, private val token: String) : Runnable {
+class FileLoader(private val queue: BlockingQueue<CacheItem>, private val baseUrl: String, private val token: String) : Runnable {
     override fun run() {
         while (true) {
             try {
 
                 val item = queue.take()
-                val url = URL(baseUrl + item.path)
+                if (Thread.interrupted()) continue
+                val url = URL(baseUrl+ if (item.path.startsWith("/")) item.path.substring(1) else item.path)
                 val conn = url.openConnection() as HttpURLConnection
+                Log.d(LOG_TAG, "Started download of $url")
                 try {
                     conn.setRequestProperty("Authorization", "Bearer $token")
                     val responseCode = conn.responseCode
@@ -201,25 +214,31 @@ class FileLoader(private val queue: BlockingDeque<CacheItem>, private val baseUr
                             conn.inputStream.use {
                                 while (true) {
                                     val read = it.read(buf)
-                                    if (read < 0) break
+                                    if (read < 0) {
+                                        complete = true
+                                        break
+                                    }
                                     item.write(buf, 0, read)
+                                    if (Thread.interrupted()) break
                                 }
                             }
-                            complete = true
+
                         } finally {
+                            Log.d(LOG_TAG,"Finished download of $url complete $complete")
                             item.closeForAppend(complete)
                         }
 
                     } else {
-                        Log.e(LOG_TAG, "Http error $responseCode ${conn.responseMessage}")
+                        Log.e(LOG_TAG, "Http error $responseCode ${conn.responseMessage} for url $url")
                     }
 
                 } catch (e: Exception) {
-                    Log.e(LOG_TAG, "Network error", e)
+                    Log.e(LOG_TAG, "Network error for url $url", e)
 
                 }
 
             } catch (e: InterruptedException) {
+
                 Log.d(LOG_TAG, "Load interrupted")
             }
         }

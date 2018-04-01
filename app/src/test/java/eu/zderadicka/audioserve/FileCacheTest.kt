@@ -29,7 +29,7 @@ class FileCacheTest:BaseCacheTest() {
             }
         }
         val maxCacheSize: Long = 586270
-        val cache = FileCache(tmpDir!!, maxCacheSize, "http://localhost:3000")
+        val cache = FileCache(tmpDir!!, maxCacheSize, "http://localhost:3000", "abcd")
         cache.addListener(counter)
         assertEquals(10, cache.numberOfFiles)
         assertEquals(10L * testFile.length(), cache.cacheSize)
