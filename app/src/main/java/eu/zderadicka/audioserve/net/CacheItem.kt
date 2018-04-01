@@ -115,17 +115,27 @@ class CacheItem(val path: String, val cacheDir: File, changeListener: Listener? 
         }
     }
 
-    fun openForAppend() {
+    fun openForAppend(forceNew: Boolean = false) {
         if (state == State.Complete) {
             throw IllegalStateException("Cache entry is already complete")
         } else if (state == State.Filling) {
             throw IllegalStateException("Already opened for append")
         }
+        synchronized(this) {
+            if (state == State.Empty) {
+                itemTempPath.parentFile.mkdirs()
+                itemTempPath.createNewFile()
+            } else if (state == State.Exists && forceNew) {
+                itemTempPath.delete()
+                itemTempPath.createNewFile()
+                cachedLength = 0
+                totalLength = UNKNOWN_LENGTH
+            } else {
 
-        if (state == State.Empty) {
-            itemTempPath.parentFile.mkdirs()
-            itemTempPath.createNewFile()
+            }
         }
+
+
         appendStream = FileOutputStream(itemTempPath, true)
         state = State.Filling
     }
@@ -164,15 +174,18 @@ class CacheItem(val path: String, val cacheDir: File, changeListener: Listener? 
 
     }
 
-    fun openForRead() {
+    fun openForRead(fromPosition:Long=0) {
         if (readStream != null) {
             throw IllegalStateException("Already opened for read")
         }
-        position = 0
+        position = fromPosition
         readStream = when (state) {
             State.Empty -> throw IllegalStateException("Cannot open empty CacheItem for read")
             State.Exists, State.Filling -> FileInputStream(itemTempPath)
             State.Complete -> FileInputStream(itemPath)
+        }
+        if (position > 0) {
+            val skipped = readStream!!.skip(position)
         }
 
     }
