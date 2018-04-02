@@ -4,11 +4,15 @@ import android.os.Bundle
 import android.support.v4.media.MediaBrowserCompat.MediaItem
 import android.support.v4.media.MediaDescriptionCompat
 import android.support.v4.media.MediaMetadataCompat
+import eu.zderadicka.audioserve.net.CacheManager
+import eu.zderadicka.audioserve.net.FileCache
 import java.io.File
 
 const val METADATA_KEY_DURATION = MediaMetadataCompat.METADATA_KEY_DURATION
 const val METADATA_KEY_BITRATE = "eu.zderadicka.audioserve.bitrate"
 const val METADATA_KEY_TRANSCODED = "eu.zderadicka.audioserve.transcoded"
+const val METADATA_KEY_CACHED = "eu.zderadicka.audioserve.cached"
+const val METADATA_KEY_MEDIA_ID = "eu.zderadicka.audioserve.media_id"
 
 const val ITEM_TYPE_FOLDER = "folder"
 const val ITEM_TYPE_AUDIOFILE = "audio"
@@ -39,14 +43,14 @@ class AudioFolder(name: String, path: String, val subfolders: ArrayList<Subfolde
     val numFiles: Int
     get() = this.files?.size?:0
 
-    val playableItems:List<MediaItem>
-    get() {
+    fun getPlayableItems(cache: CacheManager?):List<MediaItem>
+    {
         val data: ArrayList<MediaItem> = ArrayList()
 
 
         if (this.files != null && this.files.size > 0) {
             for (f in this.files) {
-                data.add(fileToItem(f))
+                data.add(fileToItem(f, cache))
             }
         }
         return data
@@ -61,16 +65,19 @@ class AudioFolder(name: String, path: String, val subfolders: ArrayList<Subfolde
         return MediaItem(desc, MediaItem.FLAG_BROWSABLE)
     }
 
-    private fun fileToItem(f: AudioFile): MediaItem {
+    private fun fileToItem(f: AudioFile, cache: CacheManager? = null): MediaItem {
         val extras = Bundle()
+        val mediaId = prefixPath(f.path, ITEM_TYPE_AUDIOFILE)
         val descBuilder = MediaDescriptionCompat.Builder()
-                .setMediaId(prefixPath(f.path, ITEM_TYPE_AUDIOFILE))
+                .setMediaId(mediaId)
                 .setTitle(f.name)
                 .setSubtitle(File(f.path).parent)
         if (f.meta != null) {
             extras.putLong(METADATA_KEY_DURATION, f.meta.duration.toLong() * 1000) // in miliseconds
             extras.putInt(METADATA_KEY_BITRATE, f.meta.bitrate)
-
+        }
+        if (cache != null && cache.isCached(mediaId)) {
+            extras.putBoolean(METADATA_KEY_CACHED, true)
         }
         extras.putBoolean(METADATA_KEY_TRANSCODED, f.transcoded)
         descBuilder.setExtras(extras)
@@ -85,8 +92,8 @@ class AudioFolder(name: String, path: String, val subfolders: ArrayList<Subfolde
         }
     }
 
-    val mediaItems: ArrayList<MediaItem>
-    get() {
+    fun getMediaItems(cache: CacheManager?): ArrayList<MediaItem>
+    {
 
         val data: ArrayList<MediaItem> = ArrayList()
 
@@ -98,7 +105,7 @@ class AudioFolder(name: String, path: String, val subfolders: ArrayList<Subfolde
 
         if (this.files != null && this.files.size > 0) {
             for (f in this.files) {
-                data.add(fileToItem(f))
+                data.add(fileToItem(f, cache))
             }
         }
         return data

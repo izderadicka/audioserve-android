@@ -179,10 +179,12 @@ class CacheItem(val path: String, val cacheDir: File, changeListener: Listener? 
             throw IllegalStateException("Already opened for read")
         }
         position = fromPosition
-        readStream = when (state) {
-            State.Empty -> throw IllegalStateException("Cannot open empty CacheItem for read")
-            State.Exists, State.Filling -> FileInputStream(itemTempPath)
-            State.Complete -> FileInputStream(itemPath)
+        synchronized(this) {
+            readStream = when (state) {
+                State.Empty -> throw IllegalStateException("Cannot open empty CacheItem for read")
+                State.Exists, State.Filling -> FileInputStream(itemTempPath)
+                State.Complete -> FileInputStream(itemPath)
+            }
         }
         if (position > 0) {
             val skipped = readStream!!.skip(position)

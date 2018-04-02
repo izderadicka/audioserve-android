@@ -56,9 +56,9 @@ class CacheLoadTest {
         val cache = FileCache(tmpDir, cacheMaxSize,baseUrl, client.token!!)
 
         // size is 2,591,233 bytes
-        val ps = arrayListOf("/audio/Verne, Jules/Around the World in Eighty Days/01 - Chapter I.opus",
-                "/audio/Stevenson, Robert Louis/Treasure Island/01 - 00 - Dedication & Introductory Poem.mp3",
-        "/1/audio/Adams Douglas/Douglas Adams - Stoparuv pruvodce galaxii (2008)/00.uvod.mp3")
+        val ps = arrayListOf("audio/Verne, Jules/Around the World in Eighty Days/01 - Chapter I.opus",
+                "audio/Stevenson, Robert Louis/Treasure Island/01 - 00 - Dedication & Introductory Poem.mp3",
+        "1/audio/Adams Douglas/Douglas Adams - Stoparuv pruvodce galaxii (2008)/00.uvod.mp3")
         var counter = ps.size
         val listener = object: FileCache.Listener {
             override fun onCacheChange(path: String, status: FileCache.Status) {

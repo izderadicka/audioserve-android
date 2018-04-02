@@ -60,7 +60,6 @@ internal fun encodeSecret(secret: String):String {
 
     return res
 
-
 }
 
 //internal fun audioUri(path: String) : Uri {

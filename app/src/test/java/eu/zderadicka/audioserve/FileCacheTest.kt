@@ -23,7 +23,7 @@ class FileCacheTest:BaseCacheTest() {
         }
 
         for (i in 1..10) {
-            copyFile(testFile, File(tmpDir, "/audio/author/book/chapter$i.mp3"))
+            copyFile(testFile, File(tmpDir, "audio/author/book/chapter$i.mp3"))
             if (i==1) {
                 Thread.sleep(1100)
             }
@@ -35,9 +35,11 @@ class FileCacheTest:BaseCacheTest() {
         assertEquals(10L * testFile.length(), cache.cacheSize)
         assertEquals(maxCacheSize, cache.maxCacheSize)
 
+        assertEquals(FileCache.Status.FullyCached, cache.checkCache("audio/author/book/chapter8.mp3"))
+
         println("Now cache has ${cache.cacheSize} bytes")
 
-        val newItemPath = "/audio/author/book/chapter11.mp3"
+        val newItemPath = "audio/author/book/chapter11.mp3"
         copyFile(testFile, File(tmpDir, newItemPath))
 
         cache.addToCache(newItemPath)
@@ -46,7 +48,7 @@ class FileCacheTest:BaseCacheTest() {
         assertEquals(10, cache.numberOfFiles)
         assertEquals(10L * testFile.length(), cache.cacheSize)
 
-        assertEquals(FileCache.Status.NotCached, cache.checkCache("/audio/author/book/chapter1.mp3"))
+        assertEquals(FileCache.Status.NotCached, cache.checkCache("audio/author/book/chapter1.mp3"))
 
         assertEquals(2, statusesUpdates)
 

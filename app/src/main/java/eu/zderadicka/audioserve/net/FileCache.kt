@@ -7,7 +7,6 @@ import java.io.IOException
 import java.net.HttpURLConnection
 import java.net.URL
 import java.util.concurrent.ArrayBlockingQueue
-import java.util.concurrent.BlockingDeque
 import java.util.concurrent.BlockingQueue
 import kotlin.math.max
 
@@ -93,7 +92,7 @@ class CacheIndex(val maxCacheSize: Long, private val changeListener: CacheItem.L
                 if (f.isDirectory()) {
                     load(f)
                 } else {
-                    var path = f.absolutePath.substring(pathPrefixLength)
+                    var path = f.absolutePath.substring(pathPrefixLength+1)
                     if (path.endsWith(TMP_FILE_SUFFIX)) {
                         path = path.substring(0, path.length - TMP_FILE_SUFFIX.length)
                     }
@@ -115,7 +114,7 @@ class CacheIndex(val maxCacheSize: Long, private val changeListener: CacheItem.L
 
 }
 
-class FileCache(val cacheDir: File, val maxCacheSize: Long, val baseUrl: String, token:String) : CacheItem.Listener {
+class FileCache(val cacheDir: File, val maxCacheSize: Long, val baseUrl: String, val token:String? = null) : CacheItem.Listener {
 
     enum class Status {
         NotCached,
@@ -126,14 +125,16 @@ class FileCache(val cacheDir: File, val maxCacheSize: Long, val baseUrl: String,
     private val index = CacheIndex(maxCacheSize, this, true)
     private val listeners = HashSet<Listener>()
     private val queue = ArrayBlockingQueue<CacheItem>(MAX_CACHE_FILES)
-    private val loaderThread:Thread
+    private var loaderThread:Thread? = null
+    private var loader:FileLoader? = null
     private val baseUrlPath: String = URL(baseUrl).path
 
     init {
+        if (!cacheDir.exists()) {
+            cacheDir.mkdir()
+        }
         index.loadFromDir(cacheDir)
-        loaderThread = Thread(FileLoader(queue = queue,baseUrl = baseUrl,token = token), "Loader Thread")
-        loaderThread.isDaemon = true
-        loaderThread.start()
+        if (token != null) startLoader(token)
     }
 
     val numberOfFiles: Int
@@ -145,10 +146,29 @@ class FileCache(val cacheDir: File, val maxCacheSize: Long, val baseUrl: String,
     fun pathFromUri(uri: Uri): String {
         val p = uri.path
         if (p.startsWith(baseUrlPath)) {
-            return p.substring(baseUrlPath.length-1)
+            return p.substring(baseUrlPath.length)
         } else {
             return p
         }
+    }
+
+    fun startLoader(token: String) {
+        if (loaderThread != null) {
+            throw IllegalStateException("Loader already started")
+        }
+
+        loader = FileLoader(queue = queue, baseUrl = baseUrl,token = token)
+        val loaderThread = Thread(loader, "Loader Thread")
+        loaderThread.isDaemon = true
+        loaderThread.start()
+        this.loaderThread = loaderThread
+    }
+
+    fun stopLoader() {
+        this.loader?.stop()
+        stopAllLoading()
+        this.loaderThread = null
+        this.loader = null
     }
 
     fun getOrAdd(path: String):CacheItem = synchronized(this) {
@@ -180,9 +200,11 @@ class FileCache(val cacheDir: File, val maxCacheSize: Long, val baseUrl: String,
         item
     }
 
-    fun stopAllLoading() = synchronized(this) {
+    fun stopAllLoading(keepLoading: String? = null) = synchronized(this) {
         queue.clear()
-        loaderThread.interrupt()
+        if (keepLoading == null || loader?.currentPath != keepLoading) {
+            loaderThread!!.interrupt()
+        }
 
     }
 
@@ -214,12 +236,26 @@ class FileCache(val cacheDir: File, val maxCacheSize: Long, val baseUrl: String,
 private const val LOADER_BUFFER_SIZE = 10 * 1024
 
 class FileLoader(private val queue: BlockingQueue<CacheItem>, private val baseUrl: String, private val token: String) : Runnable {
+    private var stopFlag = false
+    fun stop() {
+        stopFlag=true
+    }
+
+    var currentPath: String? = null
+    private set
+
     override fun run() {
         while (true) {
             try {
 
                 val item = queue.take()
+
+                currentPath = item.path
+                if (stopFlag) return
                 if (Thread.interrupted()) continue
+                // Check that item is not complete or filling elsewhere
+                if (item.state == CacheItem.State.Complete ||
+                        item.state == CacheItem.State.Filling) continue
                 val url = URL(baseUrl+ if (item.path.startsWith("/")) item.path.substring(1) else item.path)
                 val conn = url.openConnection() as HttpURLConnection
                 Log.d(LOG_TAG, "Started download of $url")
@@ -263,6 +299,9 @@ class FileLoader(private val queue: BlockingQueue<CacheItem>, private val baseUr
             } catch (e: InterruptedException) {
 
                 Log.d(LOG_TAG, "Load interrupted")
+            }
+            finally {
+                currentPath = null
             }
         }
     }

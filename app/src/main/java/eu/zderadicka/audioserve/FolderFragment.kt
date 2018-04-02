@@ -18,13 +18,9 @@ import android.widget.ImageView
 import android.widget.ProgressBar
 import android.widget.TextView
 import android.widget.Toast
-import eu.zderadicka.audioserve.data.METADATA_KEY_BITRATE
-import eu.zderadicka.audioserve.data.METADATA_KEY_DURATION
-import eu.zderadicka.audioserve.data.METADATA_KEY_TRANSCODED
 import eu.zderadicka.audioserve.utils.ifStoppedOrDead
 import android.os.Parcelable
-
-
+import eu.zderadicka.audioserve.data.*
 
 
 // the fragment initialization parameters, e.g. ARG_ITEM_NUMBER
@@ -46,6 +42,7 @@ class FolderItemViewHolder(itemView: View, val viewType: Int, val clickCB: (Int)
     var durationView: TextView? = null
     var bitRateView: TextView? = null
     var transcodedIcon: ImageView? = null
+    var cachedIcon: ImageView? = null
     var isFile = false
 
     init {
@@ -54,6 +51,7 @@ class FolderItemViewHolder(itemView: View, val viewType: Int, val clickCB: (Int)
             durationView = itemView.findViewById(R.id.durationView)
             bitRateView = itemView.findViewById(R.id.bitRateView)
             transcodedIcon = itemView.findViewById(R.id.transcodedIcon)
+            cachedIcon = itemView.findViewById(R.id.cachedIcon)
             isFile = true
         }
     }
@@ -124,10 +122,12 @@ class FolderAdapter(val context: Context,
                 holder.transcodedIcon?.visibility = View.INVISIBLE
             }
 
-
+            if (item.description.extras?.getBoolean(METADATA_KEY_CACHED)?: false) {
+                holder.cachedIcon?.visibility = View.VISIBLE
+            } else {
+                holder.cachedIcon?.visibility = View.INVISIBLE
+            }
         }
-
-
     }
 
     fun changeData(newData: List<MediaItem>) {
@@ -138,6 +138,14 @@ class FolderAdapter(val context: Context,
         }
         notifyDataSetChanged()
         if (pendingMediaId != null) updateNowPlaying(pendingMediaId!!)
+    }
+
+    fun updatedCached(mediaId: String) {
+        val idx = idMap.get(mediaId)
+        if (idx != null) {
+            items?.get(idx)?.description?.extras?.putBoolean(METADATA_KEY_CACHED, true)
+            notifyItemChanged(idx)
+        }
     }
 
     fun updateNowPlaying(mediaId: String): Int {
@@ -204,6 +212,16 @@ class FolderFragment : MediaFragment() {
             adapter.resetNowPlaying()
         })
     }
+
+        override fun onSessionEvent(event: String?, extras: Bundle?) {
+            super.onSessionEvent(event, extras)
+            if (event == MEDIA_FULLY_CACHED) {
+                val mediaId = extras?.getString(METADATA_KEY_MEDIA_ID)
+                if (mediaId != null) {
+                    adapter.updatedCached(mediaId)
+                }
+            }
+        }
 
     }
 

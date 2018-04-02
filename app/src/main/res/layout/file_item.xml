@@ -60,9 +60,19 @@
         android:id="@+id/transcodedIcon"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginStart="8dp"
+        android:layout_marginStart="12dp"
         android:layout_marginTop="6dp"
         app:layout_constraintStart_toEndOf="@+id/bitRateLabel"
         app:layout_constraintTop_toBottomOf="@+id/folderItemName"
         app:srcCompat="@drawable/ic_pulse" />
+
+    <ImageView
+        android:id="@+id/cachedIcon"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="12dp"
+        android:layout_marginTop="6dp"
+        app:layout_constraintStart_toEndOf="@+id/transcodedIcon"
+        app:layout_constraintTop_toBottomOf="@+id/folderItemName"
+        app:srcCompat="@drawable/ic_offline_pin" />
 </android.support.constraint.ConstraintLayout>

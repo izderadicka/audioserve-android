@@ -15,7 +15,7 @@ import java.nio.file.Files
 import java.security.MessageDigest
 
 
-private const val TEST_PATH = "/audio/author/book/chapter1.mp3"
+private const val TEST_PATH = "audio/author/book/chapter1.mp3"
 
 @Throws(IOException::class)
 fun copyFile(sourceFile: File, destFile: File) {
@@ -95,7 +95,7 @@ class CacheTest:BaseCacheTest() {
 
     @Test
     fun testInstantiation() {
-        val cacheItem = CacheItem("/audio/author/book/chapter1.opus", tmpDir!!)
+        val cacheItem = CacheItem("audio/author/book/chapter1.opus", tmpDir!!)
         assertEquals(CacheItem.State.Empty, cacheItem.state )
     }
 

@@ -10,11 +10,13 @@ import android.os.Bundle
 import android.os.Process
 import android.os.ResultReceiver
 import android.preference.PreferenceManager
+import android.renderscript.RSInvalidStateException
 import android.support.v4.content.ContextCompat
 import android.support.v4.media.MediaBrowserCompat
 import android.support.v4.media.MediaBrowserCompat.MediaItem
 import android.support.v4.media.MediaBrowserServiceCompat
 import android.support.v4.media.MediaDescriptionCompat
+import android.support.v4.media.MediaMetadataCompat
 import android.support.v4.media.session.MediaControllerCompat
 import android.support.v4.media.session.MediaSessionCompat
 import android.support.v4.media.session.PlaybackStateCompat
@@ -33,15 +35,20 @@ import com.google.android.exoplayer2.source.MediaSource
 import com.google.android.exoplayer2.trackselection.DefaultTrackSelector
 import com.google.android.exoplayer2.upstream.DefaultHttpDataSourceFactory
 import eu.zderadicka.audioserve.data.ITEM_TYPE_FOLDER
+import eu.zderadicka.audioserve.data.METADATA_KEY_CACHED
+import eu.zderadicka.audioserve.data.METADATA_KEY_MEDIA_ID
 import eu.zderadicka.audioserve.net.ApiClient
 import eu.zderadicka.audioserve.net.ApiError
 import eu.zderadicka.audioserve.net.CacheManager
+import eu.zderadicka.audioserve.net.FileCache
 import eu.zderadicka.audioserve.notifications.NotificationsManager
+import kotlin.math.min
 
 private const val LOG_TAG = "audioserve-service"
 private const val TIME_AFTER_WHICH_NOT_RESUMING = 20 * 60 * 1000
 private const val FF_MS = 30 * 1000L
 private const val REWIND_MS = 15 * 1000L
+const val MEDIA_FULLY_CACHED = "eu.zderadicka.audioserve.FULLY_CACHED"
 
 
 private class ResultWrapper(val result: MediaBrowserServiceCompat.Result<List<MediaBrowserCompat.MediaItem>>) {
@@ -74,7 +81,7 @@ class AudioService : MediaBrowserServiceCompat() {
     lateinit var player: ExoPlayer
     lateinit var notifManager: NotificationsManager
     private var currentFolder : List<MediaItem> = ArrayList<MediaItem>()
-    private var playQueue: List<MediaItem> = ArrayList<MediaItem>()
+    private var playQueue: MutableList<MediaItem> = ArrayList<MediaItem>()
     private lateinit var apiClient: ApiClient
 
     private val playerController = object : DefaultPlaybackController(REWIND_MS, FF_MS, MediaSessionConnector.DEFAULT_REPEAT_TOGGLE_MODES) {
@@ -135,7 +142,16 @@ class AudioService : MediaBrowserServiceCompat() {
         }
     }
 
+    private fun findIndexInFolder(mediaId: String): Int {
+        return currentFolder.indexOfFirst { it.mediaId == mediaId }
+    }
 
+    private fun findIndexInQueue(mediaId: String): Int {
+        return playQueue.indexOfFirst { it.mediaId == mediaId }
+    }
+
+
+    private val preloadFiles: Int = 2
     private val preparer = object : MediaSessionConnector.PlaybackPreparer {
         override fun onPrepareFromSearch(query: String?, extras: Bundle?) {
             TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
@@ -153,17 +169,12 @@ class AudioService : MediaBrowserServiceCompat() {
             return null
         }
 
-        private fun findIndexInFolder(mediaId: String): Int {
-            return currentFolder.indexOfFirst { it.mediaId == mediaId }
-        }
+        var sourceFactory: ExtractorMediaSource.Factory? = null
 
-        lateinit var dsFactory: DefaultHttpDataSourceFactory
-        lateinit var sourceFactory: ExtractorMediaSource.Factory
-
-        fun initSourceFactory(cm: CacheManager) {
-
-            dsFactory = DefaultHttpDataSourceFactory("audioserve")
-            cm.upstreamFactory = dsFactory
+        fun initSourceFactory(cm: CacheManager, token: String? = null) {
+            if (token != null) {
+                cm.startCacheLoader(token)
+            }
             sourceFactory = ExtractorMediaSource.Factory(cm.sourceFactory)
 
         }
@@ -173,19 +184,25 @@ class AudioService : MediaBrowserServiceCompat() {
                 session.isActive = true
             }
             Log.d(LOG_TAG, "Preparing mediaId $mediaId")
-            if (apiClient.token != null) {
-                dsFactory.defaultRequestProperties.set("Authorization", "Bearer ${apiClient.token}")
+            if (apiClient.token != null && sourceFactory == null) {
+                initSourceFactory(cacheManager, apiClient.token)
+                cacheManager.addListener(cacheListener)
             }
             val folderPosition = findIndexInFolder(mediaId)
 
+            val factory = sourceFactory?: throw IllegalStateException("Session not ready")
+
             var source: MediaSource
             if (folderPosition >= 0) {
-                playQueue = currentFolder.slice(folderPosition until currentFolder.size)
-                val ms = playQueue.map { sourceFactory.createMediaSource(apiClient.uriFromMediaId(it.mediaId!!)) }.toTypedArray()
+                cacheManager.resetLoading(keepLoading=mediaId)
+                playQueue = currentFolder.slice(folderPosition until currentFolder.size).toMutableList()
+                cacheManager.ensureCaching(mediaId)
+                val ms = playQueue.map { factory.createMediaSource(apiClient.uriFromMediaId(it.mediaId!!)) }.toTypedArray()
                 source = ConcatenatingMediaSource(*ms)
                 player.currentTimeline
             } else {
-                source = sourceFactory.createMediaSource(apiClient.uriFromMediaId(mediaId))
+                source = factory.createMediaSource(apiClient.uriFromMediaId(mediaId))
+                playQueue.clear()
             }
 
             player.prepare(source)
@@ -204,6 +221,23 @@ class AudioService : MediaBrowserServiceCompat() {
 
     }
 
+    private val cacheListener = object: FileCache.Listener {
+        override fun onCacheChange(path: String, status: FileCache.Status) {
+            Log.d(LOG_TAG,"Cache change on $path to ${status.name}")
+            if (status == FileCache.Status.FullyCached) {
+                val b =Bundle()
+                b.putString(METADATA_KEY_MEDIA_ID, path)
+                session.sendSessionEvent(MEDIA_FULLY_CACHED, b)
+                val folderPosition = findIndexInFolder(path)
+                if (folderPosition>=0) {
+                    currentFolder[folderPosition].description.extras?.putBoolean(METADATA_KEY_CACHED, true)
+                }
+
+            }
+        }
+
+    }
+
     private val sessionCallback = object : MediaControllerCompat.Callback() {
         override fun onPlaybackStateChanged(state: PlaybackStateCompat) {
             super.onPlaybackStateChanged(state)
@@ -212,6 +246,20 @@ class AudioService : MediaBrowserServiceCompat() {
                 PlaybackStateCompat.STATE_PLAYING -> notifManager.sendNotification(true)
                 PlaybackStateCompat.STATE_PAUSED -> notifManager.sendNotification()
             }
+        }
+
+        override fun onMetadataChanged(metadata: MediaMetadataCompat?) {
+            super.onMetadataChanged(metadata)
+            if (metadata == null || metadata.description ==null || metadata.description.mediaId ==null) return
+            val idx = findIndexInQueue(metadata.description.mediaId!!)
+            if (idx>=0) {
+                for (i in idx..min(idx+preloadFiles, playQueue.size)) {
+                    if (! (playQueue[i].description.extras?.getBoolean(METADATA_KEY_CACHED)?:false)) {
+                        cacheManager.ensureCaching(playQueue[i].mediaId!!)
+                    }
+                }
+            }
+
         }
     }
 
@@ -253,7 +301,7 @@ class AudioService : MediaBrowserServiceCompat() {
         notifManager = NotificationsManager(this)
         connector = MediaSessionConnector(session, playerController)
         cacheManager = CacheManager(this)
-        preparer.initSourceFactory(cacheManager)
+
         connector.setPlayer(player, preparer)
         connector.setQueueNavigator(queueManager)
 
@@ -278,6 +326,7 @@ mediaSessionConnector.setErrorMessageProvider(messageProvider);
         Log.d(LOG_TAG, "Audioservice created")
 
     }
+
 
     var isStartedInForeground = false
     var isStarted = false
@@ -317,6 +366,8 @@ mediaSessionConnector.setErrorMessageProvider(messageProvider);
             session.isActive = false
             session.release()
             player.release()
+            cacheManager.removeLister(cacheListener)
+            cacheManager.stopCacheLoader()
         } catch (e: Exception) {
             Log.e(LOG_TAG, "Error while destroying AudioService")
         }
@@ -378,8 +429,8 @@ mediaSessionConnector.setErrorMessageProvider(messageProvider);
             apiClient.loadFolder(folder, index) { it, err ->
                 checkError(it, err)
                 {
-                    result.sendResult(it.mediaItems)
-                    currentFolder = it.playableItems
+                    result.sendResult(it.getMediaItems(cacheManager))
+                    currentFolder = it.getPlayableItems(cacheManager)
                 }
 
             }
