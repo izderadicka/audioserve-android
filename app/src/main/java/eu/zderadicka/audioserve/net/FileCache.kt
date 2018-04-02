@@ -1,7 +1,9 @@
 package eu.zderadicka.audioserve.net
 
+import android.net.Uri
 import android.util.Log
 import java.io.File
+import java.io.IOException
 import java.net.HttpURLConnection
 import java.net.URL
 import java.util.concurrent.ArrayBlockingQueue
@@ -125,6 +127,7 @@ class FileCache(val cacheDir: File, val maxCacheSize: Long, val baseUrl: String,
     private val listeners = HashSet<Listener>()
     private val queue = ArrayBlockingQueue<CacheItem>(MAX_CACHE_FILES)
     private val loaderThread:Thread
+    private val baseUrlPath: String = URL(baseUrl).path
 
     init {
         index.loadFromDir(cacheDir)
@@ -139,6 +142,23 @@ class FileCache(val cacheDir: File, val maxCacheSize: Long, val baseUrl: String,
     val cacheSize: Long
     get() = index.cacheSize
 
+    fun pathFromUri(uri: Uri): String {
+        val p = uri.path
+        if (p.startsWith(baseUrlPath)) {
+            return p.substring(baseUrlPath.length-1)
+        } else {
+            return p
+        }
+    }
+
+    fun getOrAdd(path: String):CacheItem = synchronized(this) {
+        if (index.contains(path)) {
+            index.get(path)!!
+        } else {
+            addToCache(path)
+        }
+    }
+
     fun checkCache(path: String): Status =
             if (!index.contains(path)) {
                 Status.NotCached
@@ -146,15 +166,18 @@ class FileCache(val cacheDir: File, val maxCacheSize: Long, val baseUrl: String,
                 itemStateConv(index.get(path)?.state)
             }
 
-    fun addToCache(path: String) {
+    fun addToCache(path: String): CacheItem = synchronized(this) {
         val item = CacheItem(path, cacheDir, this)
         index.put(item)
-        if (item.state == CacheItem.State.Complete) return
-        try {
-            queue.add(item)
-        } catch (e: IllegalStateException) {
-            Log.e(LOG_TAG, "Cannot queue $path for loading")
+        if (item.state != CacheItem.State.Complete) {
+            try {
+                queue.add(item)
+            } catch (e: IllegalStateException) {
+                Log.e(LOG_TAG, "Cannot queue $path for loading, cache is full")
+                throw IOException("Cache is full")
+            }
         }
+        item
     }
 
     fun stopAllLoading() = synchronized(this) {
