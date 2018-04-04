@@ -81,6 +81,8 @@ class AudioService : MediaBrowserServiceCompat() {
     lateinit var player: ExoPlayer
     lateinit var notifManager: NotificationsManager
     private var currentFolder : List<MediaItem> = ArrayList<MediaItem>()
+    private var currentMediaItem: MediaItem? = null
+    private var lastKnownPosition = 0L
     private var playQueue: MutableList<MediaItem> = ArrayList<MediaItem>()
     private lateinit var apiClient: ApiClient
 
@@ -243,8 +245,14 @@ class AudioService : MediaBrowserServiceCompat() {
             super.onPlaybackStateChanged(state)
             Log.d(LOG_TAG, "Playback state changed in service ${state}")
             when (state.state) {
-                PlaybackStateCompat.STATE_PLAYING -> notifManager.sendNotification(true)
-                PlaybackStateCompat.STATE_PAUSED -> notifManager.sendNotification()
+                PlaybackStateCompat.STATE_PLAYING -> {
+                    notifManager.sendNotification(true)
+                    lastKnownPosition = state.position
+                }
+                PlaybackStateCompat.STATE_PAUSED -> {
+                    notifManager.sendNotification()
+                    lastKnownPosition = state.position
+                }
             }
         }
 
@@ -253,10 +261,21 @@ class AudioService : MediaBrowserServiceCompat() {
             if (metadata == null || metadata.description ==null || metadata.description.mediaId ==null) return
             val idx = findIndexInQueue(metadata.description.mediaId!!)
             if (idx>=0) {
+
+                //initiate preload of next x items
                 for (i in idx..min(idx+preloadFiles, playQueue.size)) {
                     if (! (playQueue[i].description.extras?.getBoolean(METADATA_KEY_CACHED)?:false)) {
                         cacheManager.ensureCaching(playQueue[i].mediaId!!)
                     }
+                }
+
+                //set current item
+                val item = playQueue[idx]
+                if (item != currentMediaItem) {
+                    val oldItem = currentMediaItem
+                    currentMediaItem = item
+
+                    //TODO save to recently listened, if it is in different folder
                 }
             }
 
@@ -295,6 +314,7 @@ class AudioService : MediaBrowserServiceCompat() {
         session = MediaSessionCompat(this, LOG_TAG)
         session.controller.registerCallback(sessionCallback)
         player = ExoPlayerFactory.newSimpleInstance(this, DefaultTrackSelector())
+
         queueManager = QueueManager(session)
 
         sessionToken = session.sessionToken
@@ -361,8 +381,8 @@ mediaSessionConnector.setErrorMessageProvider(messageProvider);
     override fun onDestroy() {
         super.onDestroy()
         PreferenceManager.getDefaultSharedPreferences(this).unregisterOnSharedPreferenceChangeListener(prefsListener)
+        //TODO - save currentMediaItem to list of currently listened
         try {
-
             session.isActive = false
             session.release()
             player.release()

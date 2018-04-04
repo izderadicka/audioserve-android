@@ -49,7 +49,7 @@ class CacheLoadTest {
             assertNull(it)
         }
 
-        cond.block(3000)
+        cond.block(4000)
 
         assertNotNull(client.token)
         val cacheMaxSize: Long = 100 * 1024 * 1024

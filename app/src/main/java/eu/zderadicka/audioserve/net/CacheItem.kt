@@ -27,8 +27,10 @@ class CacheItem(val path: String, val cacheDir: File, changeListener: Listener? 
         private set
     var totalLength: Long = UNKNOWN_LENGTH
         private set
+    var hasError: Boolean = false
+    var retries: Int = 0
     private var position: Long = 0
-    private var appendStream: OutputStream? = null
+    private var appendStream: FileOutputStream? = null
     private var readStream: InputStream? = null
     private val listeners: HashSet<Listener> = HashSet()
 
@@ -121,23 +123,25 @@ class CacheItem(val path: String, val cacheDir: File, changeListener: Listener? 
         } else if (state == State.Filling) {
             throw IllegalStateException("Already opened for append")
         }
+
         synchronized(this) {
             if (state == State.Empty) {
                 itemTempPath.parentFile.mkdirs()
                 itemTempPath.createNewFile()
-            } else if (state == State.Exists && forceNew) {
-                itemTempPath.delete()
-                itemTempPath.createNewFile()
+            }
+
+            appendStream = FileOutputStream(itemTempPath, true)
+            if (state == State.Exists && forceNew) {
+                appendStream!!.channel.use {
+                    it.truncate(0)
+                }
                 cachedLength = 0
                 totalLength = UNKNOWN_LENGTH
-            } else {
+                appendStream = FileOutputStream(itemTempPath)
 
             }
+            state = State.Filling
         }
-
-
-        appendStream = FileOutputStream(itemTempPath, true)
-        state = State.Filling
     }
 
     fun write(buffer: ByteArray, offset: Int, length: Int) {

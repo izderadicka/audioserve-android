@@ -9,6 +9,7 @@ import eu.zderadicka.audioserve.net.FileCache
 import java.io.File
 
 const val METADATA_KEY_DURATION = MediaMetadataCompat.METADATA_KEY_DURATION
+const val METADATA_KEY_LAST_POSITION = "eu.zderadicka.audioserve.last_position"
 const val METADATA_KEY_BITRATE = "eu.zderadicka.audioserve.bitrate"
 const val METADATA_KEY_TRANSCODED = "eu.zderadicka.audioserve.transcoded"
 const val METADATA_KEY_CACHED = "eu.zderadicka.audioserve.cached"
