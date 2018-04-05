@@ -199,12 +199,14 @@ class FileCache(val cacheDir: File, val maxCacheSize: Long, val baseUrl: String,
         this.loader = null
     }
 
-    fun getOrAdd(path: String):CacheItem = synchronized(this) {
-        if (index.contains(path)) {
+    fun getOrAddAndSchedule(path: String):CacheItem = synchronized(this) {
+        val item = if (index.contains(path)) {
             index.get(path)!!
         } else {
             addToCache(path)
         }
+        scheduleDownload(item)
+        item
     }
 
     fun checkCache(path: String): Status =
@@ -214,17 +216,21 @@ class FileCache(val cacheDir: File, val maxCacheSize: Long, val baseUrl: String,
                 itemStateConv(index.get(path)?.state)
             }
 
-    fun addToCache(path: String): CacheItem = synchronized(this) {
-        val item = CacheItem(path, cacheDir, this)
-        index.put(item)
+    fun scheduleDownload(item: CacheItem) {
         if (item.state != CacheItem.State.Complete) {
             try {
                 queue.add(item)
             } catch (e: IllegalStateException) {
-                Log.e(LOG_TAG, "Cannot queue $path for loading, cache is full")
+                Log.e(LOG_TAG, "Cannot queue ${item.path} for loading, cache is full")
                 throw IOException("Cache is full")
             }
         }
+    }
+
+    fun addToCache(path: String): CacheItem = synchronized(this) {
+        val item = CacheItem(path, cacheDir, this)
+        index.put(item)
+
         item
     }
 

@@ -6,15 +6,11 @@ import android.os.ConditionVariable
 import android.preference.PreferenceManager
 import android.util.Log
 import com.google.android.exoplayer2.C
-import com.google.android.exoplayer2.upstream.DataSink
 import com.google.android.exoplayer2.upstream.DataSource
 import com.google.android.exoplayer2.upstream.DataSpec
-import com.google.android.exoplayer2.upstream.FileDataSourceFactory
-import com.google.android.exoplayer2.upstream.cache.*
 import java.io.EOFException
 import java.io.File
 import java.io.IOException
-import java.io.RandomAccessFile
 import kotlin.math.min
 
 private const val LOG_TAG: String = "CacheManager"
@@ -45,7 +41,7 @@ class CachedFileDataSource(val cache: FileCache) : DataSource, CacheItem.Listene
     override fun open(dataSpec: DataSpec): Long {
         try {
             uri = dataSpec.uri
-            val item = cache.getOrAdd(cache.pathFromUri(dataSpec.uri))
+            val item = cache.getOrAddAndSchedule(cache.pathFromUri(dataSpec.uri))
             this.item = item
             item.addListener(this)
 
@@ -177,7 +173,7 @@ class CacheManager(val context: Context) {
     }
 
     fun ensureCaching(mediaId: String) {
-        cache.getOrAdd(mediaId)
+        cache.getOrAddAndSchedule(mediaId)
     }
 
     companion object {

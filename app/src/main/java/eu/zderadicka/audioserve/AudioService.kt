@@ -247,13 +247,12 @@ class AudioService : MediaBrowserServiceCompat() {
             when (state.state) {
                 PlaybackStateCompat.STATE_PLAYING -> {
                     notifManager.sendNotification(true)
-                    lastKnownPosition = state.position
                 }
                 PlaybackStateCompat.STATE_PAUSED -> {
                     notifManager.sendNotification()
-                    lastKnownPosition = state.position
                 }
             }
+            lastKnownPosition = state.position
         }
 
         override fun onMetadataChanged(metadata: MediaMetadataCompat?) {

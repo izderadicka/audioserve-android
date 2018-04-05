@@ -73,7 +73,7 @@ class CacheLoadTest {
         cache.addListener(listener)
         cond.close()
         for (p in ps) {
-            cache.addToCache(p)
+            cache.getOrAddAndSchedule(p)
         }
 
         cond.block(6000)
@@ -87,6 +87,8 @@ class CacheLoadTest {
         }
 
         assertEquals(0, counter)
+
+        cache.stopLoader()
 
     }
 
