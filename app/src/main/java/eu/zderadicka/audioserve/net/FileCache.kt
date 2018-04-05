@@ -234,11 +234,23 @@ class FileCache(val cacheDir: File, val maxCacheSize: Long, val baseUrl: String,
         item
     }
 
-    fun stopAllLoading(keepLoading: String? = null) = synchronized(this) {
+    fun stopAllLoading(vararg keepLoading: String) = synchronized(this) {
         queue.clear()
-        if (keepLoading == null || loader?.currentPath != keepLoading) {
-            loaderThread!!.interrupt()
+        val shouldInterrupt: Boolean = if (keepLoading.size == 0)  {
+            true
+        } else if (keepLoading[0] == loader?.currentPath) {
+            false
+        } else if (keepLoading.size>1) {
+            val firstItem = index.get(keepLoading[0])
+            if (firstItem == null || firstItem.state != CacheItem.State.Complete) {
+                true
+            } else {
+                ! (loader?.currentPath in keepLoading.slice(1..keepLoading.size))
+            }
+        } else {
+            true
         }
+        if (shouldInterrupt) loaderThread?.interrupt()
 
     }
 

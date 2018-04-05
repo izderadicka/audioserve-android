@@ -42,6 +42,7 @@ import eu.zderadicka.audioserve.net.ApiError
 import eu.zderadicka.audioserve.net.CacheManager
 import eu.zderadicka.audioserve.net.FileCache
 import eu.zderadicka.audioserve.notifications.NotificationsManager
+import java.io.File
 import kotlin.math.min
 
 private const val LOG_TAG = "audioserve-service"
@@ -49,6 +50,7 @@ private const val TIME_AFTER_WHICH_NOT_RESUMING = 20 * 60 * 1000
 private const val FF_MS = 30 * 1000L
 private const val REWIND_MS = 15 * 1000L
 const val MEDIA_FULLY_CACHED = "eu.zderadicka.audioserve.FULLY_CACHED"
+const val MEDIA_CACHE_DELETED = "eu.zderadicka.audioserve.CACHE_DELETED"
 
 
 private class ResultWrapper(val result: MediaBrowserServiceCompat.Result<List<MediaBrowserCompat.MediaItem>>) {
@@ -196,8 +198,9 @@ class AudioService : MediaBrowserServiceCompat() {
 
             var source: MediaSource
             if (folderPosition >= 0) {
-                cacheManager.resetLoading(keepLoading=mediaId)
                 playQueue = currentFolder.slice(folderPosition until currentFolder.size).toMutableList()
+                cacheManager.resetLoading(* playQueue.slice(0 until min(preloadFiles+1, playQueue.size))
+                        .map{it.mediaId!!}.toTypedArray())
                 cacheManager.ensureCaching(mediaId)
                 val ms = playQueue.map { factory.createMediaSource(apiClient.uriFromMediaId(it.mediaId!!)) }.toTypedArray()
                 source = ConcatenatingMediaSource(*ms)
@@ -225,16 +228,22 @@ class AudioService : MediaBrowserServiceCompat() {
 
     private val cacheListener = object: FileCache.Listener {
         override fun onCacheChange(path: String, status: FileCache.Status) {
-            Log.d(LOG_TAG,"Cache change on $path to ${status.name}")
-            if (status == FileCache.Status.FullyCached) {
+
+            fun send_event(cached: Boolean) {
                 val b =Bundle()
                 b.putString(METADATA_KEY_MEDIA_ID, path)
-                session.sendSessionEvent(MEDIA_FULLY_CACHED, b)
+                session.sendSessionEvent(if (cached) MEDIA_FULLY_CACHED else MEDIA_CACHE_DELETED, b)
                 val folderPosition = findIndexInFolder(path)
                 if (folderPosition>=0) {
-                    currentFolder[folderPosition].description.extras?.putBoolean(METADATA_KEY_CACHED, true)
+                    currentFolder[folderPosition].description.extras?.putBoolean(METADATA_KEY_CACHED, cached)
                 }
+            }
+            Log.d(LOG_TAG,"Cache change on $path to ${status.name}")
+            if (status == FileCache.Status.FullyCached) {
+                send_event(true)
 
+            } else if (status == FileCache.Status.NotCached) {
+                send_event(false)
             }
         }
 
@@ -262,7 +271,7 @@ class AudioService : MediaBrowserServiceCompat() {
             if (idx>=0) {
 
                 //initiate preload of next x items
-                for (i in idx..min(idx+preloadFiles, playQueue.size)) {
+                for (i in idx until min(idx+preloadFiles+1, playQueue.size)) {
                     if (! (playQueue[i].description.extras?.getBoolean(METADATA_KEY_CACHED)?:false)) {
                         cacheManager.ensureCaching(playQueue[i].mediaId!!)
                     }

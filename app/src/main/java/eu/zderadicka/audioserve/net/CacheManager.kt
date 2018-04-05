@@ -152,8 +152,8 @@ class CacheManager(val context: Context) {
         cache.stopLoader()
     }
 
-    fun resetLoading(keepLoading:String?) {
-        cache.stopAllLoading(keepLoading)
+    fun resetLoading(vararg keepLoading:String) {
+        cache.stopAllLoading(*keepLoading)
     }
 
     fun isCached(mediaId: String): Boolean {

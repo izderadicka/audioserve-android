@@ -140,10 +140,10 @@ class FolderAdapter(val context: Context,
         if (pendingMediaId != null) updateNowPlaying(pendingMediaId!!)
     }
 
-    fun updatedCached(mediaId: String) {
+    fun updatedCached(mediaId: String, cached: Boolean) {
         val idx = idMap.get(mediaId)
         if (idx != null) {
-            items?.get(idx)?.description?.extras?.putBoolean(METADATA_KEY_CACHED, true)
+            items?.get(idx)?.description?.extras?.putBoolean(METADATA_KEY_CACHED, cached)
             notifyItemChanged(idx)
         }
     }
@@ -215,10 +215,11 @@ class FolderFragment : MediaFragment() {
 
         override fun onSessionEvent(event: String?, extras: Bundle?) {
             super.onSessionEvent(event, extras)
-            if (event == MEDIA_FULLY_CACHED) {
+            if (event == MEDIA_FULLY_CACHED || event == MEDIA_CACHE_DELETED) {
+                val cached = event == MEDIA_FULLY_CACHED
                 val mediaId = extras?.getString(METADATA_KEY_MEDIA_ID)
                 if (mediaId != null) {
-                    adapter.updatedCached(mediaId)
+                    adapter.updatedCached(mediaId, cached)
                 }
             }
         }
