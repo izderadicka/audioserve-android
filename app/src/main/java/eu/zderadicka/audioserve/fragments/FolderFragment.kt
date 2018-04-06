@@ -1,4 +1,4 @@
-package eu.zderadicka.audioserve
+package eu.zderadicka.audioserve.fragments
 
 import android.content.Context
 import android.os.Bundle
@@ -20,6 +20,9 @@ import android.widget.TextView
 import android.widget.Toast
 import eu.zderadicka.audioserve.utils.ifStoppedOrDead
 import android.os.Parcelable
+import eu.zderadicka.audioserve.MEDIA_CACHE_DELETED
+import eu.zderadicka.audioserve.MEDIA_FULLY_CACHED
+import eu.zderadicka.audioserve.R
 import eu.zderadicka.audioserve.data.*
 
 
@@ -31,6 +34,7 @@ const val FOLDER_VIEW_STATE_KEY = "eu.zderadicka.audiserve.folderViewKey"
 
 const val ITEM_TYPE_FOLDER = 0
 const val ITEM_TYPE_FILE = 1
+const val ITEM_TYPE_BOOKMARK = 2
 
 private const val LOG_TAG = "FolderFragment"
 
@@ -43,16 +47,28 @@ class FolderItemViewHolder(itemView: View, val viewType: Int, val clickCB: (Int)
     var bitRateView: TextView? = null
     var transcodedIcon: ImageView? = null
     var cachedIcon: ImageView? = null
+    var positionView: TextView? = null
+    var lastListenedView: TextView? = null
+    var folderPathView: TextView? = null
     var isFile = false
+    private set
+    var isBookmark = false
+    private set
 
     init {
         itemView.setOnClickListener { clickCB(adapterPosition) }
         if (viewType == ITEM_TYPE_FILE) {
             durationView = itemView.findViewById(R.id.durationView)
-            bitRateView = itemView.findViewById(R.id.bitRateView)
+            bitRateView = itemView.findViewById(R.id.lastListenedView)
             transcodedIcon = itemView.findViewById(R.id.transcodedIcon)
             cachedIcon = itemView.findViewById(R.id.cachedIcon)
             isFile = true
+        } else if (viewType == ITEM_TYPE_BOOKMARK) {
+            durationView = itemView.findViewById(R.id.durationView)
+            positionView = itemView.findViewById(R.id.positionView)
+            lastListenedView = itemView.findViewById(R.id.lastListenedView)
+            folderPathView = itemView.findViewById(R.id.folderPathView)
+            isBookmark = true
         }
     }
 }
@@ -72,6 +88,8 @@ class FolderAdapter(val context: Context,
         var viewId = R.layout.folder_item
         if (viewType == ITEM_TYPE_FILE) {
             viewId = R.layout.file_item
+        } else if (viewType == ITEM_TYPE_BOOKMARK) {
+            viewId = R.layout.bookmark_item
         }
         val view = inflater.inflate(viewId, parent, false)
         return FolderItemViewHolder(view, viewType, this::onItemClicked)
@@ -93,8 +111,12 @@ class FolderAdapter(val context: Context,
 
     override fun getItemViewType(position: Int): Int {
         val item = items?.get(position)
-        return if (item != null && item.isPlayable) {
-            ITEM_TYPE_FILE
+        if (item == null) {
+            return ITEM_TYPE_FOLDER
+        }
+        return if ( item.isPlayable ) {
+            if (item.description.extras?.getBoolean(METADATA_KEY_IS_BOOKMARK) == true) ITEM_TYPE_BOOKMARK
+                else ITEM_TYPE_FILE
         } else {
             ITEM_TYPE_FOLDER
         }
@@ -110,9 +132,13 @@ class FolderAdapter(val context: Context,
             holder.itemView.setBackgroundColor(context.resources.getColor(R.color.background_material_light))
         }
 
-        if (holder.isFile && item.isPlayable) {
+        if ((holder.isFile || holder.isBookmark) && item.isPlayable) {
             holder.durationView?.text =
-                    DateUtils.formatElapsedTime((item.description.extras?.getLong(METADATA_KEY_DURATION)?:0)/1000L)
+                    DateUtils.formatElapsedTime((item.description.extras?.getLong(METADATA_KEY_DURATION)
+                            ?: 0) / 1000L)
+        }
+
+        if (holder.isFile) {
             holder.bitRateView?.text =
                     item.description.extras?.getInt(METADATA_KEY_BITRATE)?.toString()?:"?"
 
@@ -127,6 +153,18 @@ class FolderAdapter(val context: Context,
             } else {
                 holder.cachedIcon?.visibility = View.INVISIBLE
             }
+        } else if (holder.isBookmark) {
+            holder.positionView?.text = DateUtils.formatElapsedTime((
+                    item.description.extras?.getLong(METADATA_KEY_LAST_POSITION)?: 0) / 1000L)
+
+            holder.lastListenedView?.text = DateUtils.getRelativeTimeSpanString(
+                    item.description.extras?.getLong(METADATA_KEY_LAST_LISTENED_TIMESTAMP)?:0,
+                    System.currentTimeMillis(),
+                    0
+            )
+
+            holder.folderPathView?.text = item.description.subtitle
+
         }
     }
 
@@ -172,6 +210,7 @@ class FolderAdapter(val context: Context,
 
 interface MediaActivity {
     fun onItemClicked(item: MediaItem)
+    fun onFolderLoaded(folderId: String, error: Boolean)
     val mediaBrowser: MediaBrowserCompat
 }
 
@@ -236,7 +275,7 @@ class FolderFragment : MediaFragment() {
             Log.d(LOG_TAG, "Received folder listing ${children.size} items")
             super.onChildrenLoaded(parentId, children)
             if (children.size==0) {
-                Toast.makeText(this@FolderFragment.context,R.string.empty_folder, Toast.LENGTH_LONG).show()
+                Toast.makeText(this@FolderFragment.context, R.string.empty_folder, Toast.LENGTH_LONG).show()
             }
             this@FolderFragment.adapter.changeData(children)
             scrollToNowPlaying()
@@ -246,7 +285,7 @@ class FolderFragment : MediaFragment() {
         override fun onError(parentId: String) {
             super.onError(parentId)
             Log.e(LOG_TAG, "Error loading folder ${parentId}")
-            Toast.makeText(this@FolderFragment.context,R.string.media_browser_error, Toast.LENGTH_LONG).show()
+            Toast.makeText(this@FolderFragment.context, R.string.media_browser_error, Toast.LENGTH_LONG).show()
             doneLoading(true)
         }
     }
@@ -306,6 +345,8 @@ class FolderFragment : MediaFragment() {
             folderView.getLayoutManager().onRestoreInstanceState(folderViewState)
             folderViewState = null
         }
+
+        mediaActivity?.onFolderLoaded(folderId, error)
     }
 
     private var folderViewState: Parcelable? = null

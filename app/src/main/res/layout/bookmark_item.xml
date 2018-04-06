@@ -23,19 +23,26 @@
         android:id="@+id/separator"
         android:layout_width="match_parent"
         android:layout_height="1dp"
+        android:layout_marginTop="4dp"
         android:background="@color/list_separator"
-        app:layout_constraintTop_toBottomOf="@id/durationView"
-        android:layout_marginTop="8dp"
-        />
+        app:layout_constraintTop_toBottomOf="@+id/positionView" />
+
+    <TextView
+        android:id="@+id/positionView"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="16dp"
+        android:layout_marginTop="2dp"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/folderPathView"
+        tools:text="0:00:00" />
 
     <TextView
         android:id="@+id/durationView"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginStart="16dp"
-        android:layout_marginTop="8dp"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/folderItemName"
+        app:layout_constraintStart_toEndOf="@+id/textView"
+        app:layout_constraintTop_toTopOf="@+id/positionView"
         tools:text="0:00:00" />
 
     <TextView
@@ -45,34 +52,27 @@
         android:layout_marginStart="16dp"
         app:layout_constraintStart_toEndOf="@+id/durationView"
         app:layout_constraintTop_toTopOf="@+id/durationView"
-        tools:text="128" />
+        tools:text="5 minutes ago" />
 
     <TextView
         android:id="@+id/folderPathView"
-        android:layout_width="wrap_content"
+        android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:layout_marginStart="2dp"
-        android:text="kbps"
-        app:layout_constraintStart_toEndOf="@+id/lastListenedView"
-        app:layout_constraintTop_toTopOf="@+id/lastListenedView" />
-
-    <ImageView
-        android:id="@+id/transcodedIcon"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginStart="12dp"
-        android:layout_marginTop="6dp"
-        app:layout_constraintStart_toEndOf="@+id/folderPathView"
+        android:layout_marginEnd="8dp"
+        android:layout_marginStart="16dp"
+        android:layout_marginTop="8dp"
+        android:textAppearance="@style/TextAppearance.AppCompat.Subhead"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/folderItemName"
-        app:srcCompat="@drawable/ic_pulse" />
+        tools:text="author first last/audiobook" />
 
-    <ImageView
-        android:id="@+id/cachedIcon"
+    <TextView
+        android:id="@+id/textView"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginStart="12dp"
-        android:layout_marginTop="6dp"
-        app:layout_constraintStart_toEndOf="@+id/transcodedIcon"
-        app:layout_constraintTop_toBottomOf="@+id/folderItemName"
-        app:srcCompat="@drawable/ic_offline_pin" />
+        android:text="/"
+        app:layout_constraintStart_toEndOf="@+id/positionView"
+        app:layout_constraintTop_toTopOf="@+id/positionView" />
+
 </android.support.constraint.ConstraintLayout>

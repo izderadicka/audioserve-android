@@ -34,9 +34,7 @@ import com.google.android.exoplayer2.source.ExtractorMediaSource
 import com.google.android.exoplayer2.source.MediaSource
 import com.google.android.exoplayer2.trackselection.DefaultTrackSelector
 import com.google.android.exoplayer2.upstream.DefaultHttpDataSourceFactory
-import eu.zderadicka.audioserve.data.ITEM_TYPE_FOLDER
-import eu.zderadicka.audioserve.data.METADATA_KEY_CACHED
-import eu.zderadicka.audioserve.data.METADATA_KEY_MEDIA_ID
+import eu.zderadicka.audioserve.data.*
 import eu.zderadicka.audioserve.net.ApiClient
 import eu.zderadicka.audioserve.net.ApiError
 import eu.zderadicka.audioserve.net.CacheManager
@@ -85,8 +83,10 @@ class AudioService : MediaBrowserServiceCompat() {
     private var currentFolder : List<MediaItem> = ArrayList<MediaItem>()
     private var currentMediaItem: MediaItem? = null
     private var lastKnownPosition = 0L
+    private var lastPositionUpdateTime = 0L
     private var playQueue: MutableList<MediaItem> = ArrayList<MediaItem>()
     private lateinit var apiClient: ApiClient
+    private var seekAfterPrepare: Long? = null
 
     private val playerController = object : DefaultPlaybackController(REWIND_MS, FF_MS, MediaSessionConnector.DEFAULT_REPEAT_TOGGLE_MODES) {
 
@@ -214,6 +214,10 @@ class AudioService : MediaBrowserServiceCompat() {
             if (player.playWhenReady) {
                 playerController.requestAudioFocus()
             }
+            val seekTo = extras?.getLong(METADATA_KEY_LAST_POSITION)
+            if (seekTo != null && seekTo > 1000) {
+                seekAfterPrepare = seekTo
+            }
         }
 
         override fun onPrepareFromUri(uri: Uri?, extras: Bundle?) {
@@ -261,7 +265,22 @@ class AudioService : MediaBrowserServiceCompat() {
                     notifManager.sendNotification()
                 }
             }
-            lastKnownPosition = state.position
+            if (seekAfterPrepare == null) {
+                lastKnownPosition = state.position
+                lastPositionUpdateTime = System.currentTimeMillis() //state.lastPositionUpdateTime
+            }
+
+            if ((state.state == PlaybackStateCompat.STATE_PAUSED || state.state == PlaybackStateCompat.STATE_PLAYING)
+                    && seekAfterPrepare!=null) {
+                val seekTo = seekAfterPrepare!!
+                seekAfterPrepare = null
+                Log.d(LOG_TAG, "Seeking to previous position $seekTo")
+                val ctl = session.controller.transportControls.seekTo(seekTo)
+
+            } else if ((state.state == PlaybackStateCompat.STATE_ERROR)
+                    && seekAfterPrepare!=null) {
+                seekAfterPrepare= null
+            }
         }
 
         override fun onMetadataChanged(metadata: MediaMetadataCompat?) {
@@ -281,9 +300,18 @@ class AudioService : MediaBrowserServiceCompat() {
                 val item = playQueue[idx]
                 if (item != currentMediaItem) {
                     val oldItem = currentMediaItem
+                    item.description.extras?.putBoolean(METADATA_KEY_IS_BOOKMARK, true)
                     currentMediaItem = item
 
-                    //TODO save to recently listened, if it is in different folder
+
+                    if (oldItem!= null) {
+                        val oldPath = File(oldItem.mediaId).parent
+                        val newPath = File(item.mediaId).path
+
+                        if (oldPath != newPath) {
+                            saveRecent(oldItem, applicationContext)
+                        }
+                    }
                 }
             }
 
@@ -291,11 +319,15 @@ class AudioService : MediaBrowserServiceCompat() {
     }
 
     inner class QueueManager(session: MediaSessionCompat) : TimelineQueueNavigator(session) {
-        override fun getMediaDescription(windowIndex: Int): MediaDescriptionCompat {
+        override fun getMediaDescription(windowIndex: Int): MediaDescriptionCompat? {
             if (windowIndex >= 0 && windowIndex < playQueue.size) {
                 return playQueue.get(windowIndex).description
             } else {
-                throw IllegalArgumentException("windowIndex is $windowIndex, but queue size is ${playQueue.size}")
+                val builder = MediaDescriptionCompat.Builder()
+                builder.setMediaId("__Unknown")
+                builder.setTitle("Unknown")
+                return builder.build()
+                //throw IllegalArgumentException("windowIndex is $windowIndex, but queue size is ${playQueue.size}")
             }
         }
     }
@@ -313,6 +345,7 @@ class AudioService : MediaBrowserServiceCompat() {
     companion object {
         const val MEDIA_ROOT_TAG = "__AUDIOSERVE_ROOT__"
         const val EMPTY_ROOT_TAG = "__AUDIOSERVE_EMPTY__"
+        const val RECENTLY_LISTENED_TAG = "__AUDIOSERVE_RECENT"
         private const val COLLECTION_PREFIX = "__COLLECTION_"
         const val ITEM_IS_COLLECTION = "is-collection"
     }
@@ -391,6 +424,9 @@ mediaSessionConnector.setErrorMessageProvider(messageProvider);
         PreferenceManager.getDefaultSharedPreferences(this).unregisterOnSharedPreferenceChangeListener(prefsListener)
         //TODO - save currentMediaItem to list of currently listened
         try {
+            if (currentMediaItem != null) {
+                saveRecent(currentMediaItem!!, applicationContext)
+            }
             session.isActive = false
             session.release()
             player.release()
@@ -441,6 +477,22 @@ mediaSessionConnector.setErrorMessageProvider(messageProvider);
                 }
 
             }
+
+        } else if (parentId == RECENTLY_LISTENED_TAG) {
+            Log.d(LOG_TAG, "Requesting list of recently listened items")
+            val list = ArrayList<MediaItem>()
+            if (currentMediaItem != null) {
+                val mi = currentMediaItem!!
+                mi.description.extras?.putLong(METADATA_KEY_LAST_POSITION, lastKnownPosition)
+                mi.description.extras?.putLong(METADATA_KEY_LAST_LISTENED_TIMESTAMP, lastPositionUpdateTime)
+                list.add(mi)
+            }
+            var path: String? = null
+            if (currentMediaItem != null) {
+                path = File(currentMediaItem!!.mediaId).parent
+            }
+            list.addAll(getRecents(applicationContext,path ))
+            result.sendResult(list)
 
         } else {
             var index = 0

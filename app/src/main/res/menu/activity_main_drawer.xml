@@ -3,7 +3,22 @@
     xmlns:tools="http://schemas.android.com/tools"
     tools:showIn="navigation_view">
 
-    <group android:checkableBehavior="single">
+    <group
+        android:id="@+id/nav_group_main"
+        android:checkableBehavior="single">
+
+        <item
+            android:id="@+id/nav_browse"
+            android:icon="@drawable/ic_menu_browse"
+            android:title="@string/action_browse" />
+        <item
+            android:id="@+id/nav_recent"
+            android:icon="@drawable/ic_menu_recent"
+            android:title="Recently Listened" />
+    </group>
+
+
+    <group android:id="@+id/nav_group_system">
         <item
             android:id="@+id/nav_settings"
             android:icon="@drawable/ic_settings"
@@ -12,27 +27,8 @@
             android:id="@+id/nav_exit"
             android:icon="@drawable/ic_exit"
             android:title="@string/action_exit" />
-        <item
-            android:id="@+id/nav_slideshow"
-            android:icon="@drawable/ic_menu_slideshow"
-            android:title="Slideshow" />
-        <item
-            android:id="@+id/nav_manage"
-            android:icon="@drawable/ic_menu_manage"
-            android:title="Tools" />
+
     </group>
 
-    <item android:title="Communicate">
-        <menu>
-            <item
-                android:id="@+id/nav_share"
-                android:icon="@drawable/ic_menu_share"
-                android:title="Share" />
-            <item
-                android:id="@+id/nav_send"
-                android:icon="@drawable/ic_menu_send"
-                android:title="Send" />
-        </menu>
-    </item>
 
 </menu>

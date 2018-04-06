@@ -1,9 +1,8 @@
-package eu.zderadicka.audioserve
+package eu.zderadicka.audioserve.fragments
 
 
 import android.animation.ValueAnimator
 import android.os.Bundle
-import android.support.v4.app.Fragment
 import android.support.v4.content.ContextCompat
 import android.support.v4.media.MediaMetadataCompat
 import android.support.v4.media.session.MediaControllerCompat
@@ -15,6 +14,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.view.animation.LinearInterpolator
 import android.widget.*
+import eu.zderadicka.audioserve.R
 
 //import kotlinx.android.synthetic.main.fragment_controller.*
 

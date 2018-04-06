@@ -1,4 +1,4 @@
-package eu.zderadicka.audioserve
+package eu.zderadicka.audioserve.fragments
 
 import android.support.v4.app.Fragment
 import android.support.v4.media.session.MediaControllerCompat

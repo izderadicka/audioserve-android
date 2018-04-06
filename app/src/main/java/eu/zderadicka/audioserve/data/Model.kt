@@ -14,6 +14,8 @@ const val METADATA_KEY_BITRATE = "eu.zderadicka.audioserve.bitrate"
 const val METADATA_KEY_TRANSCODED = "eu.zderadicka.audioserve.transcoded"
 const val METADATA_KEY_CACHED = "eu.zderadicka.audioserve.cached"
 const val METADATA_KEY_MEDIA_ID = "eu.zderadicka.audioserve.media_id"
+const val METADATA_KEY_LAST_LISTENED_TIMESTAMP = "eu.zderadicka.audioserve.last_listened_ts"
+const val METADATA_KEY_IS_BOOKMARK = "eu.zderadicka.audioserve.is_bookmark"
 
 const val ITEM_TYPE_FOLDER = "folder"
 const val ITEM_TYPE_AUDIOFILE = "audio"
@@ -112,4 +114,5 @@ class AudioFolder(name: String, path: String, val subfolders: ArrayList<Subfolde
         return data
     }
 }
+
 

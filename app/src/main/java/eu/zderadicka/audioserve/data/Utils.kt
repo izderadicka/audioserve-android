@@ -1,7 +1,9 @@
 package eu.zderadicka.audioserve.data
 
+import android.support.v4.media.MediaBrowserCompat
 import org.json.JSONException
 import org.json.JSONObject
+import java.io.File
 import java.io.InputStream
 
 fun readAsString(stream: InputStream): String {
@@ -104,4 +106,20 @@ fun parseFolderfromJson(data: String, name: String, path: String) :AudioFolder{
     val description = getTypedPath("description")
 
     return AudioFolder(name,path,subfolders,files,cover,description)
+}
+
+private val AUDIO_START_RE = Regex("""^(\d+)?/?audio/(.+)""")
+
+fun folderIdFromFileId(fileId: String): String {
+    val re = AUDIO_START_RE.matchEntire(fileId)
+    if (re != null) {
+        val collectionNo = re.groups.get(1)?.value
+        val prefix = if (collectionNo != null && collectionNo.length>0) {
+            "$collectionNo/"
+        } else ""
+        val path = File(re.groups.get(2)?.value).parent
+        return "${prefix}folder/$path"
+    } else {
+        throw IllegalArgumentException("Agrument is not audio file mediaId")
+    }
 }
