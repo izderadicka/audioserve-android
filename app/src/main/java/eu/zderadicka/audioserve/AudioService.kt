@@ -346,7 +346,8 @@ class AudioService : MediaBrowserServiceCompat() {
         const val MEDIA_ROOT_TAG = "__AUDIOSERVE_ROOT__"
         const val EMPTY_ROOT_TAG = "__AUDIOSERVE_EMPTY__"
         const val RECENTLY_LISTENED_TAG = "__AUDIOSERVE_RECENT"
-        private const val COLLECTION_PREFIX = "__COLLECTION_"
+        const val COLLECTION_PREFIX = "__COLLECTION_"
+        const val SEARCH_PREFIX = "__AUDIOSERVE_SEARCH_"
         const val ITEM_IS_COLLECTION = "is-collection"
     }
 
@@ -439,7 +440,7 @@ mediaSessionConnector.setErrorMessageProvider(messageProvider);
         Log.d(LOG_TAG, "Audioservice destroyed")
     }
 
-
+    private val SEARCH_RE = Regex("""^(\d+)_(.*)""")
     override fun onLoadChildren(parentId: String, result: MediaBrowserServiceCompat.Result<List<MediaBrowserCompat.MediaItem>>) {
 
         @Suppress("NAME_SHADOWING")
@@ -493,6 +494,28 @@ mediaSessionConnector.setErrorMessageProvider(messageProvider);
             }
             list.addAll(getRecents(applicationContext,path ))
             result.sendResult(list)
+
+        } else if (parentId.startsWith(SEARCH_PREFIX)) {
+            val s = parentId.substring(SEARCH_PREFIX.length)
+            val m = SEARCH_RE.matchEntire(s)
+            if (m == null) {
+                result.sendResult(ArrayList())
+                Log.e(LOG_TAG, "Invalid search tag $s")
+            } else {
+                val collection = m.groups.get(1)?.value?.toInt()?:0
+                val query = m.groups.get(2)?.value?:""
+
+                result.detach()
+                apiClient.loadSearch(query, collection) {it, err->
+                    if (it != null) {
+                        result.sendResult(it.getMediaItems(cacheManager))
+                        currentFolder = ArrayList()//it.getPlayableItems(cacheManager)
+
+                    } else {
+                        Log.e(LOG_TAG, "Search failed with $err")
+                    }
+                }
+            }
 
         } else {
             var index = 0

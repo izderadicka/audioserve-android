@@ -1,5 +1,6 @@
 package eu.zderadicka.audioserve
 
+import eu.zderadicka.audioserve.data.collectionFromFolderId
 import eu.zderadicka.audioserve.data.folderIdFromFileId
 import eu.zderadicka.audioserve.net.parseContentRange
 import org.junit.Assert.*
@@ -26,5 +27,18 @@ fun testConvMediaId() {
 
         assertEquals(folderId, folderIdFromFileId(fileId))
         assertEquals(folderId2, folderIdFromFileId(fileId2))
+
+        assertEquals(1, collectionFromFolderId(folderId))
+        assertEquals(0, collectionFromFolderId(folderId2))
+        assertNull(collectionFromFolderId(fileId))
+        assertNull(collectionFromFolderId(fileId2))
+        assertEquals(3, collectionFromFolderId("__COLLECTION_3"))
+    }
+
+    @Test
+fun testRe() {
+        val SEARCH_RE = Regex("""^(\d+)_(.*)""")
+        val m = SEARCH_RE.matchEntire("0_holmes")
+        assertNotNull(m)
     }
 }

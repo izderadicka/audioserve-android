@@ -31,4 +31,7 @@
     <string name="pref_clear_cache_default" translatable="false">500</string>
     <string name="action_browse">Browse Collections</string>
     <string name="recently_listened">Recently Listened</string>
+    <string name="action_search">Search</string>
+    <string name="search_hint">Enter search text</string>
+    <string name="search_warning">Search must be at least 3 characters</string>
 </resources>

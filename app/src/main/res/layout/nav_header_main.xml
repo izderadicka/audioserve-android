@@ -21,6 +21,7 @@
         app:srcCompat="@mipmap/ic_audioserve" />
 
     <TextView
+        android:id="@+id/appNameView"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:paddingTop="@dimen/nav_header_vertical_spacing"

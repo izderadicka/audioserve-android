@@ -195,6 +195,24 @@ class ApiClient private constructor(val context: Context) {
         }, callback)
     }
 
+    fun loadSearch(query: String, collection: Int, callback: (AudioFolder?, ApiError?) -> Unit) {
+        var uri = baseURL
+        if (collection>0) {
+            uri+="$collection/"
+        }
+        uri+= "search"
+
+        var queryUri = Uri.parse(uri).buildUpon().appendQueryParameter("q", query).build()
+        sendRequest(queryUri.toString(), {
+            val f = parseFolderfromJson(it,"search","")
+            if (collection>0) {
+                f.collectionIndex = collection
+            }
+            f
+        }, callback)
+
+    }
+
     fun loadCollections(callback: (ArrayList<String>?, ApiError?) -> Unit) {
         val uri = baseURL + "collections"
         sendRequest(uri, ::parseCollectionsFromJson, callback)
