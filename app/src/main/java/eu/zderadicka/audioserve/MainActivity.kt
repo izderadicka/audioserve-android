@@ -23,6 +23,7 @@ import android.widget.TextView
 import android.widget.Toast
 import eu.zderadicka.audioserve.data.METADATA_KEY_IS_BOOKMARK
 import eu.zderadicka.audioserve.data.METADATA_KEY_LAST_POSITION
+import eu.zderadicka.audioserve.data.METADATA_KEY_MEDIA_ID
 import eu.zderadicka.audioserve.data.folderIdFromFileId
 import eu.zderadicka.audioserve.fragments.*
 import eu.zderadicka.audioserve.utils.ifStoppedOrDead
@@ -32,6 +33,7 @@ import java.io.File
 
 
 private const val LOG_TAG = "Main"
+const val ACTION_NAVIGATE_TO_ITEM = "eu.zderadicka.audioserve.navigate_to_item"
 
 class MainActivity : AppCompatActivity(),
         NavigationView.OnNavigationItemSelectedListener,
@@ -176,7 +178,15 @@ class MainActivity : AppCompatActivity(),
 
 
         if (savedInstanceState == null) {
-            openInitalFolder(AudioService.MEDIA_ROOT_TAG, getString(R.string.collections_title))
+            if (intent != null && intent.action == ACTION_NAVIGATE_TO_ITEM) {
+                val itemId = intent.getStringExtra(METADATA_KEY_MEDIA_ID)
+                val folderId = folderIdFromFileId(itemId)
+                val name = File(folderId).name
+                openInitalFolder(folderId,name)
+
+            } else {
+                openInitalFolder(AudioService.MEDIA_ROOT_TAG, getString(R.string.collections_title))
+            }
         }
 
         controllerFragment = supportFragmentManager.findFragmentById(R.id.playerControls) as ControllerFragment

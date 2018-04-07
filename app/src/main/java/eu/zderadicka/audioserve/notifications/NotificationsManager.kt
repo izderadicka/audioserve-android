@@ -6,20 +6,20 @@ import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
-import android.graphics.Color
 import android.os.Build
 import android.support.annotation.RequiresApi
 import android.support.v4.app.NotificationCompat
 import android.support.v4.content.ContextCompat
 import android.support.v4.media.MediaDescriptionCompat
-import android.support.v4.media.MediaMetadataCompat
 import android.support.v4.media.session.MediaButtonReceiver
 import android.support.v4.media.session.MediaSessionCompat
 import android.support.v4.media.session.PlaybackStateCompat
 import android.util.Log
+import eu.zderadicka.audioserve.ACTION_NAVIGATE_TO_ITEM
 import eu.zderadicka.audioserve.AudioService
 import eu.zderadicka.audioserve.MainActivity
 import eu.zderadicka.audioserve.R
+import eu.zderadicka.audioserve.data.METADATA_KEY_MEDIA_ID
 
 class NotificationsManager(private val mService: AudioService) {
 
@@ -121,7 +121,7 @@ class NotificationsManager(private val mService: AudioService) {
                 .setColor(ContextCompat.getColor(mService, R.color.primary_material_dark))
                 .setSmallIcon(R.drawable.ic_logo_inverse_24dp)
                 // Pending intent that is fired when user clicks on notification.
-                .setContentIntent(createContentIntent())
+                .setContentIntent(createContentIntent(description))
                 // Title - Usually Song name.
                 .setContentTitle(description.title)
                 // Subtitle - Usually Artist name.
@@ -164,8 +164,10 @@ class NotificationsManager(private val mService: AudioService) {
         }
     }
 
-    private fun createContentIntent(): PendingIntent {
+    private fun createContentIntent(description: MediaDescriptionCompat): PendingIntent {
         val openUI = Intent(mService, MainActivity::class.java)
+        openUI.action = ACTION_NAVIGATE_TO_ITEM
+        openUI.putExtra(METADATA_KEY_MEDIA_ID, description.mediaId)
         openUI.flags = Intent.FLAG_ACTIVITY_SINGLE_TOP
         return PendingIntent.getActivity(
                 mService, REQUEST_CODE, openUI, PendingIntent.FLAG_CANCEL_CURRENT)
