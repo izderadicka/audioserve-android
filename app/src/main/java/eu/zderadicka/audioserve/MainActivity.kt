@@ -210,6 +210,18 @@ class MainActivity : AppCompatActivity(),
         folderFragment?.onMediaServiceConnected()
         registerMediaCallback()
 
+        // if we are connected when playing or paused move to the right folder
+        val state = mediaController?.playbackState?.state
+        val mediaId = mediaController?.metadata?.description?.mediaId
+        if ((state==PlaybackStateCompat.STATE_PAUSED || state == PlaybackStateCompat.STATE_PLAYING)
+            && mediaId != null) {
+            Log.d(LOG_TAG, "Play has already item $mediaId move to its folder")
+            val folderId = folderIdFromFileId(mediaId)
+            if (folderId != folderFragment?.folderId) {
+                val name = File(folderId).name
+                openInitalFolder(folderId, name)
+            }
+        }
     }
 
 
@@ -335,5 +347,10 @@ class MainActivity : AppCompatActivity(),
 
     override fun onControllerClick() {
         folderFragment?.scrollToNowPlaying()
+    }
+
+    override fun onNewIntent(intent: Intent?) {
+        super.onNewIntent(intent)
+        Log.d(LOG_TAG, "New intent arrived with action ${intent?.action}")
     }
 }

@@ -221,7 +221,9 @@ interface TopActivity {
 
 
 class FolderFragment : MediaFragment() {
-    private lateinit var folderId: String
+    lateinit var folderId: String
+    private set
+
     private lateinit var folderName: String
 
     private var mediaActivity: MediaActivity? = null
