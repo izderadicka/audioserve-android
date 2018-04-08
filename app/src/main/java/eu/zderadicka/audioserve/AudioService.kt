@@ -30,6 +30,7 @@ import com.google.android.exoplayer2.ext.mediasession.DefaultPlaybackController
 import com.google.android.exoplayer2.ext.mediasession.MediaSessionConnector
 import com.google.android.exoplayer2.ext.mediasession.TimelineQueueNavigator
 import com.google.android.exoplayer2.source.ConcatenatingMediaSource
+import com.google.android.exoplayer2.source.DynamicConcatenatingMediaSource
 import com.google.android.exoplayer2.source.ExtractorMediaSource
 import com.google.android.exoplayer2.source.MediaSource
 import com.google.android.exoplayer2.trackselection.DefaultTrackSelector
@@ -87,6 +88,7 @@ class AudioService : MediaBrowserServiceCompat() {
     private var playQueue: MutableList<MediaItem> = ArrayList<MediaItem>()
     private lateinit var apiClient: ApiClient
     private var seekAfterPrepare: Long? = null
+    private var deletePreviousQueueItem: Int = -1 // delete previous queue Item
 
     private val playerController = object : DefaultPlaybackController(REWIND_MS, FF_MS, MediaSessionConnector.DEFAULT_REPEAT_TOGGLE_MODES) {
 
@@ -174,6 +176,7 @@ class AudioService : MediaBrowserServiceCompat() {
         }
 
         var sourceFactory: ExtractorMediaSource.Factory? = null
+        var currentSourcesList: DynamicConcatenatingMediaSource? = null
 
         fun initSourceFactory(cm: CacheManager, token: String? = null) {
             if (token != null) {
@@ -197,17 +200,20 @@ class AudioService : MediaBrowserServiceCompat() {
             val factory = sourceFactory?: throw IllegalStateException("Session not ready")
 
             var source: MediaSource
+            deletePreviousQueueItem = -1
             if (folderPosition >= 0) {
                 playQueue = currentFolder.slice(folderPosition until currentFolder.size).toMutableList()
                 cacheManager.resetLoading(* playQueue.slice(0 until min(preloadFiles+1, playQueue.size))
                         .map{it.mediaId!!}.toTypedArray())
                 cacheManager.ensureCaching(mediaId)
-                val ms = playQueue.map { factory.createMediaSource(apiClient.uriFromMediaId(it.mediaId!!)) }.toTypedArray()
-                source = ConcatenatingMediaSource(*ms)
-                player.currentTimeline
+                val ms = playQueue.map { factory.createMediaSource(apiClient.uriFromMediaId(it.mediaId!!)) }
+                source = DynamicConcatenatingMediaSource()
+                source.addMediaSources(ms)
+                currentSourcesList =source
             } else {
                 source = factory.createMediaSource(apiClient.uriFromMediaId(mediaId))
                 playQueue.clear()
+                currentSourcesList = null
             }
 
             player.prepare(source)
@@ -220,6 +226,43 @@ class AudioService : MediaBrowserServiceCompat() {
             }
         }
 
+        fun duplicateInQueue(mediaId: String, cb: (queueIndex:Int, playerPosition:Long) -> Unit){
+            if (currentSourcesList != null && currentMediaItem != null && currentMediaItem?.mediaId == mediaId) {
+                val mi = currentMediaItem!!
+                val src = currentSourcesList!!
+                val playerPos = player.currentWindowIndex
+                val queuePos = findIndexInQueue(mi.mediaId!!)
+                if (playerPos == queuePos) {
+                    val duration = mi.description.extras?.getLong(METADATA_KEY_DURATION)?:0L
+                    val pos = player.currentPosition
+                    if (duration -pos > 5000) {
+                        playQueue.add(queuePos+1, mi)
+                        currentSourcesList!!.addMediaSource(playerPos+1,
+                                sourceFactory!!.createMediaSource(apiClient.uriFromMediaId(mi.mediaId!!)))
+                        {cb(queuePos, pos)}
+                    }
+                }
+            }
+
+
+        }
+
+        fun deleteInQueue() {
+            val pos = deletePreviousQueueItem
+            deletePreviousQueueItem = -1
+            if (currentSourcesList != null && pos >=0 && pos == player.currentWindowIndex-1 && pos < playQueue.size -1) {
+                //Double check that we have same mediaIs on both positions
+                val prev = playQueue[pos]
+                val curr = playQueue[pos+1]
+                if (curr.mediaId == prev.mediaId) {
+                    Log.d(LOG_TAG, "Deleting previous item in queue at $pos")
+                    playQueue.removeAt(pos)
+                    currentSourcesList?.removeMediaSource(pos)
+                }
+            }
+
+        }
+
         override fun onPrepareFromUri(uri: Uri?, extras: Bundle?) {
             TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
         }
@@ -230,7 +273,7 @@ class AudioService : MediaBrowserServiceCompat() {
 
     }
 
-    private val cacheListener = object: FileCache.Listener {
+    private val cacheListener: FileCache.Listener = object: FileCache.Listener {
         override fun onCacheChange(path: String, status: FileCache.Status) {
 
             fun send_event(cached: Boolean) {
@@ -245,6 +288,13 @@ class AudioService : MediaBrowserServiceCompat() {
             Log.d(LOG_TAG,"Cache change on $path to ${status.name}")
             if (status == FileCache.Status.FullyCached) {
                 send_event(true)
+                preparer.duplicateInQueue(path){ idx, pos ->
+                    Log.d(LOG_TAG, "Duplicted $idx,$pos, current player pos ${player.currentPosition}")
+                    player.seekTo(idx+1, pos) //TODO find best way for gapless seek +200 looked like better when emulated
+                    deletePreviousQueueItem = idx
+
+                }
+
 
             } else if (status == FileCache.Status.NotCached) {
                 send_event(false)
@@ -280,6 +330,11 @@ class AudioService : MediaBrowserServiceCompat() {
             } else if ((state.state == PlaybackStateCompat.STATE_ERROR)
                     && seekAfterPrepare!=null) {
                 seekAfterPrepare= null
+            }
+
+            if ((state.state == PlaybackStateCompat.STATE_PAUSED || state.state == PlaybackStateCompat.STATE_PLAYING)
+                    && deletePreviousQueueItem>=0 && player.currentWindowIndex == deletePreviousQueueItem+1) {
+                preparer.deleteInQueue()
             }
         }
 
