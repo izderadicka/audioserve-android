@@ -495,6 +495,9 @@ mediaSessionConnector.setErrorMessageProvider(messageProvider);
         //TODO - save currentMediaItem to list of currently listened
         try {
             if (currentMediaItem != null) {
+                //update it with last known possition
+                currentMediaItem?.description?.extras?.putLong(METADATA_KEY_LAST_POSITION, lastKnownPosition)
+                currentMediaItem?.description?.extras?.putLong(METADATA_KEY_LAST_LISTENED_TIMESTAMP, lastPositionUpdateTime)
                 saveRecent(currentMediaItem!!, applicationContext)
             }
             session.isActive = false
