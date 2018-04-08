@@ -140,6 +140,8 @@ class AudioService : MediaBrowserServiceCompat() {
 
         override fun onStop(player: Player) {
             Log.d(LOG_TAG, "Stoping play")
+            deletePreviousQueueItem = -1
+            seekAfterPrepare = null
             needResume = false
             super.onStop(player)
             session.isActive = false
@@ -152,7 +154,8 @@ class AudioService : MediaBrowserServiceCompat() {
         return currentFolder.indexOfFirst { it.mediaId == mediaId }
     }
 
-    private fun findIndexInQueue(mediaId: String): Int {
+    private fun findIndexInQueue(mediaId: String?): Int {
+        if (mediaId == null) return -1
         return playQueue.indexOfFirst { it.mediaId == mediaId }
     }
 
@@ -384,6 +387,17 @@ class AudioService : MediaBrowserServiceCompat() {
                 return builder.build()
                 //throw IllegalArgumentException("windowIndex is $windowIndex, but queue size is ${playQueue.size}")
             }
+        }
+
+        override fun onSkipToNext(player: Player?) {
+            val idx = findIndexInQueue(currentMediaItem?.mediaId)
+            if (idx>=0 && idx+1< playQueue.size) {
+                val nextItem = playQueue[idx+1]
+                if (!cacheManager.isCached(nextItem.mediaId!!)) {
+                    cacheManager.resetLoading(nextItem.mediaId!!)
+                }
+            }
+            super.onSkipToNext(player)
         }
     }
 
