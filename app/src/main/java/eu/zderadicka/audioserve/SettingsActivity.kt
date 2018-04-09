@@ -4,9 +4,7 @@ import android.content.SharedPreferences
 import android.net.Uri
 import android.support.v7.app.AppCompatActivity
 import android.os.Bundle
-import android.preference.EditTextPreference
-import android.preference.Preference
-import android.preference.PreferenceFragment
+import android.preference.*
 import android.widget.Toast
 import eu.zderadicka.audioserve.net.ApiClient
 import eu.zderadicka.audioserve.net.CacheManager
@@ -21,7 +19,14 @@ class SettingsFragment: PreferenceFragment(), SharedPreferences.OnSharedPreferen
         addPreferencesFromResource(R.xml.settings)
 
         for (i in 0 until preferenceScreen.preferenceCount) {
-            updateSummary(preferenceScreen.getPreference(i))
+            val pref = preferenceScreen.getPreference(i)
+            if (pref is PreferenceCategory) {
+                for (j in 0 until pref.preferenceCount) {
+                    updateSummary(pref.getPreference(j))
+                }
+            } else {
+                updateSummary(pref)
+            }
         }
 
         // validate url
@@ -93,17 +98,39 @@ class SettingsFragment: PreferenceFragment(), SharedPreferences.OnSharedPreferen
     }
 
     private fun updateSummary(pref: Preference) {
-        if (pref.key == "pref_server_url" ) {
-            pref.summary = preferenceScreen.sharedPreferences.getString(pref.key, "")
-        } else if (pref.key == "pref_cache_size") {
-            val v  = preferenceScreen.sharedPreferences.getString(pref.key, "0")
-            pref.summary = "$v MB"
-        } else if (pref.key == "pref_shared_secret") {
-            val secret = preferenceScreen.sharedPreferences.getString("pref_shared_secret", null)
-            if (secret != null && secret.length>0) {
-                pref.summary = getString(R.string.pref_shared_secret_summary_set)
-            } else {
-                pref.summary = getString(R.string.pref_shared_secret_summary_empty)
+        val sps = preferenceScreen.sharedPreferences
+        when (pref.key) {
+            "pref_server_url" -> pref.summary = sps.getString(pref.key, "")
+            "pref_cache_size" -> {
+                val v  = sps.getString(pref.key, "0")
+                pref.summary = "$v MB"
+            }
+            "pref_shared_secret" -> {
+                val secret = sps.getString("pref_shared_secret", null)
+                if (secret != null && secret.length>0) {
+                    pref.summary = getString(R.string.pref_shared_secret_summary_set)
+                } else {
+                    pref.summary = getString(R.string.pref_shared_secret_summary_empty)
+                }
+            }
+            "pref_transcoding" -> {
+                if ( pref !is  ListPreference) return
+                val t = sps.getString("pref_transcoding", null)?: return
+                if (t=="0") {
+                    pref.summary=getString(R.string.no_transcoding)
+                } else {
+                    val idx = pref.findIndexOfValue(t)
+                    pref.summary = getString(R.string.pref_transcoding_summary, pref.entries.get(idx))
+                }
+            }
+            "pref_preload" -> {
+                if ( pref !is  ListPreference) return
+                val p = sps.getString("pref_preload", null)?: return
+                if (p == "0") {
+                    pref.summary = "Will not preload any files ahead of current"
+                } else {
+                    pref.summary = getString(R.string.pref_preload_summary, p)
+                }
             }
         }
     }

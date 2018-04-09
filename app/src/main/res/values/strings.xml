@@ -34,4 +34,15 @@
     <string name="action_search">Search</string>
     <string name="search_hint">Enter search text</string>
     <string name="search_warning">Search must be at least 3 characters</string>
+    <string name="prefs_server_title">SERVER</string>
+    <string name="pref_preload_title">Files to cache ahead</string>
+    <string name="prefs_cache_title">CACHE</string>
+    <string name="pref_transcoding_title">Transcoding profile</string>
+    <string name="no_transcoding">No transcoding is done</string>
+    <string name="pref_transcoding_summary">Transcoding profile is %1$s</string>
+    <string name="pref_preload_summary">Will preload %1$s files ahead of current</string>
+    <string name="transcoding_no">No Transcoding</string>
+    <string name="transcoding_low">Low</string>
+    <string name="transcoding_medium">Medium</string>
+    <string name="transcoding_high">High</string>
 </resources>

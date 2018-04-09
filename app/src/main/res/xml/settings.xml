@@ -1,5 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
+<PreferenceCategory
+    android:title="@string/prefs_server_title"
+    android:key="prefs_server">
 
     <EditTextPreference
         android:key="pref_server_url"
@@ -15,16 +18,45 @@
     <Preference android:title="@string/pref_test_connection_title"
         android:key="pref_test_connection"
         android:summary="@string/pref_test_connection_summary"/>
+</PreferenceCategory>
+    <PreferenceCategory
+        android:title="@string/prefs_cache_title"
+        android:key="prefs_cache">
     <EditTextPreference
         android:key="pref_cache_size"
         android:selectAllOnFocus="true"
         android:singleLine="true"
         android:title="@string/pref_cache_size_title"
         android:defaultValue="@string/pref_clear_cache_default"/>
+        <ListPreference
+            android:key="pref_preload"
+            android:title="@string/pref_preload_title"
+            android:entryValues="@array/pref_preload_values"
+            android:entries="@array/pref_preload_values"
+            android:defaultValue="2"
+
+            />
+
     <Preference android:title="@string/pref_clear_cache_title"
         android:key="pref_clear_cache"
         android:summary="@string/pref_clear_cache_summary"
         />
+    </PreferenceCategory>
+
+    <PreferenceCategory
+        android:title="TRANSCODING"
+        android:key="prefs_transcoding"
+        >
+    <ListPreference
+        android:key="pref_transcoding"
+        android:title="@string/pref_transcoding_title"
+        android:entryValues="@array/pref_transcoding_values"
+        android:entries="@array/pref_transcoding_names"
+        android:defaultValue="m"
+        />
+
+    </PreferenceCategory>
+
 
 
 </PreferenceScreen>
