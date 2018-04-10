@@ -1,30 +1,58 @@
 package eu.zderadicka.audioserve.net
 
 import android.content.Context
+import android.content.SharedPreferences
 import android.net.Uri
 import android.os.ConditionVariable
 import android.preference.PreferenceManager
+import android.support.v4.media.MediaBrowserCompat
 import android.util.Log
 import com.google.android.exoplayer2.C
 import com.google.android.exoplayer2.upstream.DataSource
 import com.google.android.exoplayer2.upstream.DataSpec
+import eu.zderadicka.audioserve.data.METADATA_KEY_BITRATE
 import java.io.EOFException
 import java.io.File
 import java.io.IOException
 import kotlin.math.min
 
 private const val LOG_TAG: String = "CacheManager"
-private const val MAX_CACHED_FILE_SIZE: Long =  250*1024*1024
 private const val DEFAULT_CACHE_SIZE_MB: Int = 500
 private const val DEFAULT_CACHE_DIR = "exoplayer"
 private const val TIME_TO_WAIT_FOR_CACHE:Long = 10000
 
+const val TRANSCODE_LOW = "l"
+const val TRANSCODE_MEDIUM = "m"
+const val TRANSCODE_HIGH = "h"
+const val TRANSCODE_QUERY = "trans"
+
+
+fun transcodingFromPrefs(context: Context) :String? {
+    val t = PreferenceManager.getDefaultSharedPreferences(context).getString("pref_transcoding", "0")
+    when (t) {
+        TRANSCODE_LOW, TRANSCODE_MEDIUM, TRANSCODE_HIGH -> return t
+        else -> return null
+    }
+}
+
+fun transcodingLimit(transcode: String?): Int {
+    val bitrate = when (transcode) {
+        TRANSCODE_LOW -> ApiClient.transcodingBitrates.low
+        TRANSCODE_MEDIUM -> ApiClient.transcodingBitrates.medium
+        TRANSCODE_HIGH -> ApiClient.transcodingBitrates.high
+        else -> return Int.MAX_VALUE
+    }
+
+    return (bitrate.toDouble() * 1.2).toInt()
+}
+
 class CachedFileDataSourceFactory(val cache: FileCache) : DataSource.Factory {
+
+
     override fun createDataSource(): DataSource {
         return CachedFileDataSource(cache)
     }
 }
-
 
 class CachedFileDataSource(val cache: FileCache) : DataSource, CacheItem.Listener {
 
@@ -41,7 +69,8 @@ class CachedFileDataSource(val cache: FileCache) : DataSource, CacheItem.Listene
     override fun open(dataSpec: DataSpec): Long {
         try {
             uri = dataSpec.uri
-            val item = cache.getOrAddAndSchedule(cache.pathFromUri(dataSpec.uri))
+            val transcode = uri!!.getQueryParameter(TRANSCODE_QUERY)
+            val item = cache.getOrAddAndSchedule(cache.pathFromUri(dataSpec.uri), transcode)
             this.item = item
             item.addListener(this)
 
@@ -134,6 +163,28 @@ class CacheManager(val context: Context) {
 
     val cacheDir = File(context.applicationContext.cacheDir, DEFAULT_CACHE_DIR)
     val cache:FileCache
+    var transcode: String?
+    private var _transcodeLimit: Int? = null
+    val transcodeLimit: Int
+    get (){
+        if (_transcodeLimit == null) {
+            _transcodeLimit =  transcodingLimit(transcode)
+        }
+        return _transcodeLimit!!
+    }
+
+    private fun resetTranscodeLimit() {
+        _transcodeLimit = null
+    }
+
+    private val prefsListener = object : SharedPreferences.OnSharedPreferenceChangeListener {
+        override fun onSharedPreferenceChanged(sharedPreferences: SharedPreferences, key: String?) {
+            if (key == "pref_transcoding") {
+                transcode = transcodingFromPrefs(context)
+                resetTranscodeLimit()
+            }
+        }
+        }
 
     init {
         val dir = context.applicationContext.cacheDir
@@ -141,6 +192,8 @@ class CacheManager(val context: Context) {
                 DEFAULT_CACHE_SIZE_MB.toString()).toLong() * 1024 * 1024
         val baseUrl:String = PreferenceManager.getDefaultSharedPreferences(context).getString("pref_server_url","")
         cache =  FileCache(cacheDir,cacheSize, baseUrl)
+        transcode = transcodingFromPrefs(context)
+        PreferenceManager.getDefaultSharedPreferences(context).registerOnSharedPreferenceChangeListener(prefsListener)
         Log.d(LOG_TAG, "Cache initialized in directory ${dir.absolutePath}")
     }
 
@@ -148,8 +201,10 @@ class CacheManager(val context: Context) {
         cache.startLoader(token)
     }
 
-    fun stopCacheLoader() {
+    fun onDestroy() {
+        PreferenceManager.getDefaultSharedPreferences(context).unregisterOnSharedPreferenceChangeListener(prefsListener)
         cache.stopLoader()
+        cache.removeAllListeners()
     }
 
     fun resetLoading(vararg keepLoading:String) {
@@ -172,8 +227,13 @@ class CacheManager(val context: Context) {
         cache.removeListener(l)
     }
 
-    fun ensureCaching(mediaId: String) {
-        cache.getOrAddAndSchedule(mediaId)
+    fun shouldTranscode(item: MediaBrowserCompat.MediaItem): String? {
+        val itemBitrate = item.description.extras?.getInt(METADATA_KEY_BITRATE)?: Int.MAX_VALUE
+        return if (itemBitrate > transcodeLimit)transcode else null
+    }
+
+    fun ensureCaching(item: MediaBrowserCompat.MediaItem) {
+        cache.getOrAddAndSchedule(item.mediaId!!, shouldTranscode(item))
     }
 
     companion object {
@@ -186,6 +246,4 @@ class CacheManager(val context: Context) {
             }
         }
     }
-
-
 }

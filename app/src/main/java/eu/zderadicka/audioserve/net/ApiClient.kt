@@ -12,6 +12,7 @@ import com.android.volley.toolbox.Volley
 import eu.zderadicka.audioserve.data.AudioFolder
 import eu.zderadicka.audioserve.data.parseCollectionsFromJson
 import eu.zderadicka.audioserve.data.parseFolderfromJson
+import eu.zderadicka.audioserve.data.parseTranscodingsFromJson
 import java.io.File
 import java.io.UnsupportedEncodingException
 import java.nio.charset.Charset
@@ -62,13 +63,7 @@ internal fun encodeSecret(secret: String):String {
 
 }
 
-//internal fun audioUri(path: String) : Uri {
-//    val segments = path.split("/")
-//    val builder =  Uri.parse(BASE_URI).buildUpon()
-//    builder.appendPath("audio")
-//    for (s in segments) builder.appendPath(s)
-//    return builder.build()
-//}
+data class TranscodingLimits(var low:Int, var medium:Int, var high: Int)
 
 class ApiClient private constructor(val context: Context) {
 
@@ -78,7 +73,8 @@ class ApiClient private constructor(val context: Context) {
     // but also consider offline case when login fails always - so store first request here and send
     // after login success or failure
     var loginDone = false
-    val  unsentRequests: ArrayList<Request<*>> = ArrayList()
+    val unsentRequests: ArrayList<Request<*>> = ArrayList()
+
 
 
     // getApplicationContext() is key, it keeps you from leaking the
@@ -174,8 +170,8 @@ class ApiClient private constructor(val context: Context) {
         addToRequestQueue(request)
     }
 
-    fun uriFromMediaId(mediaId: String): Uri {
-        return Uri.parse(baseURL+mediaId)
+    fun uriFromMediaId(mediaId: String, transcode: String? = null): Uri {
+        return Uri.parse(baseURL+mediaId+ if (transcode != null) "?${TRANSCODE_QUERY}=$transcode" else "")
     }
 
 
@@ -218,6 +214,11 @@ class ApiClient private constructor(val context: Context) {
         sendRequest(uri, ::parseCollectionsFromJson, callback)
     }
 
+    fun loadTranscodings(callback: (TranscodingLimits?, ApiError?) -> Unit) {
+        val uri = baseURL + "transcodings"
+        sendRequest(uri, ::parseTranscodingsFromJson, callback)
+    }
+
     fun login(cb: (ApiError?) -> Unit) {
         fun afterLogin() {
             synchronized(this@ApiClient) {
@@ -233,6 +234,11 @@ class ApiClient private constructor(val context: Context) {
                     cb(null)
                     token = it
                     afterLogin()
+                    loadTranscodings{ tr, err ->
+                        if (tr!=null) {
+                            transcodingBitrates=tr
+                        }
+                    }
                 },
                 {
                     Log.e(LOG_TAG, "Login error: $it")
@@ -284,5 +290,8 @@ class ApiClient private constructor(val context: Context) {
                     instance!!
 
             }
+
+        var transcodingBitrates = TranscodingLimits(32, 48, 64)
+        private set
     }
 }

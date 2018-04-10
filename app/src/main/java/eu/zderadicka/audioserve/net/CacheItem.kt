@@ -6,6 +6,7 @@ import java.util.HashSet
 import kotlin.properties.Delegates
 
 const val UNKNOWN_LENGTH: Long = -1L
+
 internal const val TMP_FILE_SUFFIX = ".\$TMP\$"
 
 class CacheItem(val path: String, val cacheDir: File, changeListener: Listener? = null) : Closeable {
@@ -33,6 +34,8 @@ class CacheItem(val path: String, val cacheDir: File, changeListener: Listener? 
     private var appendStream: FileOutputStream? = null
     private var readStream: InputStream? = null
     private val listeners: HashSet<Listener> = HashSet()
+
+    var transcode: String? = null
 
     val itemPath by lazy {
         File(cacheDir, path)

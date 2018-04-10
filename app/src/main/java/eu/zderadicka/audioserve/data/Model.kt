@@ -26,7 +26,7 @@ data class TypedPath(val path:String, val mime:String)
 
 class Subfolder(name: String, path: String): Entry(name,path)
 class AudioFile(name: String,  path:String, val meta: MediaMeta?,
-                val mime: String, val transcoded: Boolean): Entry(name, path)
+                val mime: String): Entry(name, path)
 
 class AudioFolder(name: String, path: String, val subfolders: ArrayList<Subfolder>?, val files: ArrayList<AudioFile>?,
              val cover: TypedPath?, val info: TypedPath?): Entry(name,path) {
@@ -82,9 +82,12 @@ class AudioFolder(name: String, path: String, val subfolders: ArrayList<Subfolde
         if (cache != null && cache.isCached(mediaId)) {
             extras.putBoolean(METADATA_KEY_CACHED, true)
         }
-        extras.putBoolean(METADATA_KEY_TRANSCODED, f.transcoded)
         descBuilder.setExtras(extras)
-        return MediaItem(descBuilder.build(), MediaItem.FLAG_PLAYABLE)
+        val item =  MediaItem(descBuilder.build(), MediaItem.FLAG_PLAYABLE)
+        if (cache?.shouldTranscode(item) != null) {
+            item.description.extras?.putBoolean(METADATA_KEY_TRANSCODED, true)
+        }
+        return item
     }
 
     private fun prefixPath(p:String, type: String): String {

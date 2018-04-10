@@ -24,6 +24,7 @@ private const val MAX_CACHE_FILES = 1000
 private const val MIN_FILE_SIZE: Long = 5 * 1024 * 1024 // If we do not know file size assume at least 5MB
 private const val MAX_DOWNLOAD_RETRIES = 3
 private const val NOT_CONNECTED_WAIT = 10000L // wait ms if phone is not connected
+private const val MAX_CACHED_FILE_SIZE: Long =  250*1024*1024
 
 
 private val CONTENT_RANGE_RE = Regex("""bytes\s+(\d+)-(\d+)/(\d+)\s*""")
@@ -199,13 +200,13 @@ class FileCache(val cacheDir: File, val maxCacheSize: Long, val baseUrl: String,
         this.loader = null
     }
 
-    fun getOrAddAndSchedule(path: String):CacheItem = synchronized(this) {
+    fun getOrAddAndSchedule(path: String, transcode: String?):CacheItem = synchronized(this) {
         val item = if (index.contains(path)) {
             index.get(path)!!
         } else {
             addToCache(path)
         }
-        scheduleDownload(item)
+        scheduleDownload(item, transcode)
         item
     }
 
@@ -216,9 +217,13 @@ class FileCache(val cacheDir: File, val maxCacheSize: Long, val baseUrl: String,
                 itemStateConv(index.get(path)?.state)
             }
 
-    fun scheduleDownload(item: CacheItem) {
+    fun scheduleDownload(item: CacheItem, transcode: String?) {
         if (item.state != CacheItem.State.Complete) {
             try {
+                // set transcode only for item that is not partly loaded
+                if (item.state == CacheItem.State.Empty) {
+                    item.transcode = transcode
+                }
                 queue.add(item)
             } catch (e: IllegalStateException) {
                 Log.e(LOG_TAG, "Cannot queue ${item.path} for loading, cache is full")
@@ -265,6 +270,7 @@ class FileCache(val cacheDir: File, val maxCacheSize: Long, val baseUrl: String,
 
     fun addListener(l: Listener) = listeners.add(l)
     fun removeListener(l: Listener) = listeners.remove(l)
+    fun removeAllListeners()= listeners.clear()
 
     override fun onItemChange(path: String, state: CacheItem.State) {
         for (l in listeners) {
@@ -362,7 +368,11 @@ class FileLoader(private val queue: BlockingDeque<CacheItem>,
                 // Check that item is not complete or filling elsewhere
                 if (item.state == CacheItem.State.Complete ||
                         item.state == CacheItem.State.Filling) continue
-                val url = URL(baseUrl+ if (item.path.startsWith("/")) item.path.substring(1) else item.path)
+                var urlStr = baseUrl+ if (item.path.startsWith("/")) item.path.substring(1) else item.path
+                if (item.transcode != null) {
+                    urlStr += "?${TRANSCODE_QUERY}=${item.transcode}"
+                }
+                val url = URL(urlStr)
                 val conn = url.openConnection() as HttpURLConnection
                 Log.d(LOG_TAG, "Started download of $url")
                 try {
@@ -384,12 +394,20 @@ class FileLoader(private val queue: BlockingDeque<CacheItem>,
                         try {
                             val contentType = conn.contentType
                             val contentLength = conn.contentLength
+                            if (contentLength > MAX_CACHED_FILE_SIZE) {
+                                Log.e(LOG_TAG, "File is bigger then max limit")
+                                complete=true
+                                break
+                            }
                             val buf = ByteArray(LOADER_BUFFER_SIZE)
                             conn.inputStream.use {
                                 while (true) {
                                     val read = it.read(buf)
                                     if (read < 0) {
                                         complete = true
+                                        break
+                                    } else if (read + item.cachedLength > MAX_CACHED_FILE_SIZE) {
+                                        complete=true
                                         break
                                     }
                                     item.write(buf, 0, read)

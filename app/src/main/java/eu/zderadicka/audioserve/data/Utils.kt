@@ -2,6 +2,7 @@ package eu.zderadicka.audioserve.data
 
 import android.support.v4.media.MediaBrowserCompat
 import eu.zderadicka.audioserve.AudioService
+import eu.zderadicka.audioserve.net.TranscodingLimits
 import org.json.JSONException
 import org.json.JSONObject
 import java.io.File
@@ -38,6 +39,15 @@ fun parseCollectionsFromJson(data: String): ArrayList<String> {
     return out
 }
 
+fun parseTranscodingsFromJson(data: String): TranscodingLimits {
+    val json = JSONObject(data)
+    val low = json.getJSONObject("low").getInt("bitrate")
+    val medium = json.getJSONObject("medium").getInt("bitrate")
+    val high = json.getJSONObject("high").getInt("bitrate")
+
+    return TranscodingLimits(low, medium, high)
+}
+
 
 
 
@@ -56,7 +66,7 @@ fun parseFolderfromJson(data: String, name: String, path: String) :AudioFolder{
             val name = o.getString("name")!!
             val path = o.getString("path")!!
             val mime = o.getString("mime")!!
-            val transcoded = o.getBoolean("trans")
+
             val metaObject = o.getJSONObject("meta")
             val meta = if (metaObject != null) {
                 val duration = metaObject.getInt("duration")
@@ -65,7 +75,7 @@ fun parseFolderfromJson(data: String, name: String, path: String) :AudioFolder{
             } else {
                 null
             }
-            t.add(AudioFile(name,path,meta,mime,transcoded))
+            t.add(AudioFile(name,path,meta,mime))
         }
         t
     } else {

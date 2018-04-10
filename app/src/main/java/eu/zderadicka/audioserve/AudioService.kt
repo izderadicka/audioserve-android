@@ -87,6 +87,7 @@ class AudioService : MediaBrowserServiceCompat() {
     private var lastPositionUpdateTime = 0L
     private var playQueue: MutableList<MediaItem> = ArrayList<MediaItem>()
     private lateinit var apiClient: ApiClient
+    private var preloadFiles: Int = 2
     private var seekAfterPrepare: Long? = null
     private var deletePreviousQueueItem: Int = -1 // delete previous queue Item
 
@@ -160,7 +161,7 @@ class AudioService : MediaBrowserServiceCompat() {
     }
 
 
-    private val preloadFiles: Int = 2
+
     private val preparer = object : MediaSessionConnector.PlaybackPreparer {
         override fun onPrepareFromSearch(query: String?, extras: Bundle?) {
             TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
@@ -200,33 +201,40 @@ class AudioService : MediaBrowserServiceCompat() {
             }
             val folderPosition = findIndexInFolder(mediaId)
 
-            val factory = sourceFactory?: throw IllegalStateException("Session not ready")
 
-            var source: MediaSource
             deletePreviousQueueItem = -1
             if (folderPosition >= 0) {
+                val factory = sourceFactory?: throw IllegalStateException("Session not ready")
+                var source: MediaSource
                 playQueue = currentFolder.slice(folderPosition until currentFolder.size).toMutableList()
                 cacheManager.resetLoading(* playQueue.slice(0 until min(preloadFiles+1, playQueue.size))
                         .map{it.mediaId!!}.toTypedArray())
-                cacheManager.ensureCaching(mediaId)
-                val ms = playQueue.map { factory.createMediaSource(apiClient.uriFromMediaId(it.mediaId!!)) }
+                cacheManager.ensureCaching(currentFolder[folderPosition])
+                val ms = playQueue.map {
+                    val transcode = cacheManager.shouldTranscode(it)
+                    factory.createMediaSource(apiClient.uriFromMediaId(it.mediaId!!, transcode))
+                }
                 source = DynamicConcatenatingMediaSource()
                 source.addMediaSources(ms)
                 currentSourcesList =source
+
+                player.prepare(source)
+                if (player.playWhenReady) {
+                    playerController.requestAudioFocus()
+                }
+                val seekTo = extras?.getLong(METADATA_KEY_LAST_POSITION)
+                if (seekTo != null && seekTo > 1000) {
+                    seekAfterPrepare = seekTo
+                }
+
+
             } else {
-                source = factory.createMediaSource(apiClient.uriFromMediaId(mediaId))
+                //source = factory.createMediaSource(apiClient.uriFromMediaId(mediaId))
+                Log.e(LOG_TAG, "Folder is not synched - cannot played")
                 playQueue.clear()
                 currentSourcesList = null
             }
 
-            player.prepare(source)
-            if (player.playWhenReady) {
-                playerController.requestAudioFocus()
-            }
-            val seekTo = extras?.getLong(METADATA_KEY_LAST_POSITION)
-            if (seekTo != null && seekTo > 1000) {
-                seekAfterPrepare = seekTo
-            }
         }
 
         fun duplicateInQueue(mediaId: String, cb: (queueIndex:Int, playerPosition:Long) -> Unit){
@@ -350,7 +358,7 @@ class AudioService : MediaBrowserServiceCompat() {
                 //initiate preload of next x items
                 for (i in idx until min(idx+preloadFiles+1, playQueue.size)) {
                     if (! (playQueue[i].description.extras?.getBoolean(METADATA_KEY_CACHED)?:false)) {
-                        cacheManager.ensureCaching(playQueue[i].mediaId!!)
+                        cacheManager.ensureCaching(playQueue[i])
                     }
                 }
 
@@ -402,8 +410,13 @@ class AudioService : MediaBrowserServiceCompat() {
     }
 
     private val prefsListener = object : SharedPreferences.OnSharedPreferenceChangeListener {
-        override fun onSharedPreferenceChanged(sharedPreferences: SharedPreferences?, key: String?) {
-            apiClient.loadPreferences()
+        override fun onSharedPreferenceChanged(sharedPreferences: SharedPreferences, key: String?) {
+            when (key) {
+                "pref_server_url", "pref_shared_secret" -> apiClient.loadPreferences()
+                "pref_preload" -> {
+                    preloadFiles = sharedPreferences.getString("pref_preload","2").toInt()
+                }
+            }
         }
 
     }
@@ -422,6 +435,7 @@ class AudioService : MediaBrowserServiceCompat() {
 
     override fun onCreate() {
         super.onCreate()
+        preloadFiles = PreferenceManager.getDefaultSharedPreferences(this).getString("pref_preload","2").toInt()
         session = MediaSessionCompat(this, LOG_TAG)
         session.controller.registerCallback(sessionCallback)
         player = ExoPlayerFactory.newSimpleInstance(this, DefaultTrackSelector())
@@ -503,8 +517,8 @@ mediaSessionConnector.setErrorMessageProvider(messageProvider);
             session.isActive = false
             session.release()
             player.release()
-            cacheManager.removeLister(cacheListener)
-            cacheManager.stopCacheLoader()
+
+            cacheManager.onDestroy()
         } catch (e: Exception) {
             Log.e(LOG_TAG, "Error while destroying AudioService")
         }
