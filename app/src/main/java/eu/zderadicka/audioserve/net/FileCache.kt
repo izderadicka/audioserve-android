@@ -7,6 +7,7 @@ import android.content.IntentFilter
 import android.net.ConnectivityManager
 import android.net.Uri
 import android.os.ConditionVariable
+import android.os.FileObserver
 import android.util.Log
 import eu.zderadicka.audioserve.utils.isNetworkConnected
 import java.io.File
@@ -74,6 +75,11 @@ class CacheIndex(val maxCacheSize: Long, private val changeListener: CacheItem.L
         for (e in map) {
             e.value.destroy()
         }
+        map.clear()
+        cacheSize = 0
+    }
+
+    fun fastClear() {
         map.clear()
         cacheSize = 0
     }
@@ -158,12 +164,41 @@ class FileCache(val cacheDir: File, val maxCacheSize: Long, val baseUrl: String,
     private var loader:FileLoader? = null
     private val baseUrlPath: String = URL(baseUrl).path
 
+    private var dirObserver: FileObserver? = null;
+
     init {
         if (!cacheDir.exists()) {
             cacheDir.mkdir()
         }
+        dirObserver = object: FileObserver(cacheDir.absolutePath, FileObserver.DELETE_SELF) {
+            override fun onEvent(event: Int, path: String?) {
+                Log.d(LOG_TAG, "Dir event is $event, $path")
+                if (event and FileObserver.DELETE_SELF >0) resetIndex()
+            }
+
+        }
+        dirObserver?.startWatching()
+
         index.loadFromDir(cacheDir)
         if (token != null) startLoader(token)
+    }
+
+    private fun resetIndex() {
+        Log.i(LOG_TAG, "Reseting cache")
+        synchronized(this) {
+            dirObserver?.stopWatching()
+            if (!cacheDir.exists()) {
+                cacheDir.mkdir()
+            }
+            index.clear()
+            dirObserver = object : FileObserver(cacheDir.absolutePath, FileObserver.DELETE_SELF) {
+                override fun onEvent(event: Int, path: String?) {
+                    Log.d(LOG_TAG, "Dir event is $event, $path")
+                    if (event and FileObserver.DELETE_SELF >0) resetIndex()
+                }
+            }
+            dirObserver?.startWatching()
+        }
     }
 
     val numberOfFiles: Int
