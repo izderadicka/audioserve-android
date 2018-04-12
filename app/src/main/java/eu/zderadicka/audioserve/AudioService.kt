@@ -514,7 +514,7 @@ mediaSessionConnector.setErrorMessageProvider(messageProvider);
         PreferenceManager.getDefaultSharedPreferences(this).unregisterOnSharedPreferenceChangeListener(prefsListener)
         //TODO - save currentMediaItem to list of currently listened
         try {
-            if (currentMediaItem != null) {
+            if (currentMediaItem != null && lastPositionUpdateTime>0) {
                 //update it with last known possition
                 currentMediaItem?.description?.extras?.putLong(METADATA_KEY_LAST_POSITION, lastKnownPosition)
                 currentMediaItem?.description?.extras?.putLong(METADATA_KEY_LAST_LISTENED_TIMESTAMP, lastPositionUpdateTime)
