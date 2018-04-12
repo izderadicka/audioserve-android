@@ -189,7 +189,7 @@ class CacheManager(val context: Context) {
 
     init {
         val cacheBase = PreferenceManager.getDefaultSharedPreferences(context).getString("pref_cache_location",
-                null)!!
+                context.cacheDir.absolutePath)!!
         cacheDir = File(File(cacheBase), MEDIA_CACHE_DIR)
         val cacheSize: Long = PreferenceManager.getDefaultSharedPreferences(context).getString("pref_cache_size",
                 DEFAULT_CACHE_SIZE_MB.toString()).toLong() * 1024 * 1024
