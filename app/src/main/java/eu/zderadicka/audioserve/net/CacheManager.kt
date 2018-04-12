@@ -18,7 +18,7 @@ import kotlin.math.min
 
 private const val LOG_TAG: String = "CacheManager"
 private const val DEFAULT_CACHE_SIZE_MB: Int = 500
-private const val DEFAULT_CACHE_DIR = "exoplayer"
+const val MEDIA_CACHE_DIR = "exoplayer"
 private const val TIME_TO_WAIT_FOR_CACHE:Long = 10000
 
 const val TRANSCODE_LOW = "l"
@@ -161,7 +161,8 @@ class CachedFileDataSource(val cache: FileCache) : DataSource, CacheItem.Listene
 
 class CacheManager(val context: Context) {
 
-    val cacheDir = File(context.applicationContext.cacheDir, DEFAULT_CACHE_DIR)
+
+    val cacheDir: File
     val cache:FileCache
     var transcode: String?
     private var _transcodeLimit: Int? = null
@@ -187,14 +188,16 @@ class CacheManager(val context: Context) {
         }
 
     init {
-        val dir = context.applicationContext.cacheDir
+        val cacheBase = PreferenceManager.getDefaultSharedPreferences(context).getString("pref_cache_location",
+                null)!!
+        cacheDir = File(File(cacheBase), MEDIA_CACHE_DIR)
         val cacheSize: Long = PreferenceManager.getDefaultSharedPreferences(context).getString("pref_cache_size",
                 DEFAULT_CACHE_SIZE_MB.toString()).toLong() * 1024 * 1024
         val baseUrl:String = PreferenceManager.getDefaultSharedPreferences(context).getString("pref_server_url","")
         cache =  FileCache(cacheDir,cacheSize, baseUrl)
         transcode = transcodingFromPrefs(context)
         PreferenceManager.getDefaultSharedPreferences(context).registerOnSharedPreferenceChangeListener(prefsListener)
-        Log.d(LOG_TAG, "Cache initialized in directory ${dir.absolutePath}")
+        Log.d(LOG_TAG, "Cache initialized in directory ${cacheDir.absolutePath}")
     }
 
     fun startCacheLoader(token: String) {
@@ -240,7 +243,14 @@ class CacheManager(val context: Context) {
 
         @Synchronized fun clearCache(context: Context) {
             try {
-                File(context.applicationContext.cacheDir, DEFAULT_CACHE_DIR).deleteRecursively()
+                val cacheLocation = PreferenceManager.getDefaultSharedPreferences(context)
+                        .getString("pref_cache_location", null)
+                if (cacheLocation == null) return
+                val cacheDir = File(cacheLocation, MEDIA_CACHE_DIR)
+                val res = cacheDir.deleteRecursively()
+                if (! res) {
+                    Log.e(LOG_TAG,"Failed to delete cache directory")
+                }
             } catch (e: Exception) {
                 Log.e(LOG_TAG, "Cannot delete cache due  error $e")
             }

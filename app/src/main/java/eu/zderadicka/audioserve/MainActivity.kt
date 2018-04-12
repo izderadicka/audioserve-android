@@ -341,6 +341,7 @@ class MainActivity : AppCompatActivity(),
         // Handle navigation view item clicks here.
         when (item.itemId) {
             R.id.nav_settings -> {
+                stopPlayback() //need to stop as some setting cannot be changed with player sitting on the file
                 val intent = Intent(this, SettingsActivity::class.java)
                 startActivity(intent)
             }

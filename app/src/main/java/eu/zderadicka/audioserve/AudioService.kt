@@ -416,6 +416,12 @@ class AudioService : MediaBrowserServiceCompat() {
                 "pref_preload" -> {
                     preloadFiles = sharedPreferences.getString("pref_preload","2").toInt()
                 }
+                "pref_cache_location" -> {
+                    cacheManager.onDestroy()
+                    cacheManager = CacheManager(this@AudioService)
+                    cacheManager.addListener(cacheListener)
+                    preparer.sourceFactory = null
+                }
             }
         }
 
@@ -513,6 +519,7 @@ mediaSessionConnector.setErrorMessageProvider(messageProvider);
                 currentMediaItem?.description?.extras?.putLong(METADATA_KEY_LAST_POSITION, lastKnownPosition)
                 currentMediaItem?.description?.extras?.putLong(METADATA_KEY_LAST_LISTENED_TIMESTAMP, lastPositionUpdateTime)
                 saveRecent(currentMediaItem!!, applicationContext)
+                Log.d(LOG_TAG, "Save lastly listened item ${currentMediaItem?.mediaId} pos ${lastKnownPosition} time ${lastPositionUpdateTime}")
             }
             session.isActive = false
             session.release()

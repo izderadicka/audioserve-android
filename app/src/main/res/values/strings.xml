@@ -45,4 +45,8 @@
     <string name="transcoding_low">Low</string>
     <string name="transcoding_medium">Medium</string>
     <string name="transcoding_high">High</string>
+    <string name="pref_cache_location_title">Location of media cache</string>
+    <string name="storage_internal_cache">Internal Cache</string>
+    <string name="storage_internal">Internal Storage</string>
+    <string name="storage_external">External Media Storage %1$d</string>
 </resources>

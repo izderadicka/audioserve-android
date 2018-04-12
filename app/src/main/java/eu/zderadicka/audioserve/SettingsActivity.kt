@@ -4,12 +4,18 @@ import android.content.SharedPreferences
 import android.net.Uri
 import android.support.v7.app.AppCompatActivity
 import android.os.Bundle
+import android.os.Environment
 import android.preference.*
+import android.util.Log
 import android.widget.Toast
 import eu.zderadicka.audioserve.net.ApiClient
 import eu.zderadicka.audioserve.net.CacheManager
+import eu.zderadicka.audioserve.net.MEDIA_CACHE_DIR
+import java.io.File
 import java.net.URL
+import java.util.*
 
+private const val LOG_TAG = "Settings"
 
 class SettingsFragment: PreferenceFragment(), SharedPreferences.OnSharedPreferenceChangeListener {
 
@@ -17,6 +23,23 @@ class SettingsFragment: PreferenceFragment(), SharedPreferences.OnSharedPreferen
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         addPreferencesFromResource(R.xml.settings)
+
+        val transcodingPref: ListPreference = findPreference("pref_transcoding") as ListPreference
+        transcodingPref.entries = arrayOf(
+                activity.getString(R.string.transcoding_low) + " ${ApiClient.transcodingBitrates.low} kbps",
+                activity.getString(R.string.transcoding_medium) + " ${ApiClient.transcodingBitrates.medium} kbps",
+                activity.getString(R.string.transcoding_high) + " ${ApiClient.transcodingBitrates.high} kbps",
+                activity.getString(R.string.transcoding_no)
+                )
+
+        val cacheLocationPref: ListPreference = findPreference("pref_cache_location") as ListPreference
+
+
+        val entriesNames = storagesList.map{it.first}.toTypedArray()
+        val entriesValues = storagesList.map{it.second}.toTypedArray()
+        cacheLocationPref.entries = entriesNames
+        cacheLocationPref.entryValues = entriesValues
+        cacheLocationPref.setDefaultValue(activity.cacheDir.absolutePath)
 
         for (i in 0 until preferenceScreen.preferenceCount) {
             val pref = preferenceScreen.getPreference(i)
@@ -28,6 +51,7 @@ class SettingsFragment: PreferenceFragment(), SharedPreferences.OnSharedPreferen
                 updateSummary(pref)
             }
         }
+
 
         // validate url
         findPreference("pref_server_url").setOnPreferenceChangeListener { preference, newValue ->
@@ -70,7 +94,7 @@ class SettingsFragment: PreferenceFragment(), SharedPreferences.OnSharedPreferen
         }
 
         findPreference("pref_clear_cache").setOnPreferenceClickListener {
-            //FIXME - this is provisional and usafe
+
             Thread({
                 ApiClient.clearCache(activity)
                 CacheManager.clearCache(activity)
@@ -80,6 +104,45 @@ class SettingsFragment: PreferenceFragment(), SharedPreferences.OnSharedPreferen
             }).run()
             true
         }
+
+        cacheLocationPref.setOnPreferenceChangeListener { preference, newValue ->
+
+            val oldValue = preference.sharedPreferences.getString(preference.key, null)
+            val oldCacheDir = File(oldValue, MEDIA_CACHE_DIR)
+            if (oldCacheDir.isDirectory) {
+                val res = oldCacheDir.deleteRecursively()
+                if (! res) {
+                    Log.e(LOG_TAG, "Cannot delete old cache")
+                }
+            }
+
+            val newDir = File(newValue as String)
+            newDir.isDirectory()
+        }
+    }
+
+    private val storagesList: List<Pair<String,String>>
+    get (){
+
+        fun fileSize(s:Long): String {
+            return android.text.format.Formatter.formatShortFileSize(activity, s)
+        }
+
+        val l = ArrayList<Pair<String,String>>()
+        val cname = getString(R.string.storage_internal_cache)
+        val cfile = activity.cacheDir
+        l.add(Pair(cname + " (${fileSize(cfile.freeSpace)})",cfile.absolutePath))
+        val sname = R.string.storage_internal
+        val sfile = activity.filesDir
+        l.add(Pair(getString(sname) + " (${fileSize(sfile.freeSpace)})",sfile.absolutePath))
+
+       activity.externalMediaDirs.forEachIndexed { index, file ->
+            if (Environment.getExternalStorageState(file) == Environment.MEDIA_MOUNTED) {
+                val name = getString(R.string.storage_external, index)
+                l.add(Pair(name+ " (${fileSize(file.freeSpace)})",file.absolutePath))
+            }
+       }
+        return l
     }
 
 
@@ -131,6 +194,13 @@ class SettingsFragment: PreferenceFragment(), SharedPreferences.OnSharedPreferen
                 } else {
                     pref.summary = getString(R.string.pref_preload_summary, p)
                 }
+            }
+            "pref_cache_location" -> {
+                if ( pref !is  ListPreference) return
+                val value = sps.getString("pref_cache_location", null)?: return
+                val idx = pref.findIndexOfValue(value)
+                val name = if (idx>=0) pref.entries.get(idx) else ""
+                pref.summary = "$name : $value"
             }
         }
     }

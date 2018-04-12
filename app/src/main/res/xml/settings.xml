@@ -1,62 +1,66 @@
 <?xml version="1.0" encoding="utf-8"?>
 <PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
-<PreferenceCategory
-    android:title="@string/prefs_server_title"
-    android:key="prefs_server">
-
-    <EditTextPreference
-        android:key="pref_server_url"
-        android:selectAllOnFocus="true"
-        android:singleLine="true"
-        android:title="@string/pref_server_url_title" />
-    <EditTextPreference
-        android:key="pref_shared_secret"
-        android:password="true"
-        android:selectAllOnFocus="true"
-        android:singleLine="true"
-        android:title="@string/pref_shared_secret_title" />
-    <Preference android:title="@string/pref_test_connection_title"
-        android:key="pref_test_connection"
-        android:summary="@string/pref_test_connection_summary"/>
-</PreferenceCategory>
     <PreferenceCategory
-        android:title="@string/prefs_cache_title"
-        android:key="prefs_cache">
-    <EditTextPreference
-        android:key="pref_cache_size"
-        android:selectAllOnFocus="true"
-        android:singleLine="true"
-        android:title="@string/pref_cache_size_title"
-        android:defaultValue="@string/pref_clear_cache_default"/>
+        android:key="prefs_server"
+        android:title="@string/prefs_server_title">
+
+        <EditTextPreference
+            android:key="pref_server_url"
+            android:selectAllOnFocus="true"
+            android:singleLine="true"
+            android:title="@string/pref_server_url_title" />
+        <EditTextPreference
+            android:key="pref_shared_secret"
+            android:password="true"
+            android:selectAllOnFocus="true"
+            android:singleLine="true"
+            android:title="@string/pref_shared_secret_title" />
+        <Preference
+            android:key="pref_test_connection"
+            android:summary="@string/pref_test_connection_summary"
+            android:title="@string/pref_test_connection_title" />
+    </PreferenceCategory>
+    <PreferenceCategory
+        android:key="prefs_cache"
+        android:title="@string/prefs_cache_title">
+        <EditTextPreference
+            android:defaultValue="@string/pref_clear_cache_default"
+            android:key="pref_cache_size"
+            android:selectAllOnFocus="true"
+            android:singleLine="true"
+            android:title="@string/pref_cache_size_title" />
+
         <ListPreference
+            android:key="pref_cache_location"
+            android:title="@string/pref_cache_location_title"
+            />
+
+        <ListPreference
+            android:defaultValue="2"
+            android:entries="@array/pref_preload_values"
+            android:entryValues="@array/pref_preload_values"
             android:key="pref_preload"
             android:title="@string/pref_preload_title"
-            android:entryValues="@array/pref_preload_values"
-            android:entries="@array/pref_preload_values"
-            android:defaultValue="2"
 
             />
 
-    <Preference android:title="@string/pref_clear_cache_title"
-        android:key="pref_clear_cache"
-        android:summary="@string/pref_clear_cache_summary"
-        />
+        <Preference
+            android:key="pref_clear_cache"
+            android:summary="@string/pref_clear_cache_summary"
+            android:title="@string/pref_clear_cache_title" />
     </PreferenceCategory>
 
     <PreferenceCategory
-        android:title="TRANSCODING"
         android:key="prefs_transcoding"
-        >
-    <ListPreference
-        android:key="pref_transcoding"
-        android:title="@string/pref_transcoding_title"
-        android:entryValues="@array/pref_transcoding_values"
-        android:entries="@array/pref_transcoding_names"
-        android:defaultValue="m"
-        />
+        android:title="TRANSCODING">
+        <ListPreference
+            android:defaultValue="m"
+            android:entries="@array/pref_transcoding_names"
+            android:entryValues="@array/pref_transcoding_values"
+            android:key="pref_transcoding"
+            android:title="@string/pref_transcoding_title" />
 
     </PreferenceCategory>
-
 
 
 </PreferenceScreen>

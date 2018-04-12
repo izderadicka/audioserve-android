@@ -273,7 +273,7 @@ class ApiClient private constructor(val context: Context) {
         @Volatile private var instance: ApiClient? = null
 
         @Synchronized fun clearCache(context: Context) {
-            //FIXME - this is a complete adhoc hack per now
+            //TODO - although this is working consider better way
             try {
                 for (f in File(context.applicationContext.cacheDir, "volley").listFiles()) {
                     f.deleteRecursively()
