@@ -102,7 +102,7 @@ class MainActivity : AppCompatActivity(),
         val ctl = MediaControllerCompat.getMediaController(this).transportControls
         when (action) {
             ItemAction.Download -> {
-                Toast.makeText(this,"Audio File will be downloaded for this folder", Toast.LENGTH_LONG).show()
+                Toast.makeText(this,getString(R.string.download_confirmation), Toast.LENGTH_LONG).show()
                 val bundle = Bundle()
                 bundle.putString(METADATA_KEY_MEDIA_ID, item.mediaId)
                 bundle.putBoolean(METADATA_KEY_IS_FOLDER, item.isBrowsable)

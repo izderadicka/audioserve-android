@@ -68,12 +68,14 @@ data class TranscodingLimits(var low:Int, var medium:Int, var high: Int)
 class ApiClient private constructor(val context: Context) {
 
     lateinit var baseURL: String
+    private set
     var token:String? = null
+    private set
     // as login is asynchronous need to handle cases where fists requests are send before login
     // but also consider offline case when login fails always - so store first request here and send
     // after login success or failure
-    var loginDone = false
-    val unsentRequests: ArrayList<Request<*>> = ArrayList()
+    private var loginDone = false
+    private val unsentRequests: ArrayList<Request<*>> = ArrayList()
 
 
 

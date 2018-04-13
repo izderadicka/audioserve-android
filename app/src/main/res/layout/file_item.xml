@@ -1,78 +1,30 @@
 <?xml version="1.0" encoding="utf-8"?>
-<android.support.constraint.ConstraintLayout
+<eu.zderadicka.audioserve.ui.SwipeRevealLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
+    android:layout_height="wrap_content"
     android:layout_width="match_parent"
-    android:layout_height="wrap_content">
+    app:dragFromEdge="left"
+    >
 
-    <TextView
-        android:id="@+id/folderItemName"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:layout_marginEnd="8dp"
-        android:layout_marginStart="8dp"
-        android:layout_marginTop="8dp"
-        tools:text="Item name"
-        style="@style/TextAppearance.AppCompat.Headline"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
+    <FrameLayout
+        android:layout_width="wrap_content"
+        android:layout_height="match_parent">
+        <include layout="@layout/item_buttons"/>
+    </FrameLayout>
 
-    <View
-        android:id="@+id/separator"
+    <FrameLayout
         android:layout_width="match_parent"
-        android:layout_height="1dp"
-        android:background="@color/list_separator"
-        app:layout_constraintTop_toBottomOf="@id/durationView"
-        android:layout_marginTop="8dp"
-        />
-
-    <TextView
-        android:id="@+id/durationView"
-        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginStart="16dp"
-        android:layout_marginTop="8dp"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/folderItemName"
-        tools:text="0:00:00" />
+        android:clickable="true"
+        android:focusable="true"
+        android:id="@+id/contentView">
 
-    <TextView
-        android:id="@+id/lastListenedView"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginStart="16dp"
-        app:layout_constraintStart_toEndOf="@+id/durationView"
-        app:layout_constraintTop_toTopOf="@+id/durationView"
-        tools:text="128" />
+        <include
+            layout="@layout/file_item_inner"
+            />
 
-    <TextView
-        android:id="@+id/folderPathView"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginStart="2dp"
-        android:text="kbps"
-        app:layout_constraintStart_toEndOf="@+id/lastListenedView"
-        app:layout_constraintTop_toTopOf="@+id/lastListenedView" />
+    </FrameLayout>
 
-    <ImageView
-        android:id="@+id/transcodedIcon"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginStart="12dp"
-        android:layout_marginTop="6dp"
-        app:layout_constraintStart_toEndOf="@+id/folderPathView"
-        app:layout_constraintTop_toBottomOf="@+id/folderItemName"
-        app:srcCompat="@drawable/ic_pulse" />
-
-    <ImageView
-        android:id="@+id/cachedIcon"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginStart="12dp"
-        android:layout_marginTop="6dp"
-        app:layout_constraintStart_toEndOf="@+id/transcodedIcon"
-        app:layout_constraintTop_toBottomOf="@+id/folderItemName"
-        app:srcCompat="@drawable/ic_offline_pin" />
-</android.support.constraint.ConstraintLayout>
+</eu.zderadicka.audioserve.ui.SwipeRevealLayout>

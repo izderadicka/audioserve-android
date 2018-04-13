@@ -64,6 +64,15 @@ class FolderItemViewHolder(itemView: View, val viewType: Int, val clickCB: (Int,
         itemView.setOnClickListener { clickCB(adapterPosition, ItemAction.Open) }
 
         if (viewType == ITEM_TYPE_FILE) {
+            contentView = itemView.findViewById(R.id.contentView)
+            contentView?.setOnClickListener { clickCB(adapterPosition, ItemAction.Open) }
+            downloadButton = itemView.findViewById(R.id.downloadButton)
+            downloadButton?.setOnClickListener{
+                val animator = ObjectAnimator.ofInt(contentView, "left", 0)
+                animator.start()
+                clickCB(adapterPosition, ItemAction.Download)
+            }
+
             durationView = itemView.findViewById(R.id.durationView)
             bitRateView = itemView.findViewById(R.id.lastListenedView)
             transcodedIcon = itemView.findViewById(R.id.transcodedIcon)
@@ -76,16 +85,7 @@ class FolderItemViewHolder(itemView: View, val viewType: Int, val clickCB: (Int,
             folderPathView = itemView.findViewById(R.id.folderPathView)
             isBookmark = true
         }
-        else if (viewType == ITEM_TYPE_FOLDER) {
-            contentView = itemView.findViewById(R.id.contentView)
-            contentView?.setOnClickListener { clickCB(adapterPosition, ItemAction.Open) }
-            downloadButton = itemView.findViewById(R.id.downloadButton)
-            downloadButton?.setOnClickListener{
-                val animator = ObjectAnimator.ofInt(contentView, "left", 0)
-                animator.start()
-                clickCB(adapterPosition, ItemAction.Download)
-            }
-        }
+
     }
 }
 
