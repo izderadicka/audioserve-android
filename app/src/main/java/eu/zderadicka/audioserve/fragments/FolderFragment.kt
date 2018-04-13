@@ -50,6 +50,7 @@ class FolderItemViewHolder(itemView: View, val viewType: Int, val clickCB: (Int)
     var positionView: TextView? = null
     var lastListenedView: TextView? = null
     var folderPathView: TextView? = null
+    var contentView: View? = null
     var isFile = false
     private set
     var isBookmark = false
@@ -57,6 +58,7 @@ class FolderItemViewHolder(itemView: View, val viewType: Int, val clickCB: (Int)
 
     init {
         itemView.setOnClickListener { clickCB(adapterPosition) }
+
         if (viewType == ITEM_TYPE_FILE) {
             durationView = itemView.findViewById(R.id.durationView)
             bitRateView = itemView.findViewById(R.id.lastListenedView)
@@ -69,6 +71,10 @@ class FolderItemViewHolder(itemView: View, val viewType: Int, val clickCB: (Int)
             lastListenedView = itemView.findViewById(R.id.lastListenedView)
             folderPathView = itemView.findViewById(R.id.folderPathView)
             isBookmark = true
+        }
+        else if (viewType == ITEM_TYPE_FOLDER) {
+            contentView = itemView.findViewById(R.id.contentView)
+            contentView?.setOnClickListener { clickCB(adapterPosition) }
         }
     }
 }
@@ -129,7 +135,7 @@ class FolderAdapter(val context: Context,
         if (position == nowPlaying) {
             holder.itemView.setBackgroundColor(context.resources.getColor(R.color.colorAccentLight))
         } else {
-            holder.itemView.setBackgroundColor(context.resources.getColor(R.color.background_material_light))
+            holder.itemView.setBackgroundColor(context.resources.getColor(R.color.colorListBackground))
         }
 
         if ((holder.isFile || holder.isBookmark) && item.isPlayable) {

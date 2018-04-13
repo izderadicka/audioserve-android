@@ -4,7 +4,7 @@
     <color name="colorPrimaryDark">#303F9F</color>
     <color name="colorAccent">#FF4081</color>
     <color name="colorAccentLight">#f8bbd0</color>
-    <color name="background_material_light">#fafafa</color>
+    <color name="colorListBackground">#fafafa</color>
 
     <color name="list_separator">#bcaaa4</color>
 
