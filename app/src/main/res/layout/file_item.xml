@@ -19,7 +19,7 @@
         android:layout_height="wrap_content"
         android:clickable="true"
         android:focusable="true"
-        android:id="@+id/contentView">
+        >
 
         <include
             layout="@layout/file_item_inner"

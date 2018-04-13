@@ -142,11 +142,6 @@ class FolderAdapter(val context: Context,
         val item = items?.get(position)
         if (item == null) return
         holder!!.itemName.text = item.description.title
-        if (position == nowPlaying) {
-            holder.itemView.setBackgroundColor(context.resources.getColor(R.color.colorAccentLight))
-        } else {
-            holder.itemView.setBackgroundColor(context.resources.getColor(R.color.colorListBackground))
-        }
 
         if ((holder.isFile || holder.isBookmark) && item.isPlayable) {
             holder.durationView?.text =
@@ -155,6 +150,13 @@ class FolderAdapter(val context: Context,
         }
 
         if (holder.isFile) {
+
+            if (position == nowPlaying) {
+                holder.contentView?.setBackgroundColor(context.resources.getColor(R.color.colorAccentLight))
+            } else {
+                holder.contentView?.setBackgroundColor(context.resources.getColor(R.color.colorListBackground))
+            }
+
             holder.bitRateView?.text =
                     item.description.extras?.getInt(METADATA_KEY_BITRATE)?.toString()?:"?"
 
