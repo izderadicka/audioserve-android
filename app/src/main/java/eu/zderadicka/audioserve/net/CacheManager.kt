@@ -159,12 +159,13 @@ class CachedFileDataSource(val cache: FileCache) : DataSource, CacheItem.Listene
 
 }
 
-class CacheManager(val context: Context) {
+class CacheManager private constructor(val context: Context) {
 
 
-    val cacheDir: File
-    val cache:FileCache
-    var transcode: String?
+    var cacheDir: File
+    private set
+    private var cache:FileCache
+    private var transcode: String?
     private var _transcodeLimit: Int? = null
     val transcodeLimit: Int
     get (){
@@ -183,6 +184,8 @@ class CacheManager(val context: Context) {
             if (key == "pref_transcoding") {
                 transcode = transcodingFromPrefs(context)
                 resetTranscodeLimit()
+            } else if (key == "pref_cache_location") {
+                reset()
             }
         }
         }
@@ -200,26 +203,52 @@ class CacheManager(val context: Context) {
         Log.d(LOG_TAG, "Cache initialized in directory ${cacheDir.absolutePath}")
     }
 
+
     fun startCacheLoader(token: String) {
         cache.startLoader(token)
     }
 
-    fun onDestroy() {
-        PreferenceManager.getDefaultSharedPreferences(context).unregisterOnSharedPreferenceChangeListener(prefsListener)
+    fun stopCacheLoader() {
         cache.stopLoader()
+    }
+
+
+    private fun reset() {
+        cache.stopLoader()
+        val cacheBase = PreferenceManager.getDefaultSharedPreferences(context).getString("pref_cache_location",
+                context.cacheDir.absolutePath)!!
+        cacheDir = File(File(cacheBase), MEDIA_CACHE_DIR)
+        val cacheSize: Long = PreferenceManager.getDefaultSharedPreferences(context).getString("pref_cache_size",
+                DEFAULT_CACHE_SIZE_MB.toString()).toLong() * 1024 * 1024
+        val baseUrl:String = PreferenceManager.getDefaultSharedPreferences(context).getString("pref_server_url","")
+        cache =  FileCache(cacheDir,cacheSize, baseUrl)
+        val oldListeners: HashSet<FileCache.Listener> = cache.listeners.clone() as HashSet<FileCache.Listener>
         cache.removeAllListeners()
+        cache = FileCache(cacheDir, cacheSize, baseUrl)
+        oldListeners.forEach{cache.addListener(it)}
+        _sourceFactory = null
+        Log.d(LOG_TAG, "Cache reset to directory ${cacheDir.absolutePath}")
     }
 
     fun resetLoading(vararg keepLoading:String) {
         cache.stopAllLoading(*keepLoading)
     }
 
+    private fun clearCache() {
+       cache.resetIndex(true)
+    }
+
     fun isCached(mediaId: String): Boolean {
         return cache.checkCache(mediaId) == FileCache.Status.FullyCached
     }
 
-    val sourceFactory: DataSource.Factory by lazy {
-        CachedFileDataSourceFactory(cache)
+    private var _sourceFactory: DataSource.Factory? = null
+    val sourceFactory: DataSource.Factory
+    get(){
+        if (_sourceFactory == null) {
+            _sourceFactory = CachedFileDataSourceFactory(cache)
+        }
+        return _sourceFactory!!
     }
 
     fun addListener(l: FileCache.Listener) {
@@ -240,17 +269,21 @@ class CacheManager(val context: Context) {
     }
 
     companion object {
+        @Volatile
+        private var instance: CacheManager? = null
 
-        @Synchronized fun clearCache(context: Context) {
+        @Synchronized
+        fun getInstance(context: Context): CacheManager {
+            if (instance == null) {
+                instance = CacheManager(context.applicationContext)
+            }
+            return instance!!
+        }
+
+        @Synchronized
+        fun clearCache(context: Context) {
             try {
-                val cacheLocation = PreferenceManager.getDefaultSharedPreferences(context)
-                        .getString("pref_cache_location", null)
-                if (cacheLocation == null) return
-                val cacheDir = File(cacheLocation, MEDIA_CACHE_DIR)
-                val res = cacheDir.deleteRecursively()
-                if (! res) {
-                    Log.e(LOG_TAG,"Failed to delete cache directory")
-                }
+                instance?.clearCache()
             } catch (e: Exception) {
                 Log.e(LOG_TAG, "Cannot delete cache due  error $e")
             }

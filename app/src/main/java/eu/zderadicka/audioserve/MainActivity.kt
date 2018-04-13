@@ -33,6 +33,8 @@ import android.content.Context
 import android.content.pm.PackageManager
 import android.support.v7.widget.SearchView
 import eu.zderadicka.audioserve.data.*
+import eu.zderadicka.audioserve.net.DOWNLOAD_ACTION
+import eu.zderadicka.audioserve.net.DownloadService
 
 
 private const val LOG_TAG = "Main"
@@ -97,10 +99,18 @@ class MainActivity : AppCompatActivity(),
     }
 
     override fun onItemClicked(item: MediaBrowserCompat.MediaItem, action: ItemAction) {
-
+        val ctl = MediaControllerCompat.getMediaController(this).transportControls
         when (action) {
             ItemAction.Download -> {
                 Toast.makeText(this,"Audio File will be downloaded for this folder", Toast.LENGTH_LONG).show()
+                val bundle = Bundle()
+                bundle.putString(METADATA_KEY_MEDIA_ID, item.mediaId)
+                bundle.putBoolean(METADATA_KEY_IS_FOLDER, item.isBrowsable)
+                val downloadIntent = Intent(this,DownloadService::class.java)
+                downloadIntent.action = DOWNLOAD_ACTION
+                downloadIntent.putExtra(METADATA_KEY_MEDIA_ID, item.mediaId)
+                downloadIntent.putExtra(METADATA_KEY_IS_FOLDER, item.isBrowsable)
+                startService(downloadIntent)
 
             }
             ItemAction.Open -> {
@@ -121,7 +131,6 @@ class MainActivity : AppCompatActivity(),
 
                     } else {
                         Log.d(LOG_TAG, "Requesting play of ${item.mediaId}")
-                        val ctl = MediaControllerCompat.getMediaController(this).transportControls
                         ctl.playFromMediaId(item.mediaId, null)
                     }
                 }

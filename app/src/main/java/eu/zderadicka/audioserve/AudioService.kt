@@ -417,9 +417,6 @@ class AudioService : MediaBrowserServiceCompat() {
                     preloadFiles = sharedPreferences.getString("pref_preload","2").toInt()
                 }
                 "pref_cache_location" -> {
-                    cacheManager.onDestroy()
-                    cacheManager = CacheManager(this@AudioService)
-                    cacheManager.addListener(cacheListener)
                     preparer.sourceFactory = null
                 }
             }
@@ -451,7 +448,7 @@ class AudioService : MediaBrowserServiceCompat() {
         sessionToken = session.sessionToken
         notifManager = NotificationsManager(this)
         connector = MediaSessionConnector(session, playerController)
-        cacheManager = CacheManager(this)
+        cacheManager = CacheManager.getInstance(this)
 
         connector.setPlayer(player, preparer)
         connector.setQueueNavigator(queueManager)
@@ -525,7 +522,8 @@ mediaSessionConnector.setErrorMessageProvider(messageProvider);
             session.release()
             player.release()
 
-            cacheManager.onDestroy()
+            cacheManager.removeLister(cacheListener)
+            cacheManager.stopCacheLoader()
         } catch (e: Exception) {
             Log.e(LOG_TAG, "Error while destroying AudioService")
         }

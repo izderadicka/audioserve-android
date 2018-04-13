@@ -158,7 +158,7 @@ class FileCache(val cacheDir: File, val maxCacheSize: Long, val baseUrl: String,
     }
 
     private val index = CacheIndex(maxCacheSize, this, true)
-    private val listeners = HashSet<Listener>()
+    internal val listeners = HashSet<Listener>()
     private val queue = LinkedBlockingDeque<CacheItem>(MAX_CACHE_FILES)
     private var loaderThread:Thread? = null
     private var loader:FileLoader? = null
@@ -183,13 +183,20 @@ class FileCache(val cacheDir: File, val maxCacheSize: Long, val baseUrl: String,
         if (token != null) startLoader(token)
     }
 
-    private fun resetIndex() {
+    internal fun resetIndex(deleteDir: Boolean = false) {
         Log.i(LOG_TAG, "Reseting cache")
         synchronized(this) {
             dirObserver?.stopWatching()
+            if (deleteDir) {
+                val res = cacheDir.deleteRecursively()
+                if (! res) {
+                    Log.e(LOG_TAG, "Cannot delete media cache dir")
+                }
+            }
             if (!cacheDir.exists()) {
                 cacheDir.mkdir()
             }
+            stopAllLoading()
             index.clear()
             dirObserver = object : FileObserver(cacheDir.absolutePath, FileObserver.DELETE_SELF) {
                 override fun onEvent(event: Int, path: String?) {
@@ -252,7 +259,7 @@ class FileCache(val cacheDir: File, val maxCacheSize: Long, val baseUrl: String,
                 itemStateConv(index.get(path)?.state)
             }
 
-    fun scheduleDownload(item: CacheItem, transcode: String?) {
+    private fun scheduleDownload(item: CacheItem, transcode: String?) {
         if (item.state != CacheItem.State.Complete) {
             try {
                 // set transcode only for item that is not partly loaded

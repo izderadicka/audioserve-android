@@ -1,5 +1,6 @@
 package eu.zderadicka.audioserve.fragments
 
+import android.animation.ObjectAnimator
 import android.content.Context
 import android.os.Bundle
 import android.support.v4.media.MediaBrowserCompat
@@ -79,7 +80,11 @@ class FolderItemViewHolder(itemView: View, val viewType: Int, val clickCB: (Int,
             contentView = itemView.findViewById(R.id.contentView)
             contentView?.setOnClickListener { clickCB(adapterPosition, ItemAction.Open) }
             downloadButton = itemView.findViewById(R.id.downloadButton)
-            downloadButton?.setOnClickListener{clickCB(adapterPosition, ItemAction.Download)}
+            downloadButton?.setOnClickListener{
+                val animator = ObjectAnimator.ofInt(contentView, "left", 0)
+                animator.start()
+                clickCB(adapterPosition, ItemAction.Download)
+            }
         }
     }
 }

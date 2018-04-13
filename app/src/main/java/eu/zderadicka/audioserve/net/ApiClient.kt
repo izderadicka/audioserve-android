@@ -286,7 +286,7 @@ class ApiClient private constructor(val context: Context) {
         @JvmStatic
         fun getInstance(context: Context): ApiClient =
             synchronized(this) {
-                if (instance ==null) instance = ApiClient(context)
+                if (instance ==null) instance = ApiClient(context.applicationContext)
                     instance!!
 
             }
