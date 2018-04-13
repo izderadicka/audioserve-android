@@ -96,31 +96,37 @@ class MainActivity : AppCompatActivity(),
                 .commit()
     }
 
-    override fun onItemClicked(item: MediaBrowserCompat.MediaItem) {
+    override fun onItemClicked(item: MediaBrowserCompat.MediaItem, action: ItemAction) {
 
-        if (item.isBrowsable) {
-            stopPlayback()
-            newFolderFragment(item.mediaId!!, item.description.title?.toString()
-                    ?: "unknown")
+        when (action) {
+            ItemAction.Download -> {
+                Toast.makeText(this,"Audio File will be downloaded for this folder", Toast.LENGTH_LONG).show()
 
-        } else if (item.isPlayable) {
-            if (item.description.extras?.getBoolean(METADATA_KEY_IS_BOOKMARK) == true) {
-                Log.d(LOG_TAG, "Processing bookmark ${item.mediaId}")
-                val folderId = folderIdFromFileId(item.mediaId.toString())
-                val folderName = File(folderId).name
-                newFolderFragment(folderId, folderName)
-                pendingMediaItem = item
-
-
-            } else {
-                Log.d(LOG_TAG, "Requesting play of ${item.mediaId}")
-                val ctl = MediaControllerCompat.getMediaController(this).transportControls
-                ctl.playFromMediaId(item.mediaId, null)
             }
+            ItemAction.Open -> {
 
+                if (item.isBrowsable) {
+                    stopPlayback()
+                    newFolderFragment(item.mediaId!!, item.description.title?.toString()
+                            ?: "unknown")
+
+                } else if (item.isPlayable) {
+                    if (item.description.extras?.getBoolean(METADATA_KEY_IS_BOOKMARK) == true) {
+                        Log.d(LOG_TAG, "Processing bookmark ${item.mediaId}")
+                        val folderId = folderIdFromFileId(item.mediaId.toString())
+                        val folderName = File(folderId).name
+                        newFolderFragment(folderId, folderName)
+                        pendingMediaItem = item
+
+
+                    } else {
+                        Log.d(LOG_TAG, "Requesting play of ${item.mediaId}")
+                        val ctl = MediaControllerCompat.getMediaController(this).transportControls
+                        ctl.playFromMediaId(item.mediaId, null)
+                    }
+                }
+            }
         }
-
-
     }
 
     override fun onFolderLoaded(folderId: String, error: Boolean) {

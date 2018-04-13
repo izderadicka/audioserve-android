@@ -14,12 +14,9 @@ import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.ImageView
-import android.widget.ProgressBar
-import android.widget.TextView
-import android.widget.Toast
 import eu.zderadicka.audioserve.utils.ifStoppedOrDead
 import android.os.Parcelable
+import android.widget.*
 import eu.zderadicka.audioserve.MEDIA_CACHE_DELETED
 import eu.zderadicka.audioserve.MEDIA_FULLY_CACHED
 import eu.zderadicka.audioserve.R
@@ -36,11 +33,16 @@ const val ITEM_TYPE_FOLDER = 0
 const val ITEM_TYPE_FILE = 1
 const val ITEM_TYPE_BOOKMARK = 2
 
+enum class ItemAction {
+    Open,
+    Download
+}
+
 private const val LOG_TAG = "FolderFragment"
 
 //TODO icon for item type - folder or audio file
 // TODO icon for currently played icon - that ice equlizer bar from Universal player
-class FolderItemViewHolder(itemView: View, val viewType: Int, val clickCB: (Int) -> Unit) : RecyclerView.ViewHolder(itemView) {
+class FolderItemViewHolder(itemView: View, val viewType: Int, val clickCB: (Int, ItemAction) -> Unit) : RecyclerView.ViewHolder(itemView) {
 
     var itemName: TextView = itemView.findViewById(R.id.folderItemName)
     var durationView: TextView? = null
@@ -51,13 +53,14 @@ class FolderItemViewHolder(itemView: View, val viewType: Int, val clickCB: (Int)
     var lastListenedView: TextView? = null
     var folderPathView: TextView? = null
     var contentView: View? = null
+    var downloadButton: ImageButton? = null
     var isFile = false
     private set
     var isBookmark = false
     private set
 
     init {
-        itemView.setOnClickListener { clickCB(adapterPosition) }
+        itemView.setOnClickListener { clickCB(adapterPosition, ItemAction.Open) }
 
         if (viewType == ITEM_TYPE_FILE) {
             durationView = itemView.findViewById(R.id.durationView)
@@ -74,14 +77,16 @@ class FolderItemViewHolder(itemView: View, val viewType: Int, val clickCB: (Int)
         }
         else if (viewType == ITEM_TYPE_FOLDER) {
             contentView = itemView.findViewById(R.id.contentView)
-            contentView?.setOnClickListener { clickCB(adapterPosition) }
+            contentView?.setOnClickListener { clickCB(adapterPosition, ItemAction.Open) }
+            downloadButton = itemView.findViewById(R.id.downloadButton)
+            downloadButton?.setOnClickListener{clickCB(adapterPosition, ItemAction.Download)}
         }
     }
 }
 
 
 class FolderAdapter(val context: Context,
-                    private val itemCb: (MediaItem) -> Unit)
+                    private val itemCb: (MediaItem, ItemAction) -> Unit)
     : RecyclerView.Adapter<FolderItemViewHolder>() {
 
     private var items: List<MediaItem>? = null
@@ -102,11 +107,11 @@ class FolderAdapter(val context: Context,
 
     }
 
-    private fun onItemClicked(index: Int) {
+    private fun onItemClicked(index: Int, action: ItemAction) {
 
         val item = items?.get(index)
         if (item != null) {
-            itemCb(item)
+            itemCb(item, action)
         }
 
     }
@@ -215,7 +220,7 @@ class FolderAdapter(val context: Context,
 
 
 interface MediaActivity {
-    fun onItemClicked(item: MediaItem)
+    fun onItemClicked(item: MediaItem, action: ItemAction)
     fun onFolderLoaded(folderId: String, error: Boolean)
     val mediaBrowser: MediaBrowserCompat
 }
@@ -311,8 +316,8 @@ class FolderFragment : MediaFragment() {
         folderView = view.findViewById(R.id.folderView)
         folderView.layoutManager = LinearLayoutManager(context)
 
-        adapter = FolderAdapter(context!!) {
-            mediaActivity?.onItemClicked(it)
+        adapter = FolderAdapter(context!!) {item, action ->
+            mediaActivity?.onItemClicked(item, action)
         }
         folderView.adapter = adapter
 
