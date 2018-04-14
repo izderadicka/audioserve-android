@@ -1,5 +1,6 @@
 package eu.zderadicka.audioserve
 
+import android.app.DownloadManager
 import android.content.ComponentName
 import android.content.Intent
 import android.os.Bundle
@@ -24,14 +25,13 @@ import android.widget.Toast
 import eu.zderadicka.audioserve.fragments.*
 import eu.zderadicka.audioserve.utils.ifStoppedOrDead
 import kotlinx.android.synthetic.main.content_main.*
-import kotlinx.android.synthetic.main.nav_header_main.*
 import java.io.File
-import android.support.v4.view.MenuItemCompat.getActionView
-import android.content.Context.SEARCH_SERVICE
 import android.app.SearchManager
 import android.content.Context
 import android.content.pm.PackageManager
+import android.preference.PreferenceManager
 import android.support.v7.widget.SearchView
+import android.support.v7.widget.SwitchCompat
 import eu.zderadicka.audioserve.data.*
 import eu.zderadicka.audioserve.net.DOWNLOAD_ACTION
 import eu.zderadicka.audioserve.net.DownloadService
@@ -216,7 +216,7 @@ class MainActivity : AppCompatActivity(),
                 openInitalFolder(folderId, name)
 
             } else {
-                openInitalFolder(AudioService.MEDIA_ROOT_TAG, getString(R.string.collections_title))
+                openRootFolder()
             }
         }
 
@@ -226,6 +226,36 @@ class MainActivity : AppCompatActivity(),
                 mediaServiceConnectionCallback, null)
         mBrowser.connect()
 
+        createOfflineSwitch()
+
+    }
+
+    private fun createOfflineSwitch() {
+        val isOffline = PreferenceManager.getDefaultSharedPreferences(this).getBoolean("pref_offline", false)
+        // test switch
+        val actionView = nav_view.menu.findItem(R.id.offline_switch).getActionView()
+        val switcher =  actionView.findViewById(R.id.switcher) as SwitchCompat
+        switcher.isChecked = isOffline;
+        switcher.setOnClickListener{
+            val makeOffline = switcher.isChecked
+            val editor = PreferenceManager.getDefaultSharedPreferences(this@MainActivity).edit()
+            editor.putBoolean("pref_offline", makeOffline)
+            editor.apply()
+            Toast.makeText(this@MainActivity, if (makeOffline) "Going Offline" else "Going Online",
+                    Toast.LENGTH_SHORT).show()
+
+            openRootFolder()
+
+        }
+
+    }
+
+    private fun openRootFolder() {
+        val isOffline = PreferenceManager.getDefaultSharedPreferences(this).getBoolean("pref_offline", false)
+        stopPlayback()
+        openInitalFolder(AudioService.MEDIA_ROOT_TAG,
+                if (isOffline) getString(R.string.collection_offline)
+                    else getString(R.string.collections_title))
     }
 
 
@@ -365,14 +395,21 @@ class MainActivity : AppCompatActivity(),
                 finish()
             }
             R.id.nav_browse -> {
-                stopPlayback()
-                openInitalFolder(AudioService.MEDIA_ROOT_TAG, getString(R.string.collections_title))
+                openRootFolder()
 
             }
             R.id.nav_recent -> {
                 stopPlayback()
                 openInitalFolder(AudioService.RECENTLY_LISTENED_TAG, getString(R.string.recently_listened))
             }
+
+            R.id.nav_download -> {
+                val intent = Intent(DownloadManager.ACTION_VIEW_DOWNLOADS)
+                startActivity(intent)
+            }
+
+            R.id.offline_switch -> return false
+
         }
 
         drawer_layout.closeDrawer(GravityCompat.START)

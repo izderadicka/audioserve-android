@@ -1,11 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <menu xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
-    tools:showIn="navigation_view">
+    tools:showIn="navigation_view"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
 
     <group
         android:id="@+id/nav_group_main"
-        android:checkableBehavior="single">
+        android:checkableBehavior="none">
 
         <item
             android:id="@+id/nav_browse"
@@ -14,7 +15,20 @@
         <item
             android:id="@+id/nav_recent"
             android:icon="@drawable/ic_menu_recent"
-            android:title="Recently Listened" />
+            android:title="@string/action_recently_listened" />
+
+        <item
+            android:id="@+id/nav_download"
+            android:icon="@drawable/ic_menu_download"
+            android:title="@string/action_pending_downloads" />
+    </group>
+
+    <group android:checkableBehavior="none">
+
+        <item android:id="@+id/offline_switch"
+            android:icon="@drawable/ic_menu_offline"
+            app:actionLayout="@layout/action_switch_view"
+            android:title="@string/action_offline" />
     </group>
 
 

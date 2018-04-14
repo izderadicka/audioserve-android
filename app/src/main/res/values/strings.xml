@@ -6,7 +6,7 @@
     <string name="nav_header_subtitle"><a href="https://github.com/izderadicka/audioserve-android">View It at Github</a></string>
     <string name="nav_header_desc">Navigation header</string>
     <string name="action_settings">Settings</string>
-    <string name="collections_title">Select Collection</string>
+    <string name="collections_title">Select Online Collection</string>
     <string name="label_play">Play</string>
     <string name="label_pause">Pause</string>
     <string name="label_next">Next</string>
@@ -50,4 +50,8 @@
     <string name="storage_internal">Internal Storage</string>
     <string name="storage_external">External Media Storage %1$d</string>
     <string name="download_confirmation">Will download audio files from this one on</string>
+    <string name="action_recently_listened">Recently Listened</string>
+    <string name="action_offline">Force Offline</string>
+    <string name="collection_offline">Select Offline Folder</string>
+    <string name="action_pending_downloads">Pending Downloads</string>
 </resources>

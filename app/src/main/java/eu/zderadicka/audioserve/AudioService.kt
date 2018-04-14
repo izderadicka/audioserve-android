@@ -90,6 +90,7 @@ class AudioService : MediaBrowserServiceCompat() {
     private var preloadFiles: Int = 2
     private var seekAfterPrepare: Long? = null
     private var deletePreviousQueueItem: Int = -1 // delete previous queue Item
+    private var isOffline: Boolean = false
 
     private val playerController = object : DefaultPlaybackController(REWIND_MS, FF_MS, MediaSessionConnector.DEFAULT_REPEAT_TOGGLE_MODES) {
 
@@ -419,6 +420,7 @@ class AudioService : MediaBrowserServiceCompat() {
                 "pref_cache_location" -> {
                     preparer.sourceFactory = null
                 }
+                "pref_offline" -> isOffline = sharedPreferences.getBoolean("pref_offline", false)
             }
         }
 
@@ -439,6 +441,7 @@ class AudioService : MediaBrowserServiceCompat() {
     override fun onCreate() {
         super.onCreate()
         preloadFiles = PreferenceManager.getDefaultSharedPreferences(this).getString("pref_preload","2").toInt()
+        isOffline = PreferenceManager.getDefaultSharedPreferences(this).getBoolean("pref_offline",false)
         session = MediaSessionCompat(this, LOG_TAG)
         session.controller.registerCallback(sessionCallback)
         player = ExoPlayerFactory.newSimpleInstance(this, DefaultTrackSelector())
@@ -533,7 +536,46 @@ mediaSessionConnector.setErrorMessageProvider(messageProvider);
     }
 
     private val SEARCH_RE = Regex("""^(\d+)_(.*)""")
-    override fun onLoadChildren(parentId: String, result: MediaBrowserServiceCompat.Result<List<MediaBrowserCompat.MediaItem>>) {
+    override fun onLoadChildren(parentId: String, result:Result<List<MediaItem>>) {
+        if (parentId == RECENTLY_LISTENED_TAG) {
+            Log.d(LOG_TAG, "Requesting list of recently listened items")
+            val list = ArrayList<MediaItem>()
+            if (currentMediaItem != null) {
+                val mi = currentMediaItem!!
+                mi.description.extras?.putLong(METADATA_KEY_LAST_POSITION, lastKnownPosition)
+                mi.description.extras?.putLong(METADATA_KEY_LAST_LISTENED_TIMESTAMP, lastPositionUpdateTime)
+                list.add(mi)
+            }
+            var path: String? = null
+            if (currentMediaItem != null) {
+                path = File(currentMediaItem!!.mediaId).parent
+            }
+            list.addAll(getRecents(applicationContext,path ))
+            result.sendResult(list)
+
+        } else {
+            if (isOffline) {
+                onLoadChildrenOffline(parentId, result)
+            } else {
+                onLoadChildrenOnline(parentId, result)
+            }
+        }
+    }
+
+    private fun onLoadChildrenOffline(parentId: String, result: Result<List<MediaBrowserCompat.MediaItem>>) {
+        if (parentId == EMPTY_ROOT_TAG) {
+            result.sendResult(ArrayList())
+        } else if (parentId == MEDIA_ROOT_TAG) {
+            Log.d(LOG_TAG, "Requesting offline root")
+            result.sendResult(ArrayList())
+        } else {
+            result.sendResult(ArrayList())
+        }
+    }
+
+
+
+    private fun onLoadChildrenOnline(parentId: String, result: Result<List<MediaBrowserCompat.MediaItem>>) {
 
         @Suppress("NAME_SHADOWING")
         val result = ResultWrapper(result)
@@ -571,23 +613,7 @@ mediaSessionConnector.setErrorMessageProvider(messageProvider);
 
             }
 
-        } else if (parentId == RECENTLY_LISTENED_TAG) {
-            Log.d(LOG_TAG, "Requesting list of recently listened items")
-            val list = ArrayList<MediaItem>()
-            if (currentMediaItem != null) {
-                val mi = currentMediaItem!!
-                mi.description.extras?.putLong(METADATA_KEY_LAST_POSITION, lastKnownPosition)
-                mi.description.extras?.putLong(METADATA_KEY_LAST_LISTENED_TIMESTAMP, lastPositionUpdateTime)
-                list.add(mi)
-            }
-            var path: String? = null
-            if (currentMediaItem != null) {
-                path = File(currentMediaItem!!.mediaId).parent
-            }
-            list.addAll(getRecents(applicationContext,path ))
-            result.sendResult(list)
-
-        } else if (parentId.startsWith(SEARCH_PREFIX)) {
+        }  else if (parentId.startsWith(SEARCH_PREFIX)) {
             val s = parentId.substring(SEARCH_PREFIX.length)
             val m = SEARCH_RE.matchEntire(s)
             if (m == null) {
