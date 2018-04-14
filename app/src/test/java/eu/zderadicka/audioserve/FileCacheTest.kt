@@ -2,6 +2,7 @@ package eu.zderadicka.audioserve
 
 import eu.zderadicka.audioserve.net.CacheItem
 import eu.zderadicka.audioserve.net.FileCache
+import eu.zderadicka.audioserve.utils.copyFile
 import org.junit.Test
 import org.junit.Assert.*
 import java.io.File
@@ -29,7 +30,7 @@ class FileCacheTest:BaseCacheTest() {
             }
         }
         val maxCacheSize: Long = 586270
-        val cache = FileCache(tmpDir!!, maxCacheSize, "http://localhost:3000", "abcd")
+        val cache = FileCache(tmpDir!!, maxCacheSize, "http://localhost:3000", dontObserveDir = true)
         cache.addListener(counter)
         assertEquals(10, cache.numberOfFiles)
         assertEquals(10L * testFile.length(), cache.cacheSize)

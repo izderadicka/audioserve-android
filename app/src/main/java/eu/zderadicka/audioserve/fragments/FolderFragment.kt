@@ -22,6 +22,7 @@ import eu.zderadicka.audioserve.MEDIA_CACHE_DELETED
 import eu.zderadicka.audioserve.MEDIA_FULLY_CACHED
 import eu.zderadicka.audioserve.R
 import eu.zderadicka.audioserve.data.*
+import eu.zderadicka.audioserve.ui.SwipeRevealLayout
 
 
 // the fragment initialization parameters, e.g. ARG_ITEM_NUMBER
@@ -54,6 +55,7 @@ class FolderItemViewHolder(itemView: View, val viewType: Int, val clickCB: (Int,
     var lastListenedView: TextView? = null
     var folderPathView: TextView? = null
     var contentView: View? = null
+    var itemContainer: View? = null
     var downloadButton: ImageButton? = null
     var isFile = false
     private set
@@ -65,11 +67,13 @@ class FolderItemViewHolder(itemView: View, val viewType: Int, val clickCB: (Int,
 
         if (viewType == ITEM_TYPE_FILE) {
             contentView = itemView.findViewById(R.id.contentView)
+            itemContainer = itemView.findViewById(R.id.itemContainer)
             contentView?.setOnClickListener { clickCB(adapterPosition, ItemAction.Open) }
             downloadButton = itemView.findViewById(R.id.downloadButton)
             downloadButton?.setOnClickListener{
-                val animator = ObjectAnimator.ofInt(contentView, "left", 0)
-                animator.start()
+                //val animator = ObjectAnimator.ofInt(itemContainer, "left", 0)
+                //animator.start()
+                (itemView as SwipeRevealLayout).close(true)
                 clickCB(adapterPosition, ItemAction.Download)
             }
 
@@ -151,6 +155,7 @@ class FolderAdapter(val context: Context,
 
         if (holder.isFile) {
 
+            (holder.itemView as SwipeRevealLayout).close(false)
             if (position == nowPlaying) {
                 holder.contentView?.setBackgroundColor(context.resources.getColor(R.color.colorAccentLight))
             } else {

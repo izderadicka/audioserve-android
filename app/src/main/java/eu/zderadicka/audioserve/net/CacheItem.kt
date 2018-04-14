@@ -1,6 +1,7 @@
 package eu.zderadicka.audioserve.net
 
 
+import eu.zderadicka.audioserve.utils.copyFile
 import java.io.*
 import java.util.HashSet
 import kotlin.properties.Delegates
@@ -179,6 +180,22 @@ class CacheItem(val path: String, val cacheDir: File, changeListener: Listener? 
             (this as java.lang.Object).notifyAll()
         }
 
+    }
+
+    fun injectFile(f:File) = synchronized(this){
+        if (state != State.Empty && state != State.Exists) throw IllegalStateException("Can inject only to empty or partially downloaded")
+        if (state == State.Exists) {
+            itemTempPath.delete()
+        }
+        val sz = f.length()
+        val res = f.renameTo(itemPath)
+        if (!res ) {
+            copyFile(f, itemPath)
+            f.delete()
+        }
+        cachedLength = sz
+        totalLength = sz
+        state = State.Complete
     }
 
     fun openForRead(fromPosition:Long=0) {

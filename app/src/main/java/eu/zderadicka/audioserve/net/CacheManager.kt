@@ -268,6 +268,21 @@ class CacheManager private constructor(val context: Context) {
         cache.getOrAddAndSchedule(item.mediaId!!, shouldTranscode(item))
     }
 
+    fun injectFile(mediaId:String, f:File):Boolean {
+        if (isCached(mediaId)) return false
+        try {
+            cache.injectFile(mediaId,f)
+            return true
+
+        } catch (e:IOException) {
+            Log.e(LOG_TAG, "Cannot inject due to IO error $e")
+        } catch (e: IllegalStateException) {
+            Log.e(LOG_TAG, "Cannot inject due to cache state: $e")
+        }
+
+        return false
+    }
+
     companion object {
         @Volatile
         private var instance: CacheManager? = null

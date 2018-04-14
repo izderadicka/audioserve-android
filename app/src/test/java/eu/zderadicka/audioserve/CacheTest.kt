@@ -1,6 +1,7 @@
 package eu.zderadicka.audioserve
 
 import eu.zderadicka.audioserve.net.CacheItem
+import eu.zderadicka.audioserve.utils.copyFile
 import org.junit.After
 import org.junit.Test
 
@@ -17,29 +18,7 @@ import java.security.MessageDigest
 
 private const val TEST_PATH = "audio/author/book/chapter1.mp3"
 
-@Throws(IOException::class)
-fun copyFile(sourceFile: File, destFile: File) {
-    if (!destFile.exists()) {
-        destFile.parentFile.mkdirs()
-        destFile.createNewFile()
-    }
 
-    var source: FileChannel? = null
-    var destination: FileChannel? = null
-
-    try {
-        source = FileInputStream(sourceFile).getChannel()
-        destination = FileOutputStream(destFile).getChannel()
-        destination!!.transferFrom(source, 0, source!!.size())
-    } finally {
-        if (source != null) {
-            source!!.close()
-        }
-        if (destination != null) {
-            destination!!.close()
-        }
-    }
-}
 
 fun calcHash(f:File):ByteArray {
     val bufSize = 10*1024

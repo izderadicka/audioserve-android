@@ -197,7 +197,7 @@ class AudioService : MediaBrowserServiceCompat() {
             Log.d(LOG_TAG, "Preparing mediaId $mediaId")
             if (apiClient.token != null && sourceFactory == null) {
                 initSourceFactory(cacheManager, apiClient.token)
-                cacheManager.addListener(cacheListener)
+
             }
             val folderPosition = findIndexInFolder(mediaId)
 
@@ -449,6 +449,7 @@ class AudioService : MediaBrowserServiceCompat() {
         notifManager = NotificationsManager(this)
         connector = MediaSessionConnector(session, playerController)
         cacheManager = CacheManager.getInstance(this)
+        cacheManager.addListener(cacheListener)
 
         connector.setPlayer(player, preparer)
         connector.setQueueNavigator(queueManager)

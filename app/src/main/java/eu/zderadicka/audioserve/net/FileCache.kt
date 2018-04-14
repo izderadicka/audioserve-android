@@ -149,7 +149,11 @@ class CacheIndex(val maxCacheSize: Long, private val changeListener: CacheItem.L
 
 }
 
-class FileCache(val cacheDir: File, val maxCacheSize: Long, val baseUrl: String, val token:String? = null) : CacheItem.Listener {
+class FileCache(val cacheDir: File,
+                val maxCacheSize: Long,
+                val baseUrl: String, val
+                token:String? = null,
+                dontObserveDir:Boolean = false) : CacheItem.Listener {
 
     enum class Status {
         NotCached,
@@ -170,14 +174,16 @@ class FileCache(val cacheDir: File, val maxCacheSize: Long, val baseUrl: String,
         if (!cacheDir.exists()) {
             cacheDir.mkdir()
         }
-        dirObserver = object: FileObserver(cacheDir.absolutePath, FileObserver.DELETE_SELF) {
-            override fun onEvent(event: Int, path: String?) {
-                Log.d(LOG_TAG, "Dir event is $event, $path")
-                if (event and FileObserver.DELETE_SELF >0) resetIndex()
-            }
+        if (! dontObserveDir) {
+            dirObserver = object : FileObserver(cacheDir.absolutePath, FileObserver.DELETE_SELF) {
+                override fun onEvent(event: Int, path: String?) {
+                    Log.d(LOG_TAG, "Dir event is $event, $path")
+                    if (event and FileObserver.DELETE_SELF > 0) resetIndex()
+                }
 
+            }
+            dirObserver?.startWatching()
         }
-        dirObserver?.startWatching()
 
         index.loadFromDir(cacheDir)
         if (token != null) startLoader(token)
@@ -242,14 +248,24 @@ class FileCache(val cacheDir: File, val maxCacheSize: Long, val baseUrl: String,
         this.loader = null
     }
 
-    fun getOrAddAndSchedule(path: String, transcode: String?):CacheItem = synchronized(this) {
-        val item = if (index.contains(path)) {
+    fun getOrAdd(path:String): CacheItem = synchronized(this){
+        if (index.contains(path)) {
             index.get(path)!!
         } else {
             addToCache(path)
         }
+    }
+
+    fun injectFile(path:String, f:File):CacheItem {
+        val item = getOrAdd(path)
+        item.injectFile(f)
+        return item
+    }
+
+    fun getOrAddAndSchedule(path: String, transcode: String?):CacheItem {
+        val item = getOrAdd(path)
         scheduleDownload(item, transcode)
-        item
+        return item
     }
 
     fun checkCache(path: String): Status =
