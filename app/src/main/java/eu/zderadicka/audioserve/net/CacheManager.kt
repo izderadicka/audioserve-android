@@ -175,6 +175,8 @@ class CacheManager private constructor(val context: Context) {
         return _transcodeLimit!!
     }
 
+    var cacheBrowser: CacheBrowser
+
     private fun resetTranscodeLimit() {
         _transcodeLimit = null
     }
@@ -201,6 +203,7 @@ class CacheManager private constructor(val context: Context) {
         transcode = transcodingFromPrefs(context)
         PreferenceManager.getDefaultSharedPreferences(context).registerOnSharedPreferenceChangeListener(prefsListener)
         Log.d(LOG_TAG, "Cache initialized in directory ${cacheDir.absolutePath}")
+        cacheBrowser = CacheBrowser(cache.cacheKeys, cacheDir)
     }
 
 
@@ -227,7 +230,9 @@ class CacheManager private constructor(val context: Context) {
         cache = FileCache(cacheDir, cacheSize, baseUrl)
         oldListeners.forEach{cache.addListener(it)}
         _sourceFactory = null
+        cacheBrowser =CacheBrowser(cache.cacheKeys, cacheDir)
         Log.d(LOG_TAG, "Cache reset to directory ${cacheDir.absolutePath}")
+
     }
 
     fun resetLoading(vararg keepLoading:String) {

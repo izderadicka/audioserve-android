@@ -53,6 +53,9 @@ class CacheIndex(val maxCacheSize: Long, private val changeListener: CacheItem.L
             return map.size
         }
 
+    val keys: Set<String>
+    get() = map.keys
+
     fun contains(path: String): Boolean {
         return map.containsKey(path)
     }
@@ -219,6 +222,9 @@ class FileCache(val cacheDir: File,
 
     val cacheSize: Long
     get() = index.cacheSize
+
+    val cacheKeys: Set<String>
+    get() = index.keys
 
     fun pathFromUri(uri: Uri): String {
         val p = uri.path

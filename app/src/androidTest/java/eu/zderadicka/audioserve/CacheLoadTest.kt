@@ -17,11 +17,10 @@ import org.junit.Assert.*
 
 private const val LOG_TAG = "CacheLoadTest"
 
-@RunWith(AndroidJUnit4::class)
-class CacheLoadTest {
+open class BaseCacheAndroidTest {
     lateinit var tmpDir:File
     lateinit var ctx: Context
-    val cond: ConditionVariable = ConditionVariable()
+
 
     @Before
     fun prepare() {
@@ -31,6 +30,17 @@ class CacheLoadTest {
 
 
     }
+
+    @After
+    fun cleanUp() {
+        tmpDir.deleteRecursively()
+
+    }
+}
+
+@RunWith(AndroidJUnit4::class)
+class CacheLoadTest: BaseCacheAndroidTest() {
+    val cond: ConditionVariable = ConditionVariable()
 
     @Test
     fun testLoad() {
@@ -91,11 +101,4 @@ class CacheLoadTest {
         cache.stopLoader()
 
     }
-
-    @After
-    fun cleanUp() {
-        tmpDir.deleteRecursively()
-
-    }
-
 }

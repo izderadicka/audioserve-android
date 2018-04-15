@@ -567,7 +567,7 @@ mediaSessionConnector.setErrorMessageProvider(messageProvider);
             result.sendResult(ArrayList())
         } else if (parentId == MEDIA_ROOT_TAG) {
             Log.d(LOG_TAG, "Requesting offline root")
-            result.sendResult(ArrayList())
+            result.sendResult(cacheManager.cacheBrowser.rootFolder)
         } else {
             result.sendResult(ArrayList())
         }
