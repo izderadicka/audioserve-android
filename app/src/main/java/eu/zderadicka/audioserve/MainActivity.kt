@@ -155,7 +155,7 @@ class MainActivity : AppCompatActivity(),
         }
 
         val collection: Int? = collectionFromFolderId(folderId)
-        search_prefix = if (collection == null) null else "${AudioService.SEARCH_PREFIX}${collection}_"
+        search_prefix = if (collection == null || isOffline) null else "${AudioService.SEARCH_PREFIX}${collection}_"
         invalidateOptionsMenu()
     }
 
@@ -230,8 +230,10 @@ class MainActivity : AppCompatActivity(),
 
     }
 
+    private val isOffline: Boolean
+    get() = PreferenceManager.getDefaultSharedPreferences(this).getBoolean("pref_offline", false)
+
     private fun createOfflineSwitch() {
-        val isOffline = PreferenceManager.getDefaultSharedPreferences(this).getBoolean("pref_offline", false)
         // test switch
         val actionView = nav_view.menu.findItem(R.id.offline_switch).getActionView()
         val switcher =  actionView.findViewById(R.id.switcher) as SwitchCompat
@@ -251,7 +253,6 @@ class MainActivity : AppCompatActivity(),
     }
 
     private fun openRootFolder() {
-        val isOffline = PreferenceManager.getDefaultSharedPreferences(this).getBoolean("pref_offline", false)
         stopPlayback()
         openInitalFolder(AudioService.MEDIA_ROOT_TAG,
                 if (isOffline) getString(R.string.collection_offline)

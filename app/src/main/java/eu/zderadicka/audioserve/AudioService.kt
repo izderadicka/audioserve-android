@@ -184,6 +184,12 @@ class AudioService : MediaBrowserServiceCompat() {
         var currentSourcesList: DynamicConcatenatingMediaSource? = null
 
         fun initSourceFactory(cm: CacheManager, token: String? = null) {
+            if (sourceFactory!= null) return
+
+            if (!isOffline && token == null) {
+                Log.e(LOG_TAG, "Invalid state - Api client is not initialized")
+                return
+            }
             if (token != null) {
                 cm.startCacheLoader(token)
             }
@@ -196,10 +202,8 @@ class AudioService : MediaBrowserServiceCompat() {
                 session.isActive = true
             }
             Log.d(LOG_TAG, "Preparing mediaId $mediaId")
-            if (apiClient.token != null && sourceFactory == null) {
-                initSourceFactory(cacheManager, apiClient.token)
+            initSourceFactory(cacheManager, apiClient.token)
 
-            }
             val folderPosition = findIndexInFolder(mediaId)
 
 
@@ -367,7 +371,6 @@ class AudioService : MediaBrowserServiceCompat() {
                 val item = playQueue[idx]
                 if (item != currentMediaItem) {
                     val oldItem = currentMediaItem
-                    item.description.extras?.putBoolean(METADATA_KEY_IS_BOOKMARK, true)
                     currentMediaItem = item
 
 
@@ -420,7 +423,10 @@ class AudioService : MediaBrowserServiceCompat() {
                 "pref_cache_location" -> {
                     preparer.sourceFactory = null
                 }
-                "pref_offline" -> isOffline = sharedPreferences.getBoolean("pref_offline", false)
+                "pref_offline" -> {
+                    isOffline = sharedPreferences.getBoolean("pref_offline", false)
+                    preparer.sourceFactory = null
+                }
             }
         }
 
@@ -542,6 +548,7 @@ mediaSessionConnector.setErrorMessageProvider(messageProvider);
             val list = ArrayList<MediaItem>()
             if (currentMediaItem != null) {
                 val mi = currentMediaItem!!
+                mi.description.extras?.putBoolean(METADATA_KEY_IS_BOOKMARK, true)
                 mi.description.extras?.putLong(METADATA_KEY_LAST_POSITION, lastKnownPosition)
                 mi.description.extras?.putLong(METADATA_KEY_LAST_LISTENED_TIMESTAMP, lastPositionUpdateTime)
                 list.add(mi)
@@ -569,7 +576,13 @@ mediaSessionConnector.setErrorMessageProvider(messageProvider);
             Log.d(LOG_TAG, "Requesting offline root")
             result.sendResult(cacheManager.cacheBrowser.rootFolder)
         } else {
-            result.sendResult(ArrayList())
+            result.detach()
+            val t = Thread({
+                val res =  cacheManager.cacheBrowser.listFolder(parentId)
+                currentFolder = res.filter{it.isPlayable}
+                result.sendResult(res)
+            }, "Retrieve folder")
+            t.start()
         }
     }
 

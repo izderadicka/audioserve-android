@@ -11,7 +11,7 @@ class CacheBrowserTest: BaseCacheAndroidTest() {
 
     @Test
     fun testRootFolder() {
-        val ids = setOf("audio/Verne, Jules/Around the World in Eighty Days/01 - Chapter I.opus",
+        val ids = listOf("audio/Verne, Jules/Around the World in Eighty Days/01 - Chapter I.opus",
                 "audio/Stevenson, Robert Louis/Treasure Island/01 - 00 - Dedication & Introductory Poem.mp3",
                 "1/audio/Adams Douglas/Douglas Adams - Stoparuv pruvodce galaxii (2008)/00.uvod.mp3")
         val cacheBrowser = CacheBrowser(ids, tmpDir)

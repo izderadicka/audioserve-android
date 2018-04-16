@@ -183,11 +183,13 @@ class CacheManager private constructor(val context: Context) {
 
     private val prefsListener = object : SharedPreferences.OnSharedPreferenceChangeListener {
         override fun onSharedPreferenceChanged(sharedPreferences: SharedPreferences, key: String?) {
-            if (key == "pref_transcoding") {
-                transcode = transcodingFromPrefs(context)
-                resetTranscodeLimit()
-            } else if (key == "pref_cache_location") {
-                reset()
+            when (key) {
+                "pref_transcoding" -> {
+                    transcode = transcodingFromPrefs(context)
+                    resetTranscodeLimit()
+                }
+                "pref_cache_location",  "pref_offline" -> reset()
+
             }
         }
         }
@@ -224,7 +226,6 @@ class CacheManager private constructor(val context: Context) {
         val cacheSize: Long = PreferenceManager.getDefaultSharedPreferences(context).getString("pref_cache_size",
                 DEFAULT_CACHE_SIZE_MB.toString()).toLong() * 1024 * 1024
         val baseUrl:String = PreferenceManager.getDefaultSharedPreferences(context).getString("pref_server_url","")
-        cache =  FileCache(cacheDir,cacheSize, baseUrl)
         val oldListeners: HashSet<FileCache.Listener> = cache.listeners.clone() as HashSet<FileCache.Listener>
         cache.removeAllListeners()
         cache = FileCache(cacheDir, cacheSize, baseUrl)

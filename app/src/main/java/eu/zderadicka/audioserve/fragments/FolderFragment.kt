@@ -210,13 +210,14 @@ class FolderAdapter(val context: Context,
     }
 
     fun updateNowPlaying(mediaId: String): Int {
-
+        val oldPlaying = nowPlaying
         val idx = idMap.get(mediaId)
         nowPlaying = if (idx == null) -1 else idx
-        if (nowPlaying >= 0 ) {
-            notifyDataSetChanged()
+        if (nowPlaying >= 0 && nowPlaying != oldPlaying) {
+            notifyItemChanged(nowPlaying)
+            if (oldPlaying >= 0) notifyItemChanged(oldPlaying)
             pendingMediaId = null
-        } else {
+        } else if (nowPlaying < 0){
             pendingMediaId = mediaId
         }
         return nowPlaying

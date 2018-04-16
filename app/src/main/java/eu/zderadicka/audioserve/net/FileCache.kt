@@ -25,16 +25,18 @@ private const val MAX_CACHE_FILES = 1000
 private const val MIN_FILE_SIZE: Long = 5 * 1024 * 1024 // If we do not know file size assume at least 5MB
 private const val MAX_DOWNLOAD_RETRIES = 3
 private const val NOT_CONNECTED_WAIT = 10000L // wait ms if phone is not connected
-private const val MAX_CACHED_FILE_SIZE: Long =  250*1024*1024
+private const val MAX_CACHED_FILE_SIZE: Long = 250 * 1024 * 1024
 
 
 private val CONTENT_RANGE_RE = Regex("""bytes\s+(\d+)-(\d+)/(\d+)\s*""")
-data class ContentRange(val start:Long, val end: Long, val totalLength: Long)
+
+data class ContentRange(val start: Long, val end: Long, val totalLength: Long)
+
 fun parseContentRange(range: String): ContentRange? {
     val m = CONTENT_RANGE_RE.matchEntire(range)
     if (m == null) return null
     try {
-        val groupAsLong = {n:Int -> m.groups.get(n)!!.value.toLong()}
+        val groupAsLong = { n: Int -> m.groups.get(n)!!.value.toLong() }
         return ContentRange(groupAsLong(1), groupAsLong(2), groupAsLong(3))
 
     } catch (e: NumberFormatException) {
@@ -54,7 +56,7 @@ class CacheIndex(val maxCacheSize: Long, private val changeListener: CacheItem.L
         }
 
     val keys: Set<String>
-    get() = map.keys
+        get() = map.keys
 
     fun contains(path: String): Boolean {
         return map.containsKey(path)
@@ -69,7 +71,7 @@ class CacheIndex(val maxCacheSize: Long, private val changeListener: CacheItem.L
             if (map.containsKey(item.path)) return
             makeSpaceFor(item)
             map.put(item.path, item)
-            cacheSize+= item.knownLength
+            cacheSize += item.knownLength
         }
 
     }
@@ -118,7 +120,7 @@ class CacheIndex(val maxCacheSize: Long, private val changeListener: CacheItem.L
             e.value.destroy()
             map.remove(e.key)
         }
-        cacheSize-=removedSize
+        cacheSize -= removedSize
 
     }
 
@@ -130,7 +132,7 @@ class CacheIndex(val maxCacheSize: Long, private val changeListener: CacheItem.L
                 if (f.isDirectory()) {
                     load(f)
                 } else {
-                    var path = f.absolutePath.substring(pathPrefixLength+1)
+                    var path = f.absolutePath.substring(pathPrefixLength + 1)
                     if (path.endsWith(TMP_FILE_SUFFIX)) {
                         path = path.substring(0, path.length - TMP_FILE_SUFFIX.length)
                     }
@@ -155,8 +157,8 @@ class CacheIndex(val maxCacheSize: Long, private val changeListener: CacheItem.L
 class FileCache(val cacheDir: File,
                 val maxCacheSize: Long,
                 val baseUrl: String, val
-                token:String? = null,
-                dontObserveDir:Boolean = false) : CacheItem.Listener {
+                token: String? = null,
+                dontObserveDir: Boolean = false) : CacheItem.Listener {
 
     enum class Status {
         NotCached,
@@ -167,8 +169,8 @@ class FileCache(val cacheDir: File,
     private val index = CacheIndex(maxCacheSize, this, true)
     internal val listeners = HashSet<Listener>()
     private val queue = LinkedBlockingDeque<CacheItem>(MAX_CACHE_FILES)
-    private var loaderThread:Thread? = null
-    private var loader:FileLoader? = null
+    private var loaderThread: Thread? = null
+    private var loader: FileLoader? = null
     private val baseUrlPath: String = URL(baseUrl).path
 
     private var dirObserver: FileObserver? = null;
@@ -177,7 +179,7 @@ class FileCache(val cacheDir: File,
         if (!cacheDir.exists()) {
             cacheDir.mkdir()
         }
-        if (! dontObserveDir) {
+        if (!dontObserveDir) {
             dirObserver = object : FileObserver(cacheDir.absolutePath, FileObserver.DELETE_SELF) {
                 override fun onEvent(event: Int, path: String?) {
                     Log.d(LOG_TAG, "Dir event is $event, $path")
@@ -198,7 +200,7 @@ class FileCache(val cacheDir: File,
             dirObserver?.stopWatching()
             if (deleteDir) {
                 val res = cacheDir.deleteRecursively()
-                if (! res) {
+                if (!res) {
                     Log.e(LOG_TAG, "Cannot delete media cache dir")
                 }
             }
@@ -210,7 +212,7 @@ class FileCache(val cacheDir: File,
             dirObserver = object : FileObserver(cacheDir.absolutePath, FileObserver.DELETE_SELF) {
                 override fun onEvent(event: Int, path: String?) {
                     Log.d(LOG_TAG, "Dir event is $event, $path")
-                    if (event and FileObserver.DELETE_SELF >0) resetIndex()
+                    if (event and FileObserver.DELETE_SELF > 0) resetIndex()
                 }
             }
             dirObserver?.startWatching()
@@ -218,13 +220,16 @@ class FileCache(val cacheDir: File,
     }
 
     val numberOfFiles: Int
-    get() = index.size
+        get() = index.size
 
     val cacheSize: Long
-    get() = index.cacheSize
+        get() = index.cacheSize
 
-    val cacheKeys: Set<String>
-    get() = index.keys
+    val cacheKeys: List<String>
+        get() {
+            val keys = HashSet(index.keys)
+            return keys.filter { checkCache(it) == Status.FullyCached }
+        }
 
     fun pathFromUri(uri: Uri): String {
         val p = uri.path
@@ -240,7 +245,7 @@ class FileCache(val cacheDir: File,
             throw IllegalStateException("Loader already started")
         }
 
-        loader = FileLoader(queue = queue, baseUrl = baseUrl,token = token)
+        loader = FileLoader(queue = queue, baseUrl = baseUrl, token = token)
         val loaderThread = Thread(loader, "Loader Thread")
         loaderThread.isDaemon = true
         loaderThread.start()
@@ -254,7 +259,7 @@ class FileCache(val cacheDir: File,
         this.loader = null
     }
 
-    fun getOrAdd(path:String): CacheItem = synchronized(this){
+    fun getOrAdd(path: String): CacheItem = synchronized(this) {
         if (index.contains(path)) {
             index.get(path)!!
         } else {
@@ -262,13 +267,13 @@ class FileCache(val cacheDir: File,
         }
     }
 
-    fun injectFile(path:String, f:File):CacheItem {
+    fun injectFile(path: String, f: File): CacheItem {
         val item = getOrAdd(path)
         item.injectFile(f)
         return item
     }
 
-    fun getOrAddAndSchedule(path: String, transcode: String?):CacheItem {
+    fun getOrAddAndSchedule(path: String, transcode: String?): CacheItem {
         val item = getOrAdd(path)
         scheduleDownload(item, transcode)
         return item
@@ -305,16 +310,16 @@ class FileCache(val cacheDir: File,
 
     fun stopAllLoading(vararg keepLoading: String) = synchronized(this) {
         queue.clear()
-        val shouldInterrupt: Boolean = if (keepLoading.size == 0)  {
+        val shouldInterrupt: Boolean = if (keepLoading.size == 0) {
             true
         } else if (keepLoading[0] == loader?.currentPath) {
             false
-        } else if (keepLoading.size>1) {
+        } else if (keepLoading.size > 1) {
             val firstItem = index.get(keepLoading[0])
             if (firstItem == null || firstItem.state != CacheItem.State.Complete) {
                 true
             } else {
-                ! (loader?.currentPath in keepLoading.slice(1..keepLoading.size))
+                !(loader?.currentPath in keepLoading.slice(1..keepLoading.size))
             }
         } else {
             true
@@ -334,7 +339,7 @@ class FileCache(val cacheDir: File,
 
     fun addListener(l: Listener) = listeners.add(l)
     fun removeListener(l: Listener) = listeners.remove(l)
-    fun removeAllListeners()= listeners.clear()
+    fun removeAllListeners() = listeners.clear()
 
     override fun onItemChange(path: String, state: CacheItem.State) {
         for (l in listeners) {
@@ -345,9 +350,8 @@ class FileCache(val cacheDir: File,
     interface Listener {
         fun onCacheChange(path: String, status: Status)
     }
-
-
 }
+
 
 private const val LOADER_BUFFER_SIZE = 10 * 1024
 
@@ -357,18 +361,18 @@ class FileLoader(private val queue: BlockingDeque<CacheItem>,
                  private val context: Context? = null) : Runnable {
     private var stopFlag = false
     fun stop() {
-        stopFlag=true
+        stopFlag = true
     }
 
     var currentPath: String? = null
-    private set
+        private set
 
     private var isConnected = true
     private val connectedCondition = ConditionVariable()
-    private val connectivityStateReceiver = object: BroadcastReceiver() {
+    private val connectivityStateReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
 
-            if (intent?.action == ConnectivityManager.CONNECTIVITY_ACTION && context!= null) {
+            if (intent?.action == ConnectivityManager.CONNECTIVITY_ACTION && context != null) {
                 isConnected = isNetworkConnected(context)
 
             }
@@ -377,15 +381,15 @@ class FileLoader(private val queue: BlockingDeque<CacheItem>,
     }
 
     init {
-            if (context != null) {
-                context.registerReceiver(connectivityStateReceiver, IntentFilter(ConnectivityManager.CONNECTIVITY_ACTION))
-                isConnected = isNetworkConnected(context)
-                if (isConnected) {
-                    connectedCondition.open()
-                } else {
-                    connectedCondition.close()
-                }
+        if (context != null) {
+            context.registerReceiver(connectivityStateReceiver, IntentFilter(ConnectivityManager.CONNECTIVITY_ACTION))
+            isConnected = isNetworkConnected(context)
+            if (isConnected) {
+                connectedCondition.open()
+            } else {
+                connectedCondition.close()
             }
+        }
     }
 
     private fun returnToQueue(item: CacheItem) {
@@ -432,7 +436,7 @@ class FileLoader(private val queue: BlockingDeque<CacheItem>,
                 // Check that item is not complete or filling elsewhere
                 if (item.state == CacheItem.State.Complete ||
                         item.state == CacheItem.State.Filling) continue
-                var urlStr = baseUrl+ if (item.path.startsWith("/")) item.path.substring(1) else item.path
+                var urlStr = baseUrl + if (item.path.startsWith("/")) item.path.substring(1) else item.path
                 if (item.transcode != null) {
                     urlStr += "?${TRANSCODE_QUERY}=${item.transcode}"
                 }
@@ -440,14 +444,14 @@ class FileLoader(private val queue: BlockingDeque<CacheItem>,
                 val conn = url.openConnection() as HttpURLConnection
                 Log.d(LOG_TAG, "Started download of $url")
                 try {
-                    if (item.cachedLength>0) {
+                    if (item.cachedLength > 0) {
                         conn.setRequestProperty("Range", "bytes=${item.cachedLength}-")
                     }
                     conn.setRequestProperty("Authorization", "Bearer $token")
                     val responseCode = conn.responseCode
                     if (responseCode == 200 || responseCode == 206) {
                         val startAt: Long = if (responseCode == 206) {
-                            parseContentRange(conn.getHeaderField("Content-Range"))?.start?:0L
+                            parseContentRange(conn.getHeaderField("Content-Range"))?.start ?: 0L
                         } else {
                             0L
                         }
@@ -460,7 +464,7 @@ class FileLoader(private val queue: BlockingDeque<CacheItem>,
                             val contentLength = conn.contentLength
                             if (contentLength > MAX_CACHED_FILE_SIZE) {
                                 Log.e(LOG_TAG, "File is bigger then max limit")
-                                complete=true
+                                complete = true
                                 break
                             }
                             val buf = ByteArray(LOADER_BUFFER_SIZE)
@@ -471,7 +475,7 @@ class FileLoader(private val queue: BlockingDeque<CacheItem>,
                                         complete = true
                                         break
                                     } else if (read + item.cachedLength > MAX_CACHED_FILE_SIZE) {
-                                        complete=true
+                                        complete = true
                                         break
                                     }
                                     item.write(buf, 0, read)
@@ -480,14 +484,14 @@ class FileLoader(private val queue: BlockingDeque<CacheItem>,
                             }
 
                         } finally {
-                            Log.d(LOG_TAG,"Finished download of $url complete $complete")
+                            Log.d(LOG_TAG, "Finished download of $url complete $complete")
                             item.closeForAppend(complete)
                         }
 
                     } else {
                         Log.e(LOG_TAG, "Http error $responseCode ${conn.responseMessage} for url $url")
                         // Can retry on server error
-                        if (responseCode>= 500) retry(item)
+                        if (responseCode >= 500) retry(item)
                     }
 
                 } catch (e: InterruptedException) {
@@ -502,8 +506,7 @@ class FileLoader(private val queue: BlockingDeque<CacheItem>,
 
             } catch (e: InterruptedException) {
                 Log.d(LOG_TAG, "Load interrupted")
-            }
-            finally {
+            } finally {
                 currentPath = null
             }
         }
