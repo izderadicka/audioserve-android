@@ -54,4 +54,6 @@
     <string name="action_offline">Force Offline</string>
     <string name="collection_offline">Select Offline Folder</string>
     <string name="action_pending_downloads">Pending Downloads</string>
+    <string name="downloading_notification_title">Downloading files - %1$d remaining</string>
+    <string name="download_notification_details">Summary - Success %1$d,  Errors %2$d</string>
 </resources>

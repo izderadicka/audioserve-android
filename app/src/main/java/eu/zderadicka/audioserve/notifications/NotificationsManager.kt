@@ -178,7 +178,7 @@ class NotificationsManager(private val mService: AudioService) {
         const val NOTIFICATION_ID = 412
 
         private val LOG_TAG = NotificationsManager::class.java.simpleName
-        private const val CHANNEL_ID = "com.example.android.musicplayer.channel"
+        private const val CHANNEL_ID = "eu.zderadicka.audioserve.playback.channel"
         private const val REQUEST_CODE = 501
     }
 

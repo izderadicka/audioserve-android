@@ -21,7 +21,7 @@ import java.util.concurrent.LinkedBlockingDeque
 import kotlin.math.max
 
 private const val LOG_TAG = "FileCache"
-private const val MAX_CACHE_FILES = 1000
+internal const val MAX_CACHE_FILES = 1000
 private const val MIN_FILE_SIZE: Long = 5 * 1024 * 1024 // If we do not know file size assume at least 5MB
 private const val MAX_DOWNLOAD_RETRIES = 3
 private const val NOT_CONNECTED_WAIT = 10000L // wait ms if phone is not connected
@@ -163,7 +163,8 @@ class FileCache(val cacheDir: File,
     enum class Status {
         NotCached,
         PartiallyCached,
-        FullyCached
+        FullyCached,
+        Error
     }
 
     private val index = CacheIndex(maxCacheSize, this, true)
@@ -267,6 +268,15 @@ class FileCache(val cacheDir: File,
         }
     }
 
+    fun getOrAddTranscoded(path:String, transcode: String?): CacheItem {
+        val item = getOrAdd(path)
+        // set transcode only for item that is not partly loaded
+        if (item.state == CacheItem.State.Empty) {
+            item.transcode = transcode
+        }
+        return item
+    }
+
     fun injectFile(path: String, f: File): CacheItem {
         val item = getOrAdd(path)
         item.injectFile(f)
@@ -279,12 +289,14 @@ class FileCache(val cacheDir: File,
         return item
     }
 
-    fun checkCache(path: String): Status =
-            if (!index.contains(path)) {
-                Status.NotCached
-            } else {
-                itemStateConv(index.get(path)?.state)
-            }
+    fun checkCache(path: String): Status = synchronized(this) {
+        if (!index.contains(path)) {
+            Status.NotCached
+        } else {
+            val item = index.get(path)
+            itemStateConv(item?.state, item?.hasError?:false)
+        }
+    }
 
     private fun scheduleDownload(item: CacheItem, transcode: String?) {
         if (item.state != CacheItem.State.Complete) {
@@ -328,22 +340,26 @@ class FileCache(val cacheDir: File,
 
     }
 
-    private fun itemStateConv(state: CacheItem.State?) =
-            when (state) {
-                CacheItem.State.Empty -> Status.NotCached
-                CacheItem.State.Exists,
-                CacheItem.State.Filling -> Status.PartiallyCached
-                CacheItem.State.Complete -> Status.FullyCached
-                else -> Status.NotCached
+    private fun itemStateConv(state: CacheItem.State?, hasError: Boolean) =
+            if (hasError) {
+                Status.Error
+            } else {
+                when (state) {
+                    CacheItem.State.Empty -> Status.NotCached
+                    CacheItem.State.Exists,
+                    CacheItem.State.Filling -> Status.PartiallyCached
+                    CacheItem.State.Complete -> Status.FullyCached
+                    else -> Status.NotCached
+                }
             }
 
     fun addListener(l: Listener) = listeners.add(l)
     fun removeListener(l: Listener) = listeners.remove(l)
     fun removeAllListeners() = listeners.clear()
 
-    override fun onItemChange(path: String, state: CacheItem.State) {
+    override fun onItemChange(path: String, state: CacheItem.State, hasError:Boolean) {
         for (l in listeners) {
-            l.onCacheChange(path, itemStateConv(state))
+            l.onCacheChange(path, itemStateConv(state, hasError))
         }
     }
 
@@ -401,10 +417,11 @@ class FileLoader(private val queue: BlockingDeque<CacheItem>,
     }
 
     private fun retry(item: CacheItem) {
-        item.hasError = true
         item.retries++
         if (item.retries <= MAX_DOWNLOAD_RETRIES) {
             returnToQueue(item)
+        } else {
+            item.hasError = true
         }
     }
 
@@ -491,7 +508,7 @@ class FileLoader(private val queue: BlockingDeque<CacheItem>,
                     } else {
                         Log.e(LOG_TAG, "Http error $responseCode ${conn.responseMessage} for url $url")
                         // Can retry on server error
-                        if (responseCode >= 500) retry(item)
+                        if (responseCode >= 500) retry(item) else item.hasError = true
                     }
 
                 } catch (e: InterruptedException) {
@@ -501,6 +518,7 @@ class FileLoader(private val queue: BlockingDeque<CacheItem>,
                     retry(item)
                 } catch (e: Exception) {
                     Log.e(LOG_TAG, "Other error for url $url", e)
+                    item.hasError = true
 
                 }
 

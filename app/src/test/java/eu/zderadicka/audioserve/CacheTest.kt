@@ -193,8 +193,9 @@ class CacheTest:BaseCacheTest() {
         }, "readThread")
 
         cacheItem.addListener(object: CacheItem.Listener{
-            override fun onItemChange(path: String, state: CacheItem.State) {
+            override fun onItemChange(path: String, state: CacheItem.State, hasError:Boolean) {
                 println("Write state changed to ${state.name}")
+                assertFalse(hasError)
                 if (state == CacheItem.State.Filling) {
                     try {
                         println("Running reader thread")
@@ -225,7 +226,7 @@ class CacheTest:BaseCacheTest() {
     fun testRewriteFromScratch() {
         var counter = 0
         val listener = object: CacheItem.Listener {
-            override fun onItemChange(path: String, state: CacheItem.State) {
+            override fun onItemChange(path: String, state: CacheItem.State, hasError: Boolean) {
                 counter++
                 println("Status change to $state")
             }

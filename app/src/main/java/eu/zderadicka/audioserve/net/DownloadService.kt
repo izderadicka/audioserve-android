@@ -1,19 +1,22 @@
 package eu.zderadicka.audioserve.net
 
-import android.app.DownloadManager
-import android.app.IntentService
-import android.app.Service
+import android.app.*
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.net.Uri
 import android.os.*
+import android.support.annotation.RequiresApi
+import android.support.v4.app.NotificationCompat
 import android.support.v4.media.MediaBrowserCompat
 import android.util.Log
+import eu.zderadicka.audioserve.R
 import eu.zderadicka.audioserve.data.METADATA_KEY_MEDIA_ID
 import eu.zderadicka.audioserve.data.folderIdFromFileId
+import eu.zderadicka.audioserve.notifications.NotificationsManager
 import java.io.File
+import java.util.concurrent.LinkedBlockingDeque
 
 const val DOWNLOAD_ACTION = "eu.zderadicka.audioserve.DOWNLOAD"
 private const val DOWNLOAD_CACHE_DIR = "audioserve_download"
@@ -21,31 +24,47 @@ private const val MSG_PREPARE_DOWNLOAD = 1
 private const val MSG_PROCESS_DOWNLOAD = 2
 private const val MSG_SCHEDULE_DOWNLOAD = 3
 private const val LOG_TAG = "DownloadService"
+private const val CHANNEL_ID = "eu.zderadicka.audioserve.downloads.channel"
+private const val NOTIFICATION_ID = 8432
+
+
+enum class DownloadStatus(val details: Any? = null) {
+    Pending,
+    Downloading,
+    Done,
+    Error;
+
+    companion object {
+        fun fromCacheStatus(state: FileCache.Status) =
+                when (state) {
+                    FileCache.Status.NotCached -> Pending
+                    FileCache.Status.PartiallyCached -> Downloading
+                    FileCache.Status.FullyCached -> Done
+                    FileCache.Status.Error -> Error
+
+                }
+
+    }
+}
 
 class DownloadService : Service() {
 
-    private lateinit var downloadManager: DownloadManager
+
     private lateinit var apiClient: ApiClient
     private lateinit var cacheManager: CacheManager
-    private val pendingDownloads = HashMap<Long, String>()
-    private lateinit var downloadDir: File
+    private val pendingDownloads = HashMap<String, DownloadStatus>()
     private lateinit var worker: Worker
     private lateinit var workerThread: HandlerThread
 
-    private fun checkStatus(downloadId: Long): Boolean {
+    private var pendingCount: Int = 0
+    private var doneCount: Int = 0
+    private var failedCount: Int = 0
 
-        val query = DownloadManager.Query()
-        query.setFilterById(downloadId)
-        val c = downloadManager.query(query)
-        if (c.moveToNext()) {
-            val status = c.getInt(c.getColumnIndex(DownloadManager.COLUMN_STATUS))
-            if (status == DownloadManager.STATUS_SUCCESSFUL) return true
-            val reason = c.getInt(c.getColumnIndex(DownloadManager.COLUMN_REASON))
-            Log.e(LOG_TAG, "Download failed for reason $reason")
-        }
 
-        return false
-    }
+    private val queue = LinkedBlockingDeque<CacheItem>(MAX_CACHE_FILES)
+    private val downloadThreads = ArrayList<Thread>()
+    private val downloadLoaders = ArrayList<FileLoader>()
+
 
     private inner class Worker(looper: Looper) : Handler(looper) {
 
@@ -58,7 +77,7 @@ class DownloadService : Service() {
 
                 MSG_PROCESS_DOWNLOAD -> {
 
-                    val (downloadId, mediaId) = msg.obj as Pair<Long,String>
+                    val (downloadId, mediaId) = msg.obj as Pair<String, FileCache.Status>
                     onProcessDownload(downloadId, mediaId)
                 }
                 MSG_SCHEDULE_DOWNLOAD -> {
@@ -69,20 +88,11 @@ class DownloadService : Service() {
         }
     }
 
-    private val listener = object : BroadcastReceiver() {
-        override fun onReceive(context: Context?, intent: Intent?) {
-            Log.d(LOG_TAG, "Got broadcast ${intent?.action}")
-            val id = intent?.getLongExtra(DownloadManager.EXTRA_DOWNLOAD_ID, -1)
-            val mediaId = pendingDownloads.remove(id)
-
-            if (mediaId != null) {
-                val msg = worker.obtainMessage(MSG_PROCESS_DOWNLOAD, Pair(id, mediaId))
-                worker.sendMessage(msg)
-            }
-
-
+    private val cacheListener = object : FileCache.Listener {
+        override fun onCacheChange(path: String, status: FileCache.Status) {
+            val msg = worker.obtainMessage(MSG_PROCESS_DOWNLOAD, Pair(path, status))
+            worker.sendMessage(msg)
         }
-
     }
 
     override fun onCreate() {
@@ -90,16 +100,40 @@ class DownloadService : Service() {
         workerThread = HandlerThread("Download Service Worker")
         workerThread.start()
         worker = Worker(workerThread.looper)
-        downloadManager = getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager
+
         apiClient = ApiClient.getInstance(this)
         cacheManager = CacheManager.getInstance(this)
-        downloadDir = File(this.getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS), DOWNLOAD_CACHE_DIR)
-        if (!downloadDir.exists()) {
-            downloadDir.mkdirs()
+        cacheManager.addListener(cacheListener)
+
+        pendingCount = 0
+        doneCount = 0
+        failedCount = 0
+
+        startLoaders()
+    }
+
+    private fun startLoaders() {
+        if (downloadThreads.size > 0) {
+            throw IllegalStateException("Loaders already started")
         }
-        registerReceiver(listener, IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE))
+        val numLoaders = 2
+        for (i in 1..numLoaders) {
 
+            val loader = FileLoader(queue = queue, baseUrl = apiClient.baseUrl, token = apiClient.token!!)
+            val loaderThread = Thread(loader, "Loader Thread")
+            loaderThread.isDaemon = true
+            loaderThread.start()
+            downloadLoaders.add(loader)
+            downloadThreads.add(loaderThread)
+        }
+    }
 
+    private fun stopLoaders() {
+        queue.clear()
+        downloadLoaders.forEach { it.stop() }
+        downloadThreads.forEach { it.interrupt() }
+        downloadLoaders.clear()
+        downloadThreads.clear()
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -116,25 +150,26 @@ class DownloadService : Service() {
         return Service.START_STICKY //TODO reconsider as not sticky? Because after restart anyhow there is nothing to do unless we reconstruct pending downloads
     }
 
-    private fun onProcessDownload(downloadId: Long, mediaId: String) {
-        Log.d(LOG_TAG, "Finished download of $mediaId")
-        if (checkStatus(downloadId)) {
-            val f = File(downloadDir, mediaId)
-            if ( f.exists()) {
+    private fun onProcessDownload(mediaId: String, status: FileCache.Status) {
+        if (mediaId in pendingDownloads) {
+            if (status == FileCache.Status.FullyCached) {
+                Log.d(LOG_TAG, "Finished download of $mediaId")
+                pendingDownloads.remove(mediaId)
+                doneCount+=1
+                startForeground(NOTIFICATION_ID, createNotification())
 
-                Log.d(LOG_TAG, "Successful download of $mediaId")
-                val res = cacheManager.injectFile(mediaId, f)
-                if (!res) {
-                    Log.e(LOG_TAG, "Download injection into cache failed")
-                }
-            } else {
-                Log.e(LOG_TAG, "Downloaded file does not exist")
+            } else if (status == FileCache.Status.Error) {
+                failedCount +=1
+                pendingDownloads.remove(mediaId)
+                startForeground(NOTIFICATION_ID, createNotification())
+            }else {
+                pendingDownloads.put(mediaId, DownloadStatus.fromCacheStatus(status))
             }
 
         }
 
-        downloadManager.remove(downloadId)
         if (pendingDownloads.size == 0) {
+            stopForeground(false)
             stopSelf()
         }
     }
@@ -164,40 +199,67 @@ class DownloadService : Service() {
         }
     }
 
+    private val notificationManager: NotificationManager by lazy {
+        this.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+    }
+
+    @RequiresApi(Build.VERSION_CODES.O)
+    private fun createChannel() {
+        if (notificationManager.getNotificationChannel(CHANNEL_ID) == null) {
+            val name = "Audioserve Downloads"
+            val description = "Audioserve pending downloads"
+            val importance = NotificationManager.IMPORTANCE_LOW
+            val channel = NotificationChannel(CHANNEL_ID, name, importance)
+            channel.description = description
+            notificationManager.createNotificationChannel(channel)
+
+        }
+    }
+
+    private fun createNotification(): Notification {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            createChannel()
+        }
+        val builder = NotificationCompat.Builder(this, CHANNEL_ID)
+        builder.setContentTitle(getString(R.string.downloading_notification_title, pendingCount))
+        builder.setContentText(getString(R.string.download_notification_details, doneCount, failedCount))
+        builder.setSmallIcon(R.drawable.ic_download)
+        builder.setPriority(NotificationCompat.PRIORITY_DEFAULT)
+
+        return builder.build()
+
+
+    }
+
     private fun onScheduleDownload(itemsToDownload: List<MediaBrowserCompat.MediaItem>) {
         itemsToDownload
                 .filter { !cacheManager.isCached(it.mediaId!!) }
+                .filter { !(it.mediaId in pendingDownloads)}
                 .forEach {
-                val transcode = cacheManager.shouldTranscode(it)
-                val transcodeQuery = if (transcode != null) {
-                    "?$TRANSCODE_QUERY=$transcode"
-                } else {
-                    ""
+
+                    val cacheItem = cacheManager.getCacheItemFor(it)
+                    try {
+                        queue.add(cacheItem)
+                        pendingCount+=1
+                        pendingDownloads.put(it.mediaId!!, DownloadStatus.Pending)
+                    } catch (e: IllegalStateException) {
+                        Log.e(LOG_TAG, "Cannot add to queue - it's full")
+                    }
+
                 }
 
-                val url = apiClient.baseURL + it.mediaId + transcodeQuery
-                val destination = File(downloadDir, it.mediaId)
-                Log.d(LOG_TAG, "Will download $url")
-                val request = DownloadManager.Request(Uri.parse(url))
-                request.setDestinationUri(Uri.parse(destination.toURI().toString()))
-                request.addRequestHeader("Authorization", "Bearer ${apiClient.token}")
-                request.setVisibleInDownloadsUi(true);
-                request.setTitle(destination.name)
-                request.setAllowedNetworkTypes(DownloadManager.Request.NETWORK_WIFI or DownloadManager.Request.NETWORK_MOBILE)
-                request.setAllowedOverRoaming(false)
-
-                val id = downloadManager.enqueue(request)
-
-                pendingDownloads.put(id, it.mediaId!!)
-            }
+                if (pendingCount> 0 ) {
+                    startForeground(NOTIFICATION_ID, createNotification())
+                }
     }
 
 
     override fun onDestroy() {
         Log.d(LOG_TAG, "Destroying Download Service")
         super.onDestroy()
-        unregisterReceiver(listener)
+        cacheManager.removeLister(cacheListener)
         workerThread.quit()
+        stopLoaders()
     }
 
     override fun onBind(intent: Intent?): IBinder? {

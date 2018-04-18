@@ -29,7 +29,16 @@ class CacheItem(val path: String, val cacheDir: File, changeListener: Listener? 
         private set
     var totalLength: Long = UNKNOWN_LENGTH
         private set
-    var hasError: Boolean = false
+
+    private var _hasError:Boolean = false
+    var hasError: Boolean
+        get() = _hasError
+    internal set(v) {
+        if (_hasError != v) {
+            _hasError =v
+            fireListeners(state)
+        }
+    }
     var retries: Int = 0
     private var position: Long = 0
     private var appendStream: FileOutputStream? = null
@@ -117,7 +126,7 @@ class CacheItem(val path: String, val cacheDir: File, changeListener: Listener? 
 
     private fun fireListeners(newValue: State) = synchronized(this) {
         for (l in listeners) {
-            l.onItemChange(path, newValue)
+            l.onItemChange(path, newValue, hasError)
         }
     }
 
@@ -168,6 +177,8 @@ class CacheItem(val path: String, val cacheDir: File, changeListener: Listener? 
         }
         synchronized(this@CacheItem) {
             if (isComplete) {
+                _hasError = false
+                retries = 0
                 itemTempPath.renameTo(itemPath)
                 state = State.Complete
                 totalLength = cachedLength
@@ -240,17 +251,6 @@ class CacheItem(val path: String, val cacheDir: File, changeListener: Listener? 
                             (this@CacheItem as java.lang.Object).wait(10000)
                         }
 
-//                        readStream!!.close()
-//                        val f = if (state == State.Complete) itemPath else itemTempPath
-//                        readStream = FileInputStream(f)
-//                        readStream!!.skip(position)
-//
-//                    } else if (state == State.Complete && state != startState){
-//                        // state has changed to Completed in meanwhile
-//                        readStream!!.close()
-//                        readStream = FileInputStream(itemPath)
-//                        readStream!!.skip(position)
-
                     } else {
                         return read
                     }
@@ -275,7 +275,7 @@ class CacheItem(val path: String, val cacheDir: File, changeListener: Listener? 
 
         }
 
-        interface Listener {
-            fun onItemChange(path: String, state:State)
+    interface Listener {
+            fun onItemChange(path: String, state:State, hasError: Boolean)
         }
     }

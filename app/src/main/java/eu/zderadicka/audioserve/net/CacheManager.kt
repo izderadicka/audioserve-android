@@ -110,7 +110,7 @@ class CachedFileDataSource(val cache: FileCache) : DataSource, CacheItem.Listene
         return bytesRemaining
     }
 
-    override fun onItemChange(path: String, state: CacheItem.State) {
+    override fun onItemChange(path: String, state: CacheItem.State, hasError:Boolean) {
             if (state != CacheItem.State.Empty) cacheReadyCondition.open()
     }
 
@@ -273,6 +273,9 @@ class CacheManager private constructor(val context: Context) {
     fun ensureCaching(item: MediaBrowserCompat.MediaItem) {
         cache.getOrAddAndSchedule(item.mediaId!!, shouldTranscode(item))
     }
+
+    fun getCacheItemFor(item: MediaBrowserCompat.MediaItem): CacheItem =
+            cache.getOrAddTranscoded(item.mediaId!!, shouldTranscode(item))
 
     fun injectFile(mediaId:String, f:File):Boolean {
         if (isCached(mediaId)) return false

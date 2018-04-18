@@ -67,7 +67,7 @@ data class TranscodingLimits(var low:Int, var medium:Int, var high: Int)
 
 class ApiClient private constructor(val context: Context) {
 
-    lateinit var baseURL: String
+    lateinit var baseUrl: String
     private set
     var token:String? = null
     private set
@@ -87,12 +87,12 @@ class ApiClient private constructor(val context: Context) {
         }
 
     @Synchronized fun loadPreferences(cb: ((ApiError?) -> Unit)? = null) {
-        baseURL = PreferenceManager.getDefaultSharedPreferences(context).getString("pref_server_url", "")
-        if (baseURL.length == 0) {
+        baseUrl = PreferenceManager.getDefaultSharedPreferences(context).getString("pref_server_url", "")
+        if (baseUrl.length == 0) {
             Log.w(LOG_TAG, "BaseURL is empty!")
         } else {
-            assert(baseURL.endsWith("/"))
-            Log.d(LOG_TAG, "Client base URL is $baseURL")
+            assert(baseUrl.endsWith("/"))
+            Log.d(LOG_TAG, "Client base URL is $baseUrl")
         }
 
         login {
@@ -173,12 +173,12 @@ class ApiClient private constructor(val context: Context) {
     }
 
     fun uriFromMediaId(mediaId: String, transcode: String? = null): Uri {
-        return Uri.parse(baseURL+mediaId+ if (transcode != null) "?${TRANSCODE_QUERY}=$transcode" else "")
+        return Uri.parse(baseUrl+mediaId+ if (transcode != null) "?${TRANSCODE_QUERY}=$transcode" else "")
     }
 
 
     fun loadFolder(folder: String = "", collection: Int, callback: (AudioFolder?, ApiError?) -> Unit) {
-        var uri = baseURL
+        var uri = baseUrl
         if (collection>0) {
             uri+="$collection/"
         }
@@ -194,7 +194,7 @@ class ApiClient private constructor(val context: Context) {
     }
 
     fun loadSearch(query: String, collection: Int, callback: (AudioFolder?, ApiError?) -> Unit) {
-        var uri = baseURL
+        var uri = baseUrl
         if (collection>0) {
             uri+="$collection/"
         }
@@ -212,12 +212,12 @@ class ApiClient private constructor(val context: Context) {
     }
 
     fun loadCollections(callback: (ArrayList<String>?, ApiError?) -> Unit) {
-        val uri = baseURL + "collections"
+        val uri = baseUrl + "collections"
         sendRequest(uri, ::parseCollectionsFromJson, callback)
     }
 
     fun loadTranscodings(callback: (TranscodingLimits?, ApiError?) -> Unit) {
-        val uri = baseURL + "transcodings"
+        val uri = baseUrl + "transcodings"
         sendRequest(uri, ::parseTranscodingsFromJson, callback)
     }
 
@@ -231,7 +231,7 @@ class ApiClient private constructor(val context: Context) {
                 unsentRequests.clear()
             }
         }
-        val request = object: StringRequest(Request.Method.POST,baseURL+"authenticate",
+        val request = object: StringRequest(Request.Method.POST,baseUrl+"authenticate",
                 {
                     cb(null)
                     token = it
