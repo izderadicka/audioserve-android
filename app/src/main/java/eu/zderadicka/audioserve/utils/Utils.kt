@@ -14,6 +14,12 @@ import java.nio.channels.FileChannel
 
 private const val LOG_TAG = "Utils"
 
+// this is actually same as PreferenceManager.getDefaultSharedPreferences, but shorter and testing friendly as context can be mocked
+fun defPrefs(context: Context) =
+        context.getSharedPreferences(
+context.getPackageName() + "_preferences",
+                Context.MODE_PRIVATE)
+
 enum class ConnectionState {
     Unknown,
     Disconnected,
