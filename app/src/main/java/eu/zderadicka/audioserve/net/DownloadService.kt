@@ -120,7 +120,7 @@ class DownloadService : Service() {
         val numLoaders = 2
         for (i in 1..numLoaders) {
 
-            val loader = FileLoader(queue = queue, baseUrl = apiClient.baseUrl, token = apiClient.token!!)
+            val loader = FileLoader(queue = queue, context = this, token = apiClient.token!!)
             val loaderThread = Thread(loader, "Loader Thread")
             loaderThread.isDaemon = true
             loaderThread.start()
@@ -162,10 +162,12 @@ class DownloadService : Service() {
                 Log.d(LOG_TAG, "Finished download of $mediaId")
                 pendingDownloads.remove(mediaId)
                 doneCount+=1
+                pendingCount-=1
                 fireChange()
 
             } else if (status == FileCache.Status.Error) {
                 failedCount +=1
+                pendingCount-=1
                 pendingDownloads.remove(mediaId)
                 fireChange()
             }else {

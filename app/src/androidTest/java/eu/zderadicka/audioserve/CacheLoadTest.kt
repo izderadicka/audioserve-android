@@ -63,7 +63,7 @@ class CacheLoadTest: BaseCacheAndroidTest() {
 
         assertNotNull(client.token)
         val cacheMaxSize: Long = 100 * 1024 * 1024
-        val cache = FileCache(tmpDir, cacheMaxSize,baseUrl, client.token!!)
+        val cache = FileCache(tmpDir, cacheMaxSize, ctx, client.token!!)
 
         // size is 2,591,233 bytes
         val ps = arrayListOf("audio/Verne, Jules/Around the World in Eighty Days/01 - Chapter I.opus",

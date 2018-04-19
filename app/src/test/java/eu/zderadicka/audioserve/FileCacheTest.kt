@@ -1,17 +1,34 @@
 package eu.zderadicka.audioserve
 
+import android.content.Context
+import android.content.SharedPreferences
+import android.net.ConnectivityManager
+import android.net.NetworkInfo
 import eu.zderadicka.audioserve.net.CacheItem
 import eu.zderadicka.audioserve.net.FileCache
 import eu.zderadicka.audioserve.utils.copyFile
 import org.junit.Test
 import org.junit.Assert.*
+import org.mockito.Mockito
 import java.io.File
+import org.mockito.ArgumentMatchers.*
 
 class FileCacheTest:BaseCacheTest() {
 
 
     @Test
     fun testInit() {
+
+
+        val prefs: SharedPreferences = Mockito.mock(SharedPreferences::class.java)
+        val context: Context = Mockito.mock(Context::class.java)
+        val cm: ConnectivityManager = Mockito.mock(ConnectivityManager::class.java)
+        val netInfo:NetworkInfo = Mockito.mock(NetworkInfo::class.java)
+
+        Mockito.`when`(context.getSharedPreferences(anyString(),anyInt())).thenReturn(prefs)
+        Mockito.`when`(context.getSystemService(Context.CONNECTIVITY_SERVICE)).thenReturn(cm)
+        Mockito.`when`(cm.activeNetworkInfo).thenReturn(netInfo)
+        Mockito.`when`(netInfo.isConnectedOrConnecting).thenReturn(true)
 
         var statusesUpdates = 0
 
@@ -30,7 +47,7 @@ class FileCacheTest:BaseCacheTest() {
             }
         }
         val maxCacheSize: Long = 586270
-        val cache = FileCache(tmpDir!!, maxCacheSize, "http://localhost:3000", dontObserveDir = true)
+        val cache = FileCache(tmpDir!!, maxCacheSize, context, dontObserveDir = true)
         cache.addListener(counter)
         assertEquals(10, cache.numberOfFiles)
         assertEquals(10L * testFile.length(), cache.cacheSize)

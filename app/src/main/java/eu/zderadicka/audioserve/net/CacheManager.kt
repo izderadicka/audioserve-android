@@ -201,7 +201,7 @@ class CacheManager private constructor(val context: Context) {
         val cacheSize: Long = PreferenceManager.getDefaultSharedPreferences(context).getString("pref_cache_size",
                 DEFAULT_CACHE_SIZE_MB.toString()).toLong() * 1024 * 1024
         val baseUrl:String = PreferenceManager.getDefaultSharedPreferences(context).getString("pref_server_url","")
-        cache =  FileCache(cacheDir,cacheSize, baseUrl)
+        cache =  FileCache(cacheDir,cacheSize, context)
         transcode = transcodingFromPrefs(context)
         PreferenceManager.getDefaultSharedPreferences(context).registerOnSharedPreferenceChangeListener(prefsListener)
         Log.d(LOG_TAG, "Cache initialized in directory ${cacheDir.absolutePath}")
@@ -228,7 +228,7 @@ class CacheManager private constructor(val context: Context) {
         val baseUrl:String = PreferenceManager.getDefaultSharedPreferences(context).getString("pref_server_url","")
         val oldListeners: HashSet<FileCache.Listener> = cache.listeners.clone() as HashSet<FileCache.Listener>
         cache.removeAllListeners()
-        cache = FileCache(cacheDir, cacheSize, baseUrl)
+        cache = FileCache(cacheDir, cacheSize, context)
         oldListeners.forEach{cache.addListener(it)}
         _sourceFactory = null
         cacheBrowser =CacheBrowser(cache.cacheKeys, cacheDir)

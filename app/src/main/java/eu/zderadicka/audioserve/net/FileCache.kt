@@ -8,15 +8,15 @@ import android.net.ConnectivityManager
 import android.net.Uri
 import android.os.ConditionVariable
 import android.os.FileObserver
+import android.preference.PreferenceManager
 import android.util.Log
+import eu.zderadicka.audioserve.utils.defPrefs
 import eu.zderadicka.audioserve.utils.isNetworkConnected
 import java.io.File
 import java.io.IOException
 import java.net.HttpURLConnection
 import java.net.URL
-import java.util.concurrent.ArrayBlockingQueue
 import java.util.concurrent.BlockingDeque
-import java.util.concurrent.BlockingQueue
 import java.util.concurrent.LinkedBlockingDeque
 import kotlin.math.max
 
@@ -156,7 +156,7 @@ class CacheIndex(val maxCacheSize: Long, private val changeListener: CacheItem.L
 
 class FileCache(val cacheDir: File,
                 val maxCacheSize: Long,
-                val baseUrl: String, val
+                val context: Context,
                 token: String? = null,
                 dontObserveDir: Boolean = false) : CacheItem.Listener {
 
@@ -172,7 +172,11 @@ class FileCache(val cacheDir: File,
     private val queue = LinkedBlockingDeque<CacheItem>(MAX_CACHE_FILES)
     private var loaderThread: Thread? = null
     private var loader: FileLoader? = null
-    private val baseUrlPath: String = URL(baseUrl).path
+    private val baseUrlPath: String
+            get() {
+                val baseUrl = PreferenceManager.getDefaultSharedPreferences(context).getString("pref_server_url", null)!!
+                return URL(baseUrl).path
+            }
 
     private var dirObserver: FileObserver? = null;
 
@@ -246,7 +250,7 @@ class FileCache(val cacheDir: File,
             throw IllegalStateException("Loader already started")
         }
 
-        loader = FileLoader(queue = queue, baseUrl = baseUrl, token = token)
+        loader = FileLoader(queue = queue, token = token, context = context)
         val loaderThread = Thread(loader, "Loader Thread")
         loaderThread.isDaemon = true
         loaderThread.start()
@@ -353,11 +357,11 @@ class FileCache(val cacheDir: File,
                 }
             }
 
-    fun addListener(l: Listener) = listeners.add(l)
-    fun removeListener(l: Listener) = listeners.remove(l)
-    fun removeAllListeners() = listeners.clear()
+    fun addListener(l: Listener) = synchronized(this) {listeners.add(l)}
+    fun removeListener(l: Listener) = synchronized(this) {listeners.remove(l)}
+    fun removeAllListeners() = synchronized(this) {listeners.clear()}
 
-    override fun onItemChange(path: String, state: CacheItem.State, hasError:Boolean) {
+    override fun onItemChange(path: String, state: CacheItem.State, hasError:Boolean) = synchronized(this) {
         for (l in listeners) {
             l.onCacheChange(path, itemStateConv(state, hasError))
         }
@@ -372,12 +376,12 @@ class FileCache(val cacheDir: File,
 private const val LOADER_BUFFER_SIZE = 10 * 1024
 
 class FileLoader(private val queue: BlockingDeque<CacheItem>,
-                 private val baseUrl: String,
                  private val token: String,
-                 private val context: Context? = null) : Runnable {
+                 private val context: Context) : Runnable {
     private var stopFlag = false
     fun stop() {
         stopFlag = true
+        context.unregisterReceiver(connectivityStateReceiver)
     }
 
     var currentPath: String? = null
@@ -397,15 +401,15 @@ class FileLoader(private val queue: BlockingDeque<CacheItem>,
     }
 
     init {
-        if (context != null) {
-            context.registerReceiver(connectivityStateReceiver, IntentFilter(ConnectivityManager.CONNECTIVITY_ACTION))
-            isConnected = isNetworkConnected(context)
-            if (isConnected) {
-                connectedCondition.open()
-            } else {
-                connectedCondition.close()
-            }
+
+        context.registerReceiver(connectivityStateReceiver, IntentFilter(ConnectivityManager.CONNECTIVITY_ACTION))
+        isConnected = isNetworkConnected(context)
+        if (isConnected) {
+            connectedCondition.open()
+        } else {
+            connectedCondition.close()
         }
+
     }
 
     private fun returnToQueue(item: CacheItem) {
@@ -425,12 +429,10 @@ class FileLoader(private val queue: BlockingDeque<CacheItem>,
         }
     }
 
-    private fun onDestroy() {
-        context?.unregisterReceiver(connectivityStateReceiver)
-    }
+
 
     override fun run() {
-        while (true) {
+        main@ while (true) {
             try {
 
                 // wait if not connected
@@ -438,7 +440,7 @@ class FileLoader(private val queue: BlockingDeque<CacheItem>,
                     Log.d(LOG_TAG, "Network is not connected cannot load cache")
                     connectedCondition.block(NOT_CONNECTED_WAIT)
                 }
-
+                if (stopFlag) break
                 val item = queue.take()
 
                 // return to queue and try again if not connected
@@ -448,11 +450,12 @@ class FileLoader(private val queue: BlockingDeque<CacheItem>,
                 }
 
                 currentPath = item.path
-                if (stopFlag) return
+                if (stopFlag) break
                 if (Thread.interrupted()) continue
                 // Check that item is not complete or filling elsewhere
                 if (item.state == CacheItem.State.Complete ||
                         item.state == CacheItem.State.Filling) continue
+                val baseUrl = defPrefs(context).getString("pref_server_url", null)!!
                 var urlStr = baseUrl + if (item.path.startsWith("/")) item.path.substring(1) else item.path
                 if (item.transcode != null) {
                     urlStr += "?${TRANSCODE_QUERY}=${item.transcode}"
@@ -477,7 +480,7 @@ class FileLoader(private val queue: BlockingDeque<CacheItem>,
                         item.openForAppend(startNew)
                         var complete = false
                         try {
-                            val contentType = conn.contentType
+                            //val contentType = conn.contentType
                             val contentLength = conn.contentLength
                             if (contentLength > MAX_CACHED_FILE_SIZE) {
                                 Log.e(LOG_TAG, "File is bigger then max limit")
@@ -488,6 +491,8 @@ class FileLoader(private val queue: BlockingDeque<CacheItem>,
                             conn.inputStream.use {
                                 while (true) {
                                     val read = it.read(buf)
+                                    if (stopFlag) main@break
+                                    if (Thread.interrupted()) main@continue
                                     if (read < 0) {
                                         complete = true
                                         break
@@ -528,8 +533,6 @@ class FileLoader(private val queue: BlockingDeque<CacheItem>,
                 currentPath = null
             }
         }
-
-        onDestroy()
     }
 
 }

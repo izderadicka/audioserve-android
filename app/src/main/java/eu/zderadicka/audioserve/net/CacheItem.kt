@@ -124,7 +124,7 @@ class CacheItem(val path: String, val cacheDir: File, changeListener: Listener? 
     fun addListener(l:Listener) = synchronized(this@CacheItem) {listeners.add(l)}
     fun removeListener(l:Listener) = synchronized(this@CacheItem) {listeners.remove(l)}
 
-    private fun fireListeners(newValue: State) = synchronized(this) {
+    private fun fireListeners(newValue: State) = synchronized(this@CacheItem) {
         for (l in listeners) {
             l.onItemChange(path, newValue, hasError)
         }
