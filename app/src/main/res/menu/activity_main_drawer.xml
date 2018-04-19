@@ -17,10 +17,6 @@
             android:icon="@drawable/ic_menu_recent"
             android:title="@string/action_recently_listened" />
 
-        <item
-            android:id="@+id/nav_download"
-            android:icon="@drawable/ic_menu_download"
-            android:title="@string/action_pending_downloads" />
     </group>
 
     <group android:checkableBehavior="none">

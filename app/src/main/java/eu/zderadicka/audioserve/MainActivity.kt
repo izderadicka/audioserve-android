@@ -102,6 +102,10 @@ class MainActivity : AppCompatActivity(),
         val ctl = MediaControllerCompat.getMediaController(this).transportControls
         when (action) {
             ItemAction.Download -> {
+                if (isOffline) {
+                    Toast.makeText(this,getString(R.string.no_downloads_offline), Toast.LENGTH_LONG).show()
+                    return
+                }
                 Toast.makeText(this,getString(R.string.download_confirmation), Toast.LENGTH_LONG).show()
                 val bundle = Bundle()
                 bundle.putString(METADATA_KEY_MEDIA_ID, item.mediaId)
@@ -402,11 +406,6 @@ class MainActivity : AppCompatActivity(),
             R.id.nav_recent -> {
                 stopPlayback()
                 openInitalFolder(AudioService.RECENTLY_LISTENED_TAG, getString(R.string.recently_listened))
-            }
-
-            R.id.nav_download -> {
-                val intent = Intent(DownloadManager.ACTION_VIEW_DOWNLOADS)
-                startActivity(intent)
             }
 
             R.id.offline_switch -> return false

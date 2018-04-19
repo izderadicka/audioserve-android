@@ -1,11 +1,8 @@
 package eu.zderadicka.audioserve.net
 
 import android.app.*
-import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
-import android.content.IntentFilter
-import android.net.Uri
 import android.os.*
 import android.support.annotation.RequiresApi
 import android.support.v4.app.NotificationCompat
@@ -14,15 +11,15 @@ import android.util.Log
 import eu.zderadicka.audioserve.R
 import eu.zderadicka.audioserve.data.METADATA_KEY_MEDIA_ID
 import eu.zderadicka.audioserve.data.folderIdFromFileId
-import eu.zderadicka.audioserve.notifications.NotificationsManager
-import java.io.File
 import java.util.concurrent.LinkedBlockingDeque
 
 const val DOWNLOAD_ACTION = "eu.zderadicka.audioserve.DOWNLOAD"
-private const val DOWNLOAD_CACHE_DIR = "audioserve_download"
+const val CANCEL_DOWNLOAD_ACTION = "eu.zderadicka.audioserve.CANCEL_DOWNLOAD"
 private const val MSG_PREPARE_DOWNLOAD = 1
 private const val MSG_PROCESS_DOWNLOAD = 2
 private const val MSG_SCHEDULE_DOWNLOAD = 3
+private const val MSG_CANCEL_DOWNLOAD = 4
+
 private const val LOG_TAG = "DownloadService"
 private const val CHANNEL_ID = "eu.zderadicka.audioserve.downloads.channel"
 private const val NOTIFICATION_ID = 8432
@@ -53,6 +50,7 @@ class DownloadService : Service() {
     private lateinit var apiClient: ApiClient
     private lateinit var cacheManager: CacheManager
     private val pendingDownloads = HashMap<String, DownloadStatus>()
+
     private lateinit var worker: Worker
     private lateinit var workerThread: HandlerThread
 
@@ -83,6 +81,9 @@ class DownloadService : Service() {
                 MSG_SCHEDULE_DOWNLOAD -> {
                     val items = msg.obj as List<MediaBrowserCompat.MediaItem>
                     onScheduleDownload(items)
+                }
+                MSG_CANCEL_DOWNLOAD -> {
+                    onCancelDownloads()
                 }
             }
         }
@@ -138,13 +139,18 @@ class DownloadService : Service() {
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         Log.d(LOG_TAG, "Intent $intent requesting action ${intent?.action}")
-        if (intent?.action == DOWNLOAD_ACTION) {
-            val fileId = intent.extras?.getString(METADATA_KEY_MEDIA_ID)!!
-            val msg = worker.obtainMessage()
-            msg.obj = fileId
-            msg.what = MSG_PREPARE_DOWNLOAD
-            msg.arg1 = startId
-            worker.sendMessage(msg)
+        when (intent?.action) {
+            DOWNLOAD_ACTION -> {
+                val fileId = intent.extras?.getString(METADATA_KEY_MEDIA_ID)!!
+                val msg = worker.obtainMessage()
+                msg.obj = fileId
+                msg.what = MSG_PREPARE_DOWNLOAD
+                msg.arg1 = startId
+                worker.sendMessage(msg)
+            }
+            CANCEL_DOWNLOAD_ACTION -> {
+                worker.sendMessage(worker.obtainMessage(MSG_CANCEL_DOWNLOAD))
+            }
         }
 
         return Service.START_STICKY //TODO reconsider as not sticky? Because after restart anyhow there is nothing to do unless we reconstruct pending downloads
@@ -156,14 +162,15 @@ class DownloadService : Service() {
                 Log.d(LOG_TAG, "Finished download of $mediaId")
                 pendingDownloads.remove(mediaId)
                 doneCount+=1
-                startForeground(NOTIFICATION_ID, createNotification())
+                fireChange()
 
             } else if (status == FileCache.Status.Error) {
                 failedCount +=1
                 pendingDownloads.remove(mediaId)
-                startForeground(NOTIFICATION_ID, createNotification())
+                fireChange()
             }else {
                 pendingDownloads.put(mediaId, DownloadStatus.fromCacheStatus(status))
+                fireChange()
             }
 
         }
@@ -172,6 +179,13 @@ class DownloadService : Service() {
             stopForeground(false)
             stopSelf()
         }
+    }
+
+    private fun onCancelDownloads() {
+        pendingDownloads.clear()
+        queue.clear()
+        stopForeground(true)
+        stopSelf()
     }
 
     private fun onPrepareDownload(fileId: String) {
@@ -220,11 +234,16 @@ class DownloadService : Service() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             createChannel()
         }
+        val cancelIntent = Intent(this, DownloadService::class.java)
+        cancelIntent.action = CANCEL_DOWNLOAD_ACTION
+        val cancelPendingIntent = PendingIntent.getService(this,0,cancelIntent,0)
+
         val builder = NotificationCompat.Builder(this, CHANNEL_ID)
         builder.setContentTitle(getString(R.string.downloading_notification_title, pendingCount))
         builder.setContentText(getString(R.string.download_notification_details, doneCount, failedCount))
         builder.setSmallIcon(R.drawable.ic_download)
         builder.setPriority(NotificationCompat.PRIORITY_DEFAULT)
+        builder.addAction(R.drawable.ic_cancel,getString(R.string.action_cancel_all),cancelPendingIntent)
 
         return builder.build()
 
@@ -249,7 +268,9 @@ class DownloadService : Service() {
                 }
 
                 if (pendingCount> 0 ) {
-                    startForeground(NOTIFICATION_ID, createNotification())
+                    fireChange()
+                } else {
+                    stopSelf()
                 }
     }
 
@@ -262,7 +283,31 @@ class DownloadService : Service() {
         stopLoaders()
     }
 
+
+    inner class LocalBinder: Binder() {
+        val service: DownloadService
+        get (){
+           return  this@DownloadService
+        }
+    }
+
+    private val binder = LocalBinder()
+
     override fun onBind(intent: Intent?): IBinder? {
-        return null
+        return binder
+    }
+
+    interface ChangeListener {
+        fun onChange()
+    }
+
+    private val listeners = HashSet<ChangeListener>()
+    fun addListener(l: ChangeListener) = listeners.add(l)
+    fun removeListener(l:ChangeListener) = listeners.remove(l)
+    fun clearListeners() = listeners.clear()
+
+    fun fireChange() {
+        startForeground(NOTIFICATION_ID, createNotification())
+        listeners.forEach { it.onChange() }
     }
 }
