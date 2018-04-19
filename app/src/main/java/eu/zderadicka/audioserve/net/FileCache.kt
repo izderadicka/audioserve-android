@@ -173,10 +173,10 @@ class FileCache(val cacheDir: File,
     private var loaderThread: Thread? = null
     private var loader: FileLoader? = null
     private val baseUrlPath: String
-            get() {
-                val baseUrl = PreferenceManager.getDefaultSharedPreferences(context).getString("pref_server_url", null)!!
-                return URL(baseUrl).path
-            }
+        get() {
+            val baseUrl = PreferenceManager.getDefaultSharedPreferences(context).getString("pref_server_url", null)!!
+            return URL(baseUrl).path
+        }
 
     private var dirObserver: FileObserver? = null;
 
@@ -272,7 +272,7 @@ class FileCache(val cacheDir: File,
         }
     }
 
-    fun getOrAddTranscoded(path:String, transcode: String?): CacheItem {
+    fun getOrAddTranscoded(path: String, transcode: String?): CacheItem {
         val item = getOrAdd(path)
         // set transcode only for item that is not partly loaded
         if (item.state == CacheItem.State.Empty) {
@@ -298,7 +298,7 @@ class FileCache(val cacheDir: File,
             Status.NotCached
         } else {
             val item = index.get(path)
-            itemStateConv(item?.state, item?.hasError?:false)
+            itemStateConv(item?.state, item?.hasError ?: false)
         }
     }
 
@@ -357,11 +357,11 @@ class FileCache(val cacheDir: File,
                 }
             }
 
-    fun addListener(l: Listener) = synchronized(this) {listeners.add(l)}
-    fun removeListener(l: Listener) = synchronized(this) {listeners.remove(l)}
-    fun removeAllListeners() = synchronized(this) {listeners.clear()}
+    fun addListener(l: Listener) = synchronized(this) { listeners.add(l) }
+    fun removeListener(l: Listener) = synchronized(this) { listeners.remove(l) }
+    fun removeAllListeners() = synchronized(this) { listeners.clear() }
 
-    override fun onItemChange(path: String, state: CacheItem.State, hasError:Boolean) = synchronized(this) {
+    override fun onItemChange(path: String, state: CacheItem.State, hasError: Boolean) = synchronized(this) {
         for (l in listeners) {
             l.onCacheChange(path, itemStateConv(state, hasError))
         }
@@ -387,7 +387,24 @@ class FileLoader(private val queue: BlockingDeque<CacheItem>,
     var currentPath: String? = null
         private set
 
+    private var putBack = false
+    private var myThread: Thread? = null
+
     private var isConnected = true
+        set(v) {
+            field = v
+            if (field) {
+                Log.d(LOG_TAG, "Network is connected")
+                connectedCondition.open()
+            } else {
+                Log.d(LOG_TAG, "Network is disconnected")
+                connectedCondition.close()
+                myThread?.let {
+                    putBack = true
+                    it.interrupt()
+                }
+            }
+        }
     private val connectedCondition = ConditionVariable()
     private val connectivityStateReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
@@ -404,11 +421,7 @@ class FileLoader(private val queue: BlockingDeque<CacheItem>,
 
         context.registerReceiver(connectivityStateReceiver, IntentFilter(ConnectivityManager.CONNECTIVITY_ACTION))
         isConnected = isNetworkConnected(context)
-        if (isConnected) {
-            connectedCondition.open()
-        } else {
-            connectedCondition.close()
-        }
+
 
     }
 
@@ -430,9 +443,11 @@ class FileLoader(private val queue: BlockingDeque<CacheItem>,
     }
 
 
-
     override fun run() {
+        myThread = Thread.currentThread()
         main@ while (true) {
+            var item: CacheItem? = null
+            var url: URL? = null
             try {
 
                 // wait if not connected
@@ -441,7 +456,7 @@ class FileLoader(private val queue: BlockingDeque<CacheItem>,
                     connectedCondition.block(NOT_CONNECTED_WAIT)
                 }
                 if (stopFlag) break
-                val item = queue.take()
+                item = queue.take()
 
                 // return to queue and try again if not connected
                 if (!isConnected) {
@@ -460,77 +475,77 @@ class FileLoader(private val queue: BlockingDeque<CacheItem>,
                 if (item.transcode != null) {
                     urlStr += "?${TRANSCODE_QUERY}=${item.transcode}"
                 }
-                val url = URL(urlStr)
+                url = URL(urlStr)
                 val conn = url.openConnection() as HttpURLConnection
                 Log.d(LOG_TAG, "Started download of $url")
-                try {
-                    if (item.cachedLength > 0) {
-                        conn.setRequestProperty("Range", "bytes=${item.cachedLength}-")
-                    }
-                    conn.setRequestProperty("Authorization", "Bearer $token")
-                    val responseCode = conn.responseCode
-                    if (responseCode == 200 || responseCode == 206) {
-                        val startAt: Long = if (responseCode == 206) {
-                            parseContentRange(conn.getHeaderField("Content-Range"))?.start ?: 0L
-                        } else {
-                            0L
-                        }
-                        val startNew = startAt == 0L && item.cachedLength > 0L
-                        assert(if (!startNew) item.cachedLength == startAt else true)
-                        item.openForAppend(startNew)
-                        var complete = false
-                        try {
-                            //val contentType = conn.contentType
-                            val contentLength = conn.contentLength
-                            if (contentLength > MAX_CACHED_FILE_SIZE) {
-                                Log.e(LOG_TAG, "File is bigger then max limit")
-                                complete = true
-                                break
-                            }
-                            val buf = ByteArray(LOADER_BUFFER_SIZE)
-                            conn.inputStream.use {
-                                while (true) {
-                                    val read = it.read(buf)
-                                    if (stopFlag) main@break
-                                    if (Thread.interrupted()) main@continue
-                                    if (read < 0) {
-                                        complete = true
-                                        break
-                                    } else if (read + item.cachedLength > MAX_CACHED_FILE_SIZE) {
-                                        complete = true
-                                        break
-                                    }
-                                    item.write(buf, 0, read)
-                                    if (Thread.interrupted()) break
-                                }
-                            }
 
-                        } finally {
-                            Log.d(LOG_TAG, "Finished download of $url complete $complete")
-                            item.closeForAppend(complete)
-                        }
-
+                if (item.cachedLength > 0) {
+                    conn.setRequestProperty("Range", "bytes=${item.cachedLength}-")
+                }
+                conn.setRequestProperty("Authorization", "Bearer $token")
+                val responseCode = conn.responseCode
+                if (responseCode == 200 || responseCode == 206) {
+                    val startAt: Long = if (responseCode == 206) {
+                        parseContentRange(conn.getHeaderField("Content-Range"))?.start ?: 0L
                     } else {
-                        Log.e(LOG_TAG, "Http error $responseCode ${conn.responseMessage} for url $url")
-                        // Can retry on server error
-                        if (responseCode >= 500) retry(item) else item.hasError = true
+                        0L
+                    }
+                    val startNew = startAt == 0L && item.cachedLength > 0L
+                    assert(if (!startNew) item.cachedLength == startAt else true)
+                    item.openForAppend(startNew)
+                    var complete = false
+                    try {
+                        //val contentType = conn.contentType
+                        val contentLength = conn.contentLength
+                        if (contentLength > MAX_CACHED_FILE_SIZE) {
+                            Log.e(LOG_TAG, "File is bigger then max limit")
+                            complete = true
+                            break
+                        }
+                        val buf = ByteArray(LOADER_BUFFER_SIZE)
+                        conn.inputStream.use {
+                            while (true) {
+                                val read = it.read(buf)
+                                if (stopFlag) main@ break
+                                if (Thread.interrupted()) main@ continue
+                                if (read < 0) {
+                                    complete = true
+                                    break
+                                } else if (read + item.cachedLength > MAX_CACHED_FILE_SIZE) {
+                                    complete = true
+                                    break
+                                }
+                                item.write(buf, 0, read)
+                                if (Thread.interrupted()) break
+                            }
+                        }
+
+                    } finally {
+                        Log.d(LOG_TAG, "Finished download of $url complete $complete")
+                        item.closeForAppend(complete)
                     }
 
-                } catch (e: InterruptedException) {
-                    Log.d(LOG_TAG, "Load interrupted")
-                } catch (e: IOException) {
-                    Log.e(LOG_TAG, "Network error for url $url", e)
-                    retry(item)
-                } catch (e: Exception) {
-                    Log.e(LOG_TAG, "Other error for url $url", e)
-                    item.hasError = true
-
+                } else {
+                    Log.e(LOG_TAG, "Http error $responseCode ${conn.responseMessage} for url $url")
+                    // Can retry on server error
+                    if (responseCode >= 500) retry(item) else item.hasError = true
                 }
 
             } catch (e: InterruptedException) {
+                if (putBack && item != null) {
+                    Log.d(LOG_TAG, "Putting item back as loader was interrupted by network disconnect ")
+                    returnToQueue(item)
+                }
                 Log.d(LOG_TAG, "Load interrupted")
+            } catch (e: IOException) {
+                Log.e(LOG_TAG, "Network error for url $url", e)
+                item?.let { retry(it) }
+            } catch (e: Exception) {
+                Log.e(LOG_TAG, "Other error for url $url", e)
+                item?.hasError = true
             } finally {
                 currentPath = null
+                putBack = false
             }
         }
     }
