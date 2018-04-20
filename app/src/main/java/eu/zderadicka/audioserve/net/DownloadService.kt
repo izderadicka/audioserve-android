@@ -121,7 +121,7 @@ class DownloadService : Service() {
         for (i in 1..numLoaders) {
 
             val loader = FileLoader(queue = queue, context = this, token = apiClient.token!!)
-            val loaderThread = Thread(loader, "Loader Thread")
+            val loaderThread = Thread(loader, "Downloader Loader Thread $i")
             loaderThread.isDaemon = true
             loaderThread.start()
             downloadLoaders.add(loader)
@@ -133,6 +133,13 @@ class DownloadService : Service() {
         queue.clear()
         downloadLoaders.forEach { it.stop() }
         downloadThreads.forEach { it.interrupt() }
+        downloadThreads.forEach{
+            it.join(1000)
+            if (it.isAlive) {
+                Log.w(LOG_TAG, "Download thread is not finished")
+
+            }
+        }
         downloadLoaders.clear()
         downloadThreads.clear()
     }
@@ -283,6 +290,8 @@ class DownloadService : Service() {
         cacheManager.removeLister(cacheListener)
         workerThread.quit()
         stopLoaders()
+
+        Log.d(LOG_TAG, "Destroyed Download Service")
     }
 
 
