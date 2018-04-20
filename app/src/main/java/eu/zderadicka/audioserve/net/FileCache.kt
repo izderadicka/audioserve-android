@@ -378,6 +378,7 @@ private const val LOADER_BUFFER_SIZE = 10 * 1024
 class FileLoader(private val queue: BlockingDeque<CacheItem>,
                  private val token: String,
                  private val context: Context) : Runnable {
+    @Volatile
     private var stopFlag = false
     fun stop() {
         stopFlag = true
@@ -401,6 +402,7 @@ class FileLoader(private val queue: BlockingDeque<CacheItem>,
                 connectedCondition.close()
                 myThread?.let {
                     putBack = true
+                    Log.d(LOG_TAG, "Trying to interrupt thread ${it.name}")
                     it.interrupt()
                 }
             }
@@ -423,6 +425,13 @@ class FileLoader(private val queue: BlockingDeque<CacheItem>,
         isConnected = isNetworkConnected(context)
 
 
+    }
+    private fun putItemBack(item:CacheItem?) {
+        if (putBack && item != null) {
+            Log.d(LOG_TAG, "Putting item back as loader was interrupted by network disconnect ")
+            returnToQueue(item)
+            putBack = false
+        }
     }
 
     private fun returnToQueue(item: CacheItem) {
@@ -506,8 +515,6 @@ class FileLoader(private val queue: BlockingDeque<CacheItem>,
                         conn.inputStream.use {
                             while (true) {
                                 val read = it.read(buf)
-                                if (stopFlag) main@ break
-                                if (Thread.interrupted()) main@ continue
                                 if (read < 0) {
                                     complete = true
                                     break
@@ -516,7 +523,11 @@ class FileLoader(private val queue: BlockingDeque<CacheItem>,
                                     break
                                 }
                                 item.write(buf, 0, read)
-                                if (Thread.interrupted()) break
+                                if (Thread.interrupted()) {
+                                    Log.d(LOG_TAG, "Load interrupted in read")
+                                    putItemBack(item)
+                                    break
+                                }
                             }
                         }
 
@@ -532,11 +543,8 @@ class FileLoader(private val queue: BlockingDeque<CacheItem>,
                 }
 
             } catch (e: InterruptedException) {
-                if (putBack && item != null) {
-                    Log.d(LOG_TAG, "Putting item back as loader was interrupted by network disconnect ")
-                    returnToQueue(item)
-                }
-                Log.d(LOG_TAG, "Load interrupted")
+                putItemBack(item)
+                Log.d(LOG_TAG, "Load interrupted in wait")
             } catch (e: IOException) {
                 Log.e(LOG_TAG, "Network error for url $url", e)
                 item?.let { retry(it) }
@@ -548,6 +556,8 @@ class FileLoader(private val queue: BlockingDeque<CacheItem>,
                 putBack = false
             }
         }
+
+        Log.d(LOG_TAG, "Thread ${Thread.currentThread().name} finished")
     }
 
 }
