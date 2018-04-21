@@ -334,6 +334,9 @@ class AudioService : MediaBrowserServiceCompat() {
             if (seekAfterPrepare == null) {
                 lastKnownPosition = state.position
                 lastPositionUpdateTime = System.currentTimeMillis() //state.lastPositionUpdateTime
+                if (currentMediaItem!= null && session.controller?.metadata?.description?.mediaId == currentMediaItem?.mediaId) {
+                    updateCurrentMediaItemTime()
+                }
             }
 
             if ((state.state == PlaybackStateCompat.STATE_PAUSED || state.state == PlaybackStateCompat.STATE_PLAYING)
@@ -519,7 +522,6 @@ mediaSessionConnector.setErrorMessageProvider(messageProvider);
     override fun onDestroy() {
         super.onDestroy()
         PreferenceManager.getDefaultSharedPreferences(this).unregisterOnSharedPreferenceChangeListener(prefsListener)
-        //TODO - save currentMediaItem to list of currently listened
         try {
             if (currentMediaItem != null && lastPositionUpdateTime>0) {
                 //update it with last known possition
@@ -541,6 +543,14 @@ mediaSessionConnector.setErrorMessageProvider(messageProvider);
         Log.d(LOG_TAG, "Audioservice destroyed")
     }
 
+    private fun updateCurrentMediaItemTime(){
+        if (currentMediaItem!=null) {
+            val mi = currentMediaItem!!
+            mi.description.extras?.putLong(METADATA_KEY_LAST_POSITION, lastKnownPosition)
+            mi.description.extras?.putLong(METADATA_KEY_LAST_LISTENED_TIMESTAMP, lastPositionUpdateTime)
+        }
+    }
+
     private val SEARCH_RE = Regex("""^(\d+)_(.*)""")
     override fun onLoadChildren(parentId: String, result:Result<List<MediaItem>>) {
         if (parentId == RECENTLY_LISTENED_TAG) {
@@ -549,8 +559,7 @@ mediaSessionConnector.setErrorMessageProvider(messageProvider);
             if (currentMediaItem != null) {
                 val mi = currentMediaItem!!
                 mi.description.extras?.putBoolean(METADATA_KEY_IS_BOOKMARK, true)
-                mi.description.extras?.putLong(METADATA_KEY_LAST_POSITION, lastKnownPosition)
-                mi.description.extras?.putLong(METADATA_KEY_LAST_LISTENED_TIMESTAMP, lastPositionUpdateTime)
+                updateCurrentMediaItemTime()
                 list.add(mi)
             }
             var path: String? = null
