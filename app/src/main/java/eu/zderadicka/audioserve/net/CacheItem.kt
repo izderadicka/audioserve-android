@@ -131,6 +131,7 @@ class CacheItem(val path: String, val cacheDir: File, changeListener: Listener? 
     }
 
     fun openForAppend(forceNew: Boolean = false) {
+        hasError = false
         if (state == State.Complete) {
             throw IllegalStateException("Cache entry is already complete")
         } else if (state == State.Filling) {
