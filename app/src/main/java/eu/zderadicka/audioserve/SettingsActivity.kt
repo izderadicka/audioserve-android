@@ -33,10 +33,13 @@ class SettingsFragment: PreferenceFragment(), SharedPreferences.OnSharedPreferen
                 )
 
         val cacheLocationPref: ListPreference = findPreference("pref_cache_location") as ListPreference
-
-
+        val prefs =  PreferenceManager.getDefaultSharedPreferences(activity)
+        val cacheLocation =prefs.getString("pref_cache_location",null)
         val entriesNames = storagesList.map{it.first}.toTypedArray()
         val entriesValues = storagesList.map{it.second}.toTypedArray()
+        if (cacheLocation == null) {
+            prefs.edit().putString("pref_cache_location", entriesValues.get(0)).commit()
+        }
         cacheLocationPref.entries = entriesNames
         cacheLocationPref.entryValues = entriesValues
         cacheLocationPref.setDefaultValue(activity.cacheDir.absolutePath)

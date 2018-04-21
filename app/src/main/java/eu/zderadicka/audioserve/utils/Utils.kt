@@ -99,3 +99,15 @@ fun copyFile(sourceFile: File, destFile: File) {
     }
 }
 
+fun splitExtension(name:String): Pair<String,String?> {
+    val dotIndex = name.lastIndexOf(".")
+    if (dotIndex>0) {
+        return Pair(name.substring(0 until dotIndex),
+                name.substring(dotIndex+1).let {
+                    if (it.length>0) it else null
+                })
+    } else {
+        return Pair(name, null)
+    }
+}
+

@@ -5,6 +5,7 @@ import android.support.v4.media.MediaBrowserCompat
 import android.support.v4.media.MediaDescriptionCompat
 import android.util.Log
 import eu.zderadicka.audioserve.data.*
+import eu.zderadicka.audioserve.utils.splitExtension
 import java.io.File
 
 
@@ -21,16 +22,19 @@ private fun subfolderToItem(path:String): MediaBrowserCompat.MediaItem {
 }
 
 private fun fileToItem(mediaId: String, cacheDir: File): MediaBrowserCompat.MediaItem? {
-    val extras = Bundle()
-    val f = File(mediaId)
-    val descBuilder = MediaDescriptionCompat.Builder()
-            .setMediaId(mediaId)
-            .setTitle(f.name)
-            .setSubtitle(f.parent)
-
     val fullFile = File(cacheDir,mediaId)
     if (! fullFile.isFile()) return null
 
+    val extras = Bundle()
+    val f = File(mediaId)
+    val (name, ext) = splitExtension(f.name)
+    val descBuilder = MediaDescriptionCompat.Builder()
+            .setMediaId(mediaId)
+            .setTitle(name)
+            .setSubtitle(f.parent)
+    if (ext != null) {
+        extras.putString(METADATA_KEY_EXTENSION, ext)
+    }
     val metaExtractor = MediaMetadataRetriever()
     metaExtractor.setDataSource(fullFile.path)
     try {

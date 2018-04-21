@@ -56,10 +56,10 @@ class ControllerFragment : MediaFragment() {
             if (enablePlay) {
                 playPauseButton.setImageDrawable(
 
-                        ContextCompat.getDrawable(activity!!, android.R.drawable.ic_media_play))
+                        ContextCompat.getDrawable(activity!!, R.drawable.ic_play_white))
             } else {
                 playPauseButton.setImageDrawable(
-                        ContextCompat.getDrawable(activity!!, android.R.drawable.ic_media_pause))
+                        ContextCompat.getDrawable(activity!!, R.drawable.ic_pause_white))
             }
 
             this@ControllerFragment.canPlay = enablePlay

@@ -1,6 +1,5 @@
 package eu.zderadicka.audioserve
 
-import android.app.DownloadManager
 import android.content.ComponentName
 import android.content.Intent
 import android.os.Bundle
@@ -39,6 +38,9 @@ import eu.zderadicka.audioserve.net.DownloadService
 
 private const val LOG_TAG = "Main"
 const val ACTION_NAVIGATE_TO_ITEM = "eu.zderadicka.audioserve.navigate_to_item"
+private const val ROOT_RECENT = 0
+private const val ROOT_BROWSE = 1
+
 
 class MainActivity : AppCompatActivity(),
         NavigationView.OnNavigationItemSelectedListener,
@@ -142,7 +144,7 @@ class MainActivity : AppCompatActivity(),
         }
     }
 
-    override fun onFolderLoaded(folderId: String, error: Boolean) {
+    override fun onFolderLoaded(folderId: String, error: Boolean, empty: Boolean) {
         val item = pendingMediaItem
         pendingMediaItem = null
 
@@ -192,7 +194,11 @@ class MainActivity : AppCompatActivity(),
         drawerToggle.setHomeAsUpIndicator(R.drawable.ic_arrow_back_white)
         drawerToggle.syncState()
         drawerToggle.setToolbarNavigationClickListener {
-            onBackPressed()
+            when (rootFolder) {
+                ROOT_RECENT -> openRecentFolder()
+                ROOT_BROWSE -> openRootFolder()
+                else -> openRecentFolder()
+            }
         }
 
 
@@ -218,9 +224,10 @@ class MainActivity : AppCompatActivity(),
                 val folderId = folderIdFromFileId(itemId)
                 val name = File(folderId).name
                 openInitalFolder(folderId, name)
+                rootFolder = ROOT_RECENT
 
             } else {
-                openRootFolder()
+                openRecentFolder()
             }
         }
 
@@ -231,6 +238,12 @@ class MainActivity : AppCompatActivity(),
         mBrowser.connect()
 
         createOfflineSwitch()
+
+        val prefs = PreferenceManager.getDefaultSharedPreferences(this)
+        val haveServer = prefs.getString("pref_server_url", "").length>0
+        val haveSecret = prefs.getString(("pref_shared_secret"), "").length>0
+
+        if (!haveSecret || !haveServer) startActivity(Intent(this, SettingsActivity::class.java))
 
     }
 
@@ -256,11 +269,20 @@ class MainActivity : AppCompatActivity(),
 
     }
 
+    private var rootFolder: Int = ROOT_RECENT
+
     private fun openRootFolder() {
         stopPlayback()
         openInitalFolder(AudioService.MEDIA_ROOT_TAG,
                 if (isOffline) getString(R.string.collection_offline)
                     else getString(R.string.collections_title))
+        rootFolder = ROOT_BROWSE
+    }
+
+    private fun openRecentFolder() {
+        stopPlayback()
+        openInitalFolder(AudioService.RECENTLY_LISTENED_TAG, getString(R.string.recently_listened))
+        rootFolder = ROOT_RECENT
     }
 
 
@@ -404,8 +426,7 @@ class MainActivity : AppCompatActivity(),
 
             }
             R.id.nav_recent -> {
-                stopPlayback()
-                openInitalFolder(AudioService.RECENTLY_LISTENED_TAG, getString(R.string.recently_listened))
+                openRecentFolder()
             }
 
             R.id.offline_switch -> return false

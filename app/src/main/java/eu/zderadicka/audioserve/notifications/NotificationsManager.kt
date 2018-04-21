@@ -6,6 +6,7 @@ import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
+import android.graphics.Color
 import android.os.Build
 import android.support.annotation.RequiresApi
 import android.support.v4.app.NotificationCompat
@@ -32,25 +33,25 @@ class NotificationsManager(private val mService: AudioService) {
     init {
 
         playAction = NotificationCompat.Action(
-                android.R.drawable.ic_media_play,
+                R.drawable.ic_play_white,
                 mService.getString(R.string.label_play),
                 MediaButtonReceiver.buildMediaButtonPendingIntent(
                         mService,
                         PlaybackStateCompat.ACTION_PLAY))
         pauseAction = NotificationCompat.Action(
-                android.R.drawable.ic_media_pause,
+                R.drawable.ic_pause_white,
                 mService.getString(R.string.label_pause),
                 MediaButtonReceiver.buildMediaButtonPendingIntent(
                         mService,
                         PlaybackStateCompat.ACTION_PAUSE))
         nextAction = NotificationCompat.Action(
-                android.R.drawable.ic_media_next,
+                R.drawable.ic_next_white,
                 mService.getString(R.string.label_next),
                 MediaButtonReceiver.buildMediaButtonPendingIntent(
                         mService,
                         PlaybackStateCompat.ACTION_SKIP_TO_NEXT))
         prevAction = NotificationCompat.Action(
-                android.R.drawable.ic_media_previous,
+                R.drawable.ic_previous_white,
                 mService.getString(R.string.label_previous),
                 MediaButtonReceiver.buildMediaButtonPendingIntent(
                         mService,
@@ -118,8 +119,8 @@ class NotificationsManager(private val mService: AudioService) {
                                 MediaButtonReceiver.buildMediaButtonPendingIntent(
                                         mService,
                                         PlaybackStateCompat.ACTION_STOP)))
-                .setColor(ContextCompat.getColor(mService, R.color.primary_material_dark))
-                .setSmallIcon(R.drawable.ic_logo_inverse_24dp)
+                .setColor(ContextCompat.getColor(mService, R.color.colorAccent))
+                .setSmallIcon(R.drawable.ic_pulse)
                 // Pending intent that is fired when user clicks on notification.
                 .setContentIntent(createContentIntent(description))
                 // Title - Usually Song name.
@@ -149,14 +150,6 @@ class NotificationsManager(private val mService: AudioService) {
             val mChannel = NotificationChannel(CHANNEL_ID, name, importance)
             // Configure the notification channel.
             mChannel.description = description
-            /* TODO - I do not think we need lights or vibrations but can reconsider later
-             mChannel.enableLights(true)
-             // Sets the notification light color for notifications posted to this
-             // channel, if the device supports this feature.
-             mChannel.lightColor = Color.RED
-             mChannel.enableVibration(true)
-             mChannel.vibrationPattern = longArrayOf(100, 200, 300, 400, 500, 400, 300, 200, 400)
-             */
             notificationManager.createNotificationChannel(mChannel)
             Log.d(LOG_TAG, "createChannel: New channel created")
         } else {

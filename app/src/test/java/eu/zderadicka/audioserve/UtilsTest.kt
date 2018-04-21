@@ -3,6 +3,7 @@ package eu.zderadicka.audioserve
 import eu.zderadicka.audioserve.data.collectionFromFolderId
 import eu.zderadicka.audioserve.data.folderIdFromFileId
 import eu.zderadicka.audioserve.net.parseContentRange
+import eu.zderadicka.audioserve.utils.splitExtension
 import org.junit.Assert.*
 import org.junit.Test
 
@@ -41,4 +42,18 @@ fun testRe() {
         val m = SEARCH_RE.matchEntire("0_holmes")
         assertNotNull(m)
     }
+
+@Test
+fun testSplitExtension() {
+    fun t(name:String, base:String, ext:String?) {
+        val (n, e) = splitExtension(name)
+        assertEquals(base, n)
+        assertEquals(ext, e)
+    }
+
+    t("chapter1.opus", "chapter1", "opus")
+    t("archive.tar.gz", "archive.tar", "gz")
+    t("invalid.", "invalid", null)
+    t("noext", "noext", null)
+}
 }

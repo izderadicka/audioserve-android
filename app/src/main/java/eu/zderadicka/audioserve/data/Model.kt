@@ -6,6 +6,7 @@ import android.support.v4.media.MediaDescriptionCompat
 import android.support.v4.media.MediaMetadataCompat
 import eu.zderadicka.audioserve.net.CacheManager
 import eu.zderadicka.audioserve.net.FileCache
+import eu.zderadicka.audioserve.utils.splitExtension
 import java.io.File
 
 const val METADATA_KEY_DURATION = MediaMetadataCompat.METADATA_KEY_DURATION
@@ -17,6 +18,7 @@ const val METADATA_KEY_MEDIA_ID = "eu.zderadicka.audioserve.media_id"
 const val METADATA_KEY_LAST_LISTENED_TIMESTAMP = "eu.zderadicka.audioserve.last_listened_ts"
 const val METADATA_KEY_IS_BOOKMARK = "eu.zderadicka.audioserve.is_bookmark"
 const val METADATA_KEY_IS_FOLDER = "eu.zderadicka.audioserve.is_folder"
+const val METADATA_KEY_EXTENSION = "eu.zderadicka.audioserve.extension"
 
 const val ITEM_TYPE_FOLDER = "folder"
 const val ITEM_TYPE_AUDIOFILE = "audio"
@@ -72,10 +74,14 @@ class AudioFolder(name: String, path: String, val subfolders: ArrayList<Subfolde
     private fun fileToItem(f: AudioFile, cache: CacheManager? = null): MediaItem {
         val extras = Bundle()
         val mediaId = prefixPath(f.path, ITEM_TYPE_AUDIOFILE)
+        val (name, ext) = splitExtension(f.name)
         val descBuilder = MediaDescriptionCompat.Builder()
                 .setMediaId(mediaId)
-                .setTitle(f.name)
+                .setTitle(name)
                 .setSubtitle(File(f.path).parent)
+        if (ext != null) {
+            extras.putString(METADATA_KEY_EXTENSION, ext)
+        }
         if (f.meta != null) {
             extras.putLong(METADATA_KEY_DURATION, f.meta.duration.toLong() * 1000) // in miliseconds
             extras.putInt(METADATA_KEY_BITRATE, f.meta.bitrate)

@@ -1,6 +1,5 @@
 package eu.zderadicka.audioserve.fragments
 
-import android.animation.ObjectAnimator
 import android.content.Context
 import android.os.Bundle
 import android.support.v4.media.MediaBrowserCompat
@@ -17,6 +16,7 @@ import android.view.View
 import android.view.ViewGroup
 import eu.zderadicka.audioserve.utils.ifStoppedOrDead
 import android.os.Parcelable
+import android.support.v4.content.ContextCompat
 import android.widget.*
 import eu.zderadicka.audioserve.MEDIA_CACHE_DELETED
 import eu.zderadicka.audioserve.MEDIA_FULLY_CACHED
@@ -57,6 +57,7 @@ class FolderItemViewHolder(itemView: View, val viewType: Int, val clickCB: (Int,
     var contentView: View? = null
     var itemContainer: View? = null
     var downloadButton: ImageButton? = null
+    var extensionView: TextView? = null
     var isFile = false
     private set
     var isBookmark = false
@@ -81,6 +82,7 @@ class FolderItemViewHolder(itemView: View, val viewType: Int, val clickCB: (Int,
             bitRateView = itemView.findViewById(R.id.lastListenedView)
             transcodedIcon = itemView.findViewById(R.id.transcodedIcon)
             cachedIcon = itemView.findViewById(R.id.cachedIcon)
+            extensionView = itemView.findViewById(R.id.extesionView)
             isFile = true
         } else if (viewType == ITEM_TYPE_BOOKMARK) {
             durationView = itemView.findViewById(R.id.durationView)
@@ -157,10 +159,12 @@ class FolderAdapter(val context: Context,
 
             (holder.itemView as SwipeRevealLayout).close(false)
             if (position == nowPlaying) {
-                holder.contentView?.setBackgroundColor(context.resources.getColor(R.color.colorAccentLight))
+                holder.contentView?.setBackgroundColor(ContextCompat.getColor(context,R.color.colorAccentLight))
             } else {
-                holder.contentView?.setBackgroundColor(context.resources.getColor(R.color.colorListBackground))
+                holder.contentView?.setBackgroundColor(ContextCompat.getColor(context, R.color.colorListBackground))
             }
+
+            holder.extensionView?.text = item.description.extras?.getString(METADATA_KEY_EXTENSION,"")
 
             holder.bitRateView?.text =
                     item.description.extras?.getInt(METADATA_KEY_BITRATE)?.toString()?:"?"
@@ -234,7 +238,7 @@ class FolderAdapter(val context: Context,
 
 interface MediaActivity {
     fun onItemClicked(item: MediaItem, action: ItemAction)
-    fun onFolderLoaded(folderId: String, error: Boolean)
+    fun onFolderLoaded(folderId: String, error: Boolean, empty: Boolean)
     val mediaBrowser: MediaBrowserCompat
 }
 
@@ -300,19 +304,21 @@ class FolderFragment : MediaFragment() {
         override fun onChildrenLoaded(parentId: String, children: MutableList<MediaItem>) {
             Log.d(LOG_TAG, "Received folder listing ${children.size} items")
             super.onChildrenLoaded(parentId, children)
+            var empty = false
             if (children.size==0) {
                 Toast.makeText(this@FolderFragment.context, R.string.empty_folder, Toast.LENGTH_LONG).show()
+                empty = true
             }
             this@FolderFragment.adapter.changeData(children)
             scrollToNowPlaying()
-            doneLoading()
+            doneLoading(false, empty)
         }
 
         override fun onError(parentId: String) {
             super.onError(parentId)
             Log.e(LOG_TAG, "Error loading folder ${parentId}")
             Toast.makeText(this@FolderFragment.context, R.string.media_browser_error, Toast.LENGTH_LONG).show()
-            doneLoading(true)
+            doneLoading(true, false)
         }
     }
 
@@ -363,7 +369,7 @@ class FolderFragment : MediaFragment() {
         folderView.visibility = View.INVISIBLE
     }
 
-    private fun doneLoading(error: Boolean = false) {
+    private fun doneLoading(error: Boolean = false, empty: Boolean = false) {
         loadingProgress.visibility = View.INVISIBLE
         folderView.visibility = View.VISIBLE
 
@@ -372,7 +378,7 @@ class FolderFragment : MediaFragment() {
             folderViewState = null
         }
 
-        mediaActivity?.onFolderLoaded(folderId, error)
+        mediaActivity?.onFolderLoaded(folderId, error, empty)
     }
 
     private var folderViewState: Parcelable? = null

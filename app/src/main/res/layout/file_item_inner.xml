@@ -58,13 +58,22 @@
         app:layout_constraintStart_toEndOf="@+id/lastListenedView"
         app:layout_constraintTop_toTopOf="@+id/lastListenedView" />
 
+    <TextView
+        android:id="@+id/extesionView"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="8dp"
+        tools:text="opus"
+        app:layout_constraintStart_toEndOf="@+id/folderPathView"
+        app:layout_constraintTop_toTopOf="@+id/durationView" />
+
     <ImageView
         android:id="@+id/transcodedIcon"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginStart="12dp"
         android:layout_marginTop="6dp"
-        app:layout_constraintStart_toEndOf="@+id/folderPathView"
+        app:layout_constraintStart_toEndOf="@+id/extesionView"
         app:layout_constraintTop_toBottomOf="@+id/folderItemName"
         app:srcCompat="@drawable/ic_pulse" />
 

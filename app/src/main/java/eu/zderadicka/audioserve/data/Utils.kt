@@ -98,7 +98,7 @@ fun parseFolderfromJson(data: String, name: String, path: String) :AudioFolder{
 
 
     fun getTypedPath(key:String): TypedPath? {
-        var o: JSONObject? = null
+        var o: JSONObject?
         try {
             o = json.getJSONObject(key)
         } catch (e: JSONException) {
