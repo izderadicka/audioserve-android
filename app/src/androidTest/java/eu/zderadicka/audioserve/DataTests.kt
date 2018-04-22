@@ -42,8 +42,7 @@ class DataTests {
 
         assertEquals(5,data.numFiles)
         assertEquals(5,data.numFolders)
-        assertNotNull(data.cover)
-        assertNotNull(data.info)
+        assertNotNull(data.details)
 
     }
 

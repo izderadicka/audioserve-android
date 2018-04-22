@@ -1,0 +1,162 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_height="match_parent"
+    android:layout_width="match_parent">
+
+    <android.support.constraint.ConstraintLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        tools:context=".fragments.DetailsFragment">
+
+
+        <TextView
+            android:id="@+id/folderName"
+            style="@style/Base.TextAppearance.AppCompat.Title.Inverse"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="@color/colorPrimaryDark"
+            android:gravity="center"
+            android:paddingBottom="4dp"
+            android:paddingTop="4dp"
+            tools:text="My Test Folder" />
+
+        <TextView
+            android:id="@+id/folderPath"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginEnd="8dp"
+            android:layout_marginStart="8dp"
+            android:layout_marginTop="8dp"
+            android:textAppearance="@style/TextAppearance.AppCompat.Medium"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/folderName"
+            tools:text="author first last/series name/ebook name that is very very very long" />
+
+        <View
+            android:id="@+id/view2"
+            android:layout_width="match_parent"
+            android:layout_height="56dp"
+            android:layout_marginTop="8dp"
+            android:background="@color/colorPrimaryDark"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/folderPath" />
+
+        <ImageView
+            android:id="@+id/clock_image"
+            android:layout_width="32dp"
+            android:layout_height="32dp"
+            android:layout_marginBottom="8dp"
+            android:layout_marginStart="8dp"
+            android:layout_marginTop="8dp"
+            android:contentDescription="@string/clock_image"
+            android:src="@drawable/ic_menu_recent"
+            android:tint="#ffffff"
+            app:layout_constraintBottom_toBottomOf="@+id/view2"
+            app:layout_constraintStart_toStartOf="@+id/view2"
+            app:layout_constraintTop_toTopOf="@+id/view2" />
+
+        <TextView
+            android:id="@+id/totalTime"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="8dp"
+            android:layout_marginStart="8dp"
+            android:layout_marginTop="8dp"
+            android:textAppearance="@style/TextAppearance.AppCompat.Display1"
+            android:textColor="#ffffff"
+            android:textSize="28sp"
+            app:layout_constraintBottom_toBottomOf="@+id/view2"
+            app:layout_constraintStart_toEndOf="@+id/clock_image"
+            app:layout_constraintTop_toTopOf="@+id/view2"
+            tools:text="00:00" />
+
+        <TextView
+            android:id="@+id/totalFiles"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="8dp"
+            android:layout_marginStart="4dp"
+            android:layout_marginTop="8dp"
+            android:textAppearance="@style/TextAppearance.AppCompat.Display1"
+            android:textColor="#ffffff"
+            android:textSize="28sp"
+            app:layout_constraintBottom_toBottomOf="@+id/view2"
+            app:layout_constraintStart_toEndOf="@+id/note_image"
+            app:layout_constraintTop_toTopOf="@+id/view2"
+            app:layout_constraintVertical_bias="0.533"
+            tools:text="000" />
+
+        <TextView
+            android:id="@+id/totalFolders"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="8dp"
+            android:layout_marginStart="8dp"
+            android:layout_marginTop="8dp"
+            android:textAppearance="@style/TextAppearance.AppCompat.Display1"
+            android:textColor="#ffffff"
+            android:textSize="28sp"
+            app:layout_constraintBottom_toBottomOf="@+id/view2"
+            app:layout_constraintStart_toEndOf="@+id/folder_image"
+            app:layout_constraintTop_toTopOf="@+id/view2"
+            app:layout_constraintVertical_bias="0.0"
+            tools:text="000" />
+
+        <ImageView
+            android:id="@+id/note_image"
+            android:layout_width="32dp"
+            android:layout_height="32dp"
+            android:layout_marginBottom="8dp"
+            android:layout_marginStart="32dp"
+            android:layout_marginTop="8dp"
+            android:contentDescription="@string/note_image"
+            android:src="@drawable/ic_note"
+            app:layout_constraintBottom_toBottomOf="@+id/view2"
+            app:layout_constraintStart_toEndOf="@+id/totalTime"
+            app:layout_constraintTop_toTopOf="@+id/view2" />
+
+        <ImageView
+            android:id="@+id/folder_image"
+            android:contentDescription="@string/folder_image"
+            android:layout_width="32dp"
+            android:layout_height="32dp"
+            android:layout_marginBottom="8dp"
+            android:layout_marginStart="32dp"
+            android:layout_marginTop="8dp"
+            android:src="@drawable/ic_folder"
+            app:layout_constraintBottom_toBottomOf="@+id/view2"
+            app:layout_constraintStart_toEndOf="@+id/totalFiles"
+            app:layout_constraintTop_toTopOf="@+id/view2" />
+
+        <ImageView
+            android:id="@+id/folderImage"
+            android:contentDescription="@string/image_about_current_folder"
+            android:layout_width="0dp"
+            android:layout_height="200dp"
+            android:layout_marginEnd="8dp"
+            android:layout_marginStart="8dp"
+            android:layout_marginTop="8dp"
+            android:src="@drawable/ic_note"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/view2" />
+
+        <TextView
+            android:id="@+id/folderText"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:textAppearance="@style/TextAppearance.AppCompat.Body2"
+            android:textSize="16sp"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/folderImage"
+            tools:text="Lorem i psum ..." />
+
+    </android.support.constraint.ConstraintLayout>
+</ScrollView>

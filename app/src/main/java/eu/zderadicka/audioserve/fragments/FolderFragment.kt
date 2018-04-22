@@ -238,7 +238,7 @@ class FolderAdapter(val context: Context,
 
 interface MediaActivity {
     fun onItemClicked(item: MediaItem, action: ItemAction)
-    fun onFolderLoaded(folderId: String, error: Boolean, empty: Boolean)
+    fun onFolderLoaded(folderId: String, folderDetails: Bundle?, error: Boolean, empty: Boolean)
     val mediaBrowser: MediaBrowserCompat
 }
 
@@ -252,7 +252,8 @@ class FolderFragment : MediaFragment() {
     lateinit var folderId: String
     private set
 
-    private lateinit var folderName: String
+    lateinit var folderName: String
+    private set
 
     private var mediaActivity: MediaActivity? = null
     private lateinit var adapter: FolderAdapter
@@ -305,20 +306,23 @@ class FolderFragment : MediaFragment() {
             Log.d(LOG_TAG, "Received folder listing ${children.size} items")
             super.onChildrenLoaded(parentId, children)
             var empty = false
+            var folderDetail: Bundle? = null
             if (children.size==0) {
                 Toast.makeText(this@FolderFragment.context, R.string.empty_folder, Toast.LENGTH_LONG).show()
                 empty = true
+            } else {
+                folderDetail = children[0].description.extras?.getBundle(METADATA_KEY_FOLDER_DETAILS)
             }
             this@FolderFragment.adapter.changeData(children)
             scrollToNowPlaying()
-            doneLoading(false, empty)
+            doneLoading(folderDetail, false, empty)
         }
 
         override fun onError(parentId: String) {
             super.onError(parentId)
             Log.e(LOG_TAG, "Error loading folder ${parentId}")
             Toast.makeText(this@FolderFragment.context, R.string.media_browser_error, Toast.LENGTH_LONG).show()
-            doneLoading(true, false)
+            doneLoading(null, true, false)
         }
     }
 
@@ -369,7 +373,7 @@ class FolderFragment : MediaFragment() {
         folderView.visibility = View.INVISIBLE
     }
 
-    private fun doneLoading(error: Boolean = false, empty: Boolean = false) {
+    private fun doneLoading(folderDetails: Bundle?, error: Boolean = false, empty: Boolean = false) {
         loadingProgress.visibility = View.INVISIBLE
         folderView.visibility = View.VISIBLE
 
@@ -378,7 +382,7 @@ class FolderFragment : MediaFragment() {
             folderViewState = null
         }
 
-        mediaActivity?.onFolderLoaded(folderId, error, empty)
+        mediaActivity?.onFolderLoaded(folderId, folderDetails, error, empty)
     }
 
     private var folderViewState: Parcelable? = null

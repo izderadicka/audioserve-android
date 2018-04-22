@@ -6,6 +6,11 @@
         android:icon="@drawable/ic_search"
         app:showAsAction="collapseActionView|ifRoom"
         app:actionViewClass="android.support.v7.widget.SearchView" />
+    <item android:id="@+id/action_info"
+        android:title="@string/action_info"
+        app:showAsAction="ifRoom"
+        android:icon="@drawable/ic_info"
+        />
 
     <item
         android:id="@+id/action_reload"

@@ -1,6 +1,7 @@
 package eu.zderadicka.audioserve.net
 
 import android.content.Context
+import android.graphics.Bitmap
 import android.net.Uri
 import android.preference.PreferenceManager
 import android.util.Base64
@@ -219,6 +220,13 @@ class ApiClient private constructor(val context: Context) {
     fun loadTranscodings(callback: (TranscodingLimits?, ApiError?) -> Unit) {
         val uri = baseUrl + "transcodings"
         sendRequest(uri, ::parseTranscodingsFromJson, callback)
+    }
+
+    fun loadPicture(path: String, callback: (Bitmap?, ApiError?) -> Unit) {
+
+        val url = baseUrl + path
+
+
     }
 
     fun login(cb: (ApiError?) -> Unit) {

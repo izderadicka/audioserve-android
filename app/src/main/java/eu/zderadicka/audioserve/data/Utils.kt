@@ -1,6 +1,8 @@
 package eu.zderadicka.audioserve.data
 
+import android.os.Bundle
 import android.support.v4.media.MediaBrowserCompat
+import android.support.v4.media.MediaDescriptionCompat
 import eu.zderadicka.audioserve.AudioService
 import eu.zderadicka.audioserve.net.TranscodingLimits
 import org.json.JSONException
@@ -98,7 +100,7 @@ fun parseFolderfromJson(data: String, name: String, path: String) :AudioFolder{
 
 
     fun getTypedPath(key:String): TypedPath? {
-        var o: JSONObject?
+        val o: JSONObject?
         try {
             o = json.getJSONObject(key)
         } catch (e: JSONException) {
@@ -116,7 +118,16 @@ fun parseFolderfromJson(data: String, name: String, path: String) :AudioFolder{
     val cover = getTypedPath("cover")
     val description = getTypedPath("description")
 
-    return AudioFolder(name,path,subfolders,files,cover,description)
+    val details = Bundle()
+    details.putInt(METADATA_KEY_FOLDERS_COUNT, subfolders?.size?:0)
+    details.putInt(METADATA_KEY_FILES_COUNT, files?.size?:0)
+    details.putLong(METADATA_KEY_TOTAL_DURATION, files?.map{it?.meta?.duration?.toLong()?:0L}?.sum()?:0L)
+    if (cover!=null )
+        details.putString(METADATA_KEY_FOLDER_PICTURE_URL, cover.path)
+    if (description!= null)
+        details.putString(METADATA_KEY_FOLDER_TEXT_URL, description.path)
+
+    return AudioFolder(name,path,subfolders,files,details)
 }
 
 private val AUDIO_START_RE = Regex("""^(\d+)?/?audio/(.+)""")
@@ -136,6 +147,18 @@ fun folderIdFromFileId(fileId: String): String {
     }
 }
 
+fun pathFromFolderId(folderId:String): String {
+    if (folderId.startsWith(AudioService.COLLECTION_PREFIX)) return ""
+    val m = FOLDER_START_RE.matchEntire(folderId)
+    if (m != null) {
+        val p = m.groups.get(1)?.value
+        if (p!= null) {
+            return File(p).parent
+        }
+    }
+    return ""
+}
+
 fun collectionFromFolderId(folderId:String): Int? {
     if (folderId.startsWith(AudioService.COLLECTION_PREFIX)) {
         return folderId.substring(AudioService.COLLECTION_PREFIX.length).toInt()
@@ -145,4 +168,16 @@ fun collectionFromFolderId(folderId:String): Int? {
     val n = m.groups.get(1)?.value
     if (n == null || n.length == 0 ) return 0
     return n.toInt()
+}
+
+fun duplicateMediaItemWithExtrasAssured(item: MediaBrowserCompat.MediaItem):MediaBrowserCompat.MediaItem {
+    val desc = MediaDescriptionCompat.Builder()
+            .setMediaId(item.description.mediaId)
+            .setTitle(item.description.title)
+            .setSubtitle(item.description.subtitle)
+            .setExtras(item.description.extras?: Bundle())
+            .build()
+    return MediaBrowserCompat.MediaItem(desc, if (item.isBrowsable) MediaBrowserCompat.MediaItem.FLAG_BROWSABLE
+        else if (item.isPlayable) MediaBrowserCompat.MediaItem.FLAG_PLAYABLE else 0)
+
 }

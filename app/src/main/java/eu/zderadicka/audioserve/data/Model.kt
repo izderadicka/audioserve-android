@@ -5,7 +5,6 @@ import android.support.v4.media.MediaBrowserCompat.MediaItem
 import android.support.v4.media.MediaDescriptionCompat
 import android.support.v4.media.MediaMetadataCompat
 import eu.zderadicka.audioserve.net.CacheManager
-import eu.zderadicka.audioserve.net.FileCache
 import eu.zderadicka.audioserve.utils.splitExtension
 import java.io.File
 
@@ -19,6 +18,12 @@ const val METADATA_KEY_LAST_LISTENED_TIMESTAMP = "eu.zderadicka.audioserve.last_
 const val METADATA_KEY_IS_BOOKMARK = "eu.zderadicka.audioserve.is_bookmark"
 const val METADATA_KEY_IS_FOLDER = "eu.zderadicka.audioserve.is_folder"
 const val METADATA_KEY_EXTENSION = "eu.zderadicka.audioserve.extension"
+const val METADATA_KEY_TOTAL_DURATION = "eu.zderadicka.audioserve.total_duration"
+const val METADATA_KEY_FILES_COUNT = "eu.zderadicka.audioserve.files_count"
+const val METADATA_KEY_FOLDERS_COUNT = "eu.zderadicka.audioserve.folders_count"
+const val METADATA_KEY_FOLDER_PICTURE_URL = "eu.zderadicka.audioserve.folder_picture_url"
+const val METADATA_KEY_FOLDER_TEXT_URL = "eu.zderadicka.audioserve.folder_text_url"
+const val METADATA_KEY_FOLDER_DETAILS = "eu.zderadicka.audioserve.folder_details"
 
 const val ITEM_TYPE_FOLDER = "folder"
 const val ITEM_TYPE_AUDIOFILE = "audio"
@@ -32,7 +37,7 @@ class AudioFile(name: String,  path:String, val meta: MediaMeta?,
                 val mime: String): Entry(name, path)
 
 class AudioFolder(name: String, path: String, val subfolders: ArrayList<Subfolder>?, val files: ArrayList<AudioFile>?,
-             val cover: TypedPath?, val info: TypedPath?): Entry(name,path) {
+             val details: Bundle?): Entry(name,path) {
     var collectionIndex: Int = 0
 
 
@@ -110,6 +115,7 @@ class AudioFolder(name: String, path: String, val subfolders: ArrayList<Subfolde
 
         val data: ArrayList<MediaItem> = ArrayList()
 
+
         if (this.subfolders != null && this.subfolders.size>0) {
             for (s in this.subfolders) {
                 data.add(subfolderToItem(s))
@@ -120,6 +126,14 @@ class AudioFolder(name: String, path: String, val subfolders: ArrayList<Subfolde
             for (f in this.files) {
                 data.add(fileToItem(f, cache))
             }
+        }
+
+        if (data.size>0 && details!= null) {
+
+            val item = duplicateMediaItemWithExtrasAssured(data[0])
+            item.description.extras?.putBundle(METADATA_KEY_FOLDER_DETAILS,details)
+            data[0] = item
+
         }
         return data
     }

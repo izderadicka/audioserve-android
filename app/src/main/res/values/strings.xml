@@ -57,4 +57,13 @@
     <string name="download_notification_details">Summary - Success %1$d,  Errors %2$d</string>
     <string name="action_cancel_all">Cancel All</string>
     <string name="no_downloads_offline">No downloads in offline mode</string>
+
+    <!-- TODO: Remove or change this placeholder text -->
+    <string name="hello_blank_fragment">Hello blank fragment</string>
+    <string name="action_info">Info</string>
+    <string name="clock_image">Clock image</string>
+    <string name="label_minutes_short">mins</string>
+    <string name="note_image">Note image</string>
+    <string name="folder_image">Folder Image</string>
+    <string name="image_about_current_folder">Image about current folder</string>
 </resources>
