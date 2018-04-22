@@ -55,6 +55,7 @@ class MainActivity : AppCompatActivity(),
     private lateinit var controllerFragment: ControllerFragment
     private var pendingMediaItem: MediaBrowserCompat.MediaItem? = null
     private var search_prefix: String? = null
+    private var folderDetails: Bundle? = null
 
     private val mediaServiceConnectionCallback = object : MediaBrowserCompat.ConnectionCallback() {
         override fun onConnected() {
@@ -144,7 +145,7 @@ class MainActivity : AppCompatActivity(),
         }
     }
 
-    override fun onFolderLoaded(folderId: String, error: Boolean, empty: Boolean) {
+    override fun onFolderLoaded(folderId: String, folderDetails: Bundle?, error: Boolean, empty: Boolean) {
         val item = pendingMediaItem
         pendingMediaItem = null
 
@@ -162,6 +163,7 @@ class MainActivity : AppCompatActivity(),
 
         val collection: Int? = collectionFromFolderId(folderId)
         search_prefix = if (collection == null || isOffline) null else "${AudioService.SEARCH_PREFIX}${collection}_"
+        this.folderDetails = folderDetails
         invalidateOptionsMenu()
     }
 
@@ -366,6 +368,8 @@ class MainActivity : AppCompatActivity(),
         menuInflater.inflate(R.menu.main, menu)
         val searchItem = menu.findItem(R.id.action_search)
         searchItem.isVisible = search_prefix != null
+        val infoItem = menu.findItem(R.id.action_info)
+        infoItem.isVisible = folderDetails != null
         val searchManager = getSystemService(Context.SEARCH_SERVICE) as SearchManager
         val searchView = menu.findItem(R.id.action_search).actionView as SearchView
         searchView.setSearchableInfo(
@@ -382,6 +386,15 @@ class MainActivity : AppCompatActivity(),
         when (item.itemId) {
             R.id.action_reload -> {
                 folderFragment?.reload()
+                return true
+            }
+
+            R.id.action_info -> {
+                val intent = Intent(this,  DetailsActivity::class.java)
+                intent.putExtra(ARG_FOLDER_PATH, folderFragment?.folderId)
+                intent.putExtra(ARG_FOLDER_NAME, folderFragment?.folderName)
+                intent.putExtra(ARG_FOLDER_DETAILS, folderDetails)
+                startActivity(intent)
                 return true
             }
 
