@@ -135,12 +135,12 @@
 
         <ImageView
             android:id="@+id/folderImage"
-            android:contentDescription="@string/image_about_current_folder"
             android:layout_width="0dp"
-            android:layout_height="200dp"
+            android:layout_height="320dp"
             android:layout_marginEnd="8dp"
             android:layout_marginStart="8dp"
             android:layout_marginTop="8dp"
+            android:contentDescription="@string/image_about_current_folder"
             android:src="@drawable/ic_note"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
@@ -150,6 +150,8 @@
             android:id="@+id/folderText"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:layout_marginEnd="16dp"
+            android:layout_marginStart="16dp"
             android:layout_marginTop="8dp"
             android:textAppearance="@style/TextAppearance.AppCompat.Body2"
             android:textSize="16sp"

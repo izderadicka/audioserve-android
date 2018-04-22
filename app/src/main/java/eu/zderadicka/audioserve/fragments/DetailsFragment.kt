@@ -7,12 +7,12 @@ import android.text.format.DateUtils
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.ImageView
 import android.widget.TextView
 
 import eu.zderadicka.audioserve.R
-import eu.zderadicka.audioserve.data.METADATA_KEY_FILES_COUNT
-import eu.zderadicka.audioserve.data.METADATA_KEY_FOLDERS_COUNT
-import eu.zderadicka.audioserve.data.METADATA_KEY_TOTAL_DURATION
+import eu.zderadicka.audioserve.data.*
+import eu.zderadicka.audioserve.net.ApiClient
 
 
 const val ARG_FOLDER_DETAILS = "folder_details"
@@ -28,6 +28,7 @@ class DetailsFragment : Fragment() {
     lateinit var totalDurationView: TextView
     lateinit var numFilesView: TextView
     lateinit var numFoldersView: TextView
+
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -53,6 +54,19 @@ class DetailsFragment : Fragment() {
         numFilesView.text = folderDetails.getInt(METADATA_KEY_FILES_COUNT).toString()
         numFoldersView = view.findViewById(R.id.totalFolders)
         numFoldersView.text = folderDetails.getInt(METADATA_KEY_FOLDERS_COUNT).toString()
+
+
+        val client = ApiClient.getInstance(context!!)
+        val imagePath =  folderDetails.getString(METADATA_KEY_FOLDER_PICTURE_PATH)
+        imagePath?.let {client.loadPicture(it){bitmap, err ->
+            val img = view.findViewById<ImageView>(R.id.folderImage)
+            img.setImageBitmap(bitmap)
+        }}
+        val textPath =  folderDetails.getString(METADATA_KEY_FOLDER_TEXT_URL)
+        textPath?.let {client.loadText(it){text, err ->
+            val txt = view.findViewById<TextView>(R.id.folderText)
+            txt.text = text
+        }}
 
         return view
     }

@@ -21,12 +21,14 @@ const val METADATA_KEY_EXTENSION = "eu.zderadicka.audioserve.extension"
 const val METADATA_KEY_TOTAL_DURATION = "eu.zderadicka.audioserve.total_duration"
 const val METADATA_KEY_FILES_COUNT = "eu.zderadicka.audioserve.files_count"
 const val METADATA_KEY_FOLDERS_COUNT = "eu.zderadicka.audioserve.folders_count"
-const val METADATA_KEY_FOLDER_PICTURE_URL = "eu.zderadicka.audioserve.folder_picture_url"
+const val METADATA_KEY_FOLDER_PICTURE_PATH = "eu.zderadicka.audioserve.folder_picture_url"
 const val METADATA_KEY_FOLDER_TEXT_URL = "eu.zderadicka.audioserve.folder_text_url"
 const val METADATA_KEY_FOLDER_DETAILS = "eu.zderadicka.audioserve.folder_details"
 
 const val ITEM_TYPE_FOLDER = "folder"
 const val ITEM_TYPE_AUDIOFILE = "audio"
+const val PREFIX_COVER = "cover"
+const val PREFIX_DESCRIPTION = "desc"
 
 open class Entry(val name: String, val path: String);
 data class MediaMeta(val duration: Int, val bitrate: Int)
@@ -36,8 +38,9 @@ class Subfolder(name: String, path: String): Entry(name,path)
 class AudioFile(name: String,  path:String, val meta: MediaMeta?,
                 val mime: String): Entry(name, path)
 
-class AudioFolder(name: String, path: String, val subfolders: ArrayList<Subfolder>?, val files: ArrayList<AudioFile>?,
-             val details: Bundle?): Entry(name,path) {
+class AudioFolder(name: String, path: String, val subfolders: ArrayList<Subfolder>?,
+                  val files: ArrayList<AudioFile>?,
+                  val details: Bundle?): Entry(name,path) {
     var collectionIndex: Int = 0
 
 
@@ -46,6 +49,11 @@ class AudioFolder(name: String, path: String, val subfolders: ArrayList<Subfolde
         if (col != null) {
             collectionIndex = col.groups.get(1)?.value?.toInt()?:0
         }
+        details?.putString(METADATA_KEY_FOLDER_TEXT_URL,
+                details.getString(METADATA_KEY_FOLDER_TEXT_URL)?.let{prefixPath(it, PREFIX_DESCRIPTION)})
+
+        details?.putString(METADATA_KEY_FOLDER_PICTURE_PATH,
+                details.getString(METADATA_KEY_FOLDER_PICTURE_PATH)?.let {prefixPath(it, PREFIX_COVER)})
 
     }
     val numFolders:Int

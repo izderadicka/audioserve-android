@@ -123,7 +123,7 @@ fun parseFolderfromJson(data: String, name: String, path: String) :AudioFolder{
     details.putInt(METADATA_KEY_FILES_COUNT, files?.size?:0)
     details.putLong(METADATA_KEY_TOTAL_DURATION, files?.map{it?.meta?.duration?.toLong()?:0L}?.sum()?:0L)
     if (cover!=null )
-        details.putString(METADATA_KEY_FOLDER_PICTURE_URL, cover.path)
+        details.putString(METADATA_KEY_FOLDER_PICTURE_PATH, cover.path)
     if (description!= null)
         details.putString(METADATA_KEY_FOLDER_TEXT_URL, description.path)
 
@@ -151,9 +151,9 @@ fun pathFromFolderId(folderId:String): String {
     if (folderId.startsWith(AudioService.COLLECTION_PREFIX)) return ""
     val m = FOLDER_START_RE.matchEntire(folderId)
     if (m != null) {
-        val p = m.groups.get(1)?.value
+        val p = m.groups.get(2)?.value
         if (p!= null) {
-            return File(p).parent
+            return File(p).parent?:""
         }
     }
     return ""
