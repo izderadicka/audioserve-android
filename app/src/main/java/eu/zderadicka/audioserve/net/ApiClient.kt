@@ -4,6 +4,7 @@ import android.content.Context
 import android.graphics.Bitmap
 import android.net.Uri
 import android.preference.PreferenceManager
+import android.text.Html
 import android.util.Base64
 import android.util.Log
 import android.widget.ImageView
@@ -213,18 +214,37 @@ class ApiClient private constructor(val context: Context) {
 
     }
 
-    fun loadText(path:String, callback: (String?, ApiError?)-> Unit) {
+    fun loadText(path:String, callback: (CharSequence?, ApiError?)-> Unit) {
         val url = baseUrl + path
-        val req = object: StringRequest(url,
-                {callback(it, null)},
-                {
-                    val err = ApiError.fromResponseError(it)
-                    callback(null,err)
-                })
+        val req = object: MyRequest<CharSequence>(url, callback)
+
         {
-            override fun getHeaders(): MutableMap<String, String> {
-                return auhorizationHeaders
+            override fun parseNetworkResponse(response: NetworkResponse?): Response<CharSequence> {
+
+                var parsed: String = ""
+                var contentType = response?.headers?.get("Content-Type")?:"text/plain"
+                val semi = contentType.indexOf(';')
+                if (semi>0) {
+                    contentType.substring(0, semi).trim()
+                }
+
+                if (response!= null) {
+                    try {
+                        val charset = Charset.forName("UTF-8")
+                        parsed = String(response.data, charset)
+                    } catch (e: UnsupportedEncodingException) {
+                        parsed = String(response.data)
+                    }
+                }
+
+                if (contentType == "text/html") {
+                    val html = Html.fromHtml(parsed)
+                    return Response.success(html, HttpHeaderParser.parseCacheHeaders(response))
+                }
+
+                return Response.success(parsed, HttpHeaderParser.parseCacheHeaders(response))
             }
+
         }
 
         req.setShouldCache(true)
@@ -292,10 +312,8 @@ class ApiClient private constructor(val context: Context) {
         return headers
     }
 
-    inner class ConvertingRequest<T>(val uri: String, val convert: (String) -> T,
-                                     private val callback: (T?, ApiError?) -> Unit)
-        : Request<T>(
-            Request.Method.GET, uri,
+    inner abstract class MyRequest<T>(val uri: String, private val callback: (T?, ApiError?) -> Unit)
+        :Request<T>( Request.Method.GET, uri,
             {
                 Log.e(LOG_TAG, "Network Error $it")
                 var err = ApiError.fromResponseError(it)
@@ -315,26 +333,6 @@ class ApiClient private constructor(val context: Context) {
             return auhorizationHeaders
         }
 
-        override fun parseNetworkResponse(response: NetworkResponse?): Response<T> {
-            var parsed: String
-            if (response?.data == null || response.data.isEmpty()) {
-                return Response.error(VolleyError("Empty response"))
-            }
-            try {
-                val charset = Charset.forName(HttpHeaderParser.parseCharset(response.headers))
-                parsed = String(response.data, charset)
-            } catch (e: UnsupportedEncodingException) {
-                parsed = String(response.data)
-            }
-            val cacheEntry = HttpHeaderParser.parseCacheHeaders(response)
-            val now = System.currentTimeMillis()
-            cacheEntry.softTtl = now + CACHE_SOFT_TTL
-            cacheEntry.ttl = now + CACHE_MAX_TTL
-
-            val result = convert(parsed)
-            return Response.success(result, cacheEntry)
-        }
-
         override fun cancel() {
             super.cancel()
             synchronized(canceledLock) {
@@ -348,7 +346,34 @@ class ApiClient private constructor(val context: Context) {
             }
 
         }
+    }
 
+
+        inner class ConvertingRequest<T>(uri: String, val convert: (String) -> T,
+                                     callback: (T?, ApiError?) -> Unit)
+        : MyRequest<T>(
+            uri, callback
+            ) {
+
+        override fun parseNetworkResponse(response: NetworkResponse?): Response<T> {
+            var parsed: String
+            if (response?.data == null || response.data.isEmpty()) {
+                return Response.error(VolleyError("Empty response"))
+            }
+            try {
+                val charset = Charset.forName("UTF-8")
+                parsed = String(response.data, charset)
+            } catch (e: UnsupportedEncodingException) {
+                parsed = String(response.data)
+            }
+            val cacheEntry = HttpHeaderParser.parseCacheHeaders(response)
+            val now = System.currentTimeMillis()
+            cacheEntry.softTtl = now + CACHE_SOFT_TTL
+            cacheEntry.ttl = now + CACHE_MAX_TTL
+
+            val result = convert(parsed)
+            return Response.success(result, cacheEntry)
+        }
     }
 
     companion object {

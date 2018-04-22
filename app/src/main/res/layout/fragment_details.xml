@@ -158,6 +158,7 @@
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@+id/folderImage"
+            android:autoLink="web"
             tools:text="Lorem i psum ..." />
 
     </android.support.constraint.ConstraintLayout>
