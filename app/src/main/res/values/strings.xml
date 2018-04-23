@@ -48,7 +48,7 @@
     <string name="pref_cache_location_title">Location of media cache</string>
     <string name="storage_internal_cache">Internal Cache</string>
     <string name="storage_internal">Internal Storage</string>
-    <string name="storage_external">External Media Storage %1$d</string>
+    <string name="storage_external">External Media Storage %1$s</string>
     <string name="download_confirmation">Will download audio files from this one on</string>
     <string name="action_recently_listened">Recently Listened</string>
     <string name="action_offline">Force Offline</string>
