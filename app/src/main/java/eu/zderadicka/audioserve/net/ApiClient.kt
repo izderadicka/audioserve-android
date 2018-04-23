@@ -17,6 +17,7 @@ import eu.zderadicka.audioserve.data.AudioFolder
 import eu.zderadicka.audioserve.data.parseCollectionsFromJson
 import eu.zderadicka.audioserve.data.parseFolderfromJson
 import eu.zderadicka.audioserve.data.parseTranscodingsFromJson
+import eu.zderadicka.audioserve.utils.fromMarkdown
 import java.io.File
 import java.io.UnsupportedEncodingException
 import java.nio.charset.Charset
@@ -240,6 +241,11 @@ class ApiClient private constructor(val context: Context) {
                 if (contentType == "text/html") {
                     val html = Html.fromHtml(parsed)
                     return Response.success(html, HttpHeaderParser.parseCacheHeaders(response))
+                }
+
+                if (contentType == "text/x-markdown") {
+                    val md = fromMarkdown(context,parsed)
+                    return Response.success(md, HttpHeaderParser.parseCacheHeaders(response))
                 }
 
                 return Response.success(parsed, HttpHeaderParser.parseCacheHeaders(response))

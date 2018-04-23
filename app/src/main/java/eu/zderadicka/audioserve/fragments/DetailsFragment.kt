@@ -61,6 +61,7 @@ class DetailsFragment : Fragment() {
         imagePath?.let {client.loadPicture(it){bitmap, err ->
             val img = view.findViewById<ImageView>(R.id.folderImage)
             img.setImageBitmap(bitmap)
+            img.visibility = View.VISIBLE
         }}
         val textPath =  folderDetails.getString(METADATA_KEY_FOLDER_TEXT_URL)
         textPath?.let {client.loadText(it){text, err ->
