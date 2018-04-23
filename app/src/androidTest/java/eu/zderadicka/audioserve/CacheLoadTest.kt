@@ -63,11 +63,9 @@ class CacheLoadTest: BaseCacheAndroidTest() {
 
         Log.i(LOG_TAG,"Test of cache load")
         assertTrue(tmpDir.exists() && tmpDir.isDirectory())
-
         val baseUrl = PreferenceManager.getDefaultSharedPreferences(ctx).getString("pref_server_url", null)
-        baseUrl!!
         assumeTrue(baseUrl != null && checkConnection(baseUrl))
-
+        baseUrl!!
         val client = ApiClient.getInstance(ctx)
 
 
