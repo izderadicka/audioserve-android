@@ -14,6 +14,10 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import java.io.File
 import org.junit.Assert.*
+import org.junit.Assume.assumeTrue
+import org.junit.Ignore
+import java.net.HttpURLConnection
+import java.net.URL
 
 private const val LOG_TAG = "CacheLoadTest"
 
@@ -37,6 +41,18 @@ open class BaseCacheAndroidTest {
 
     }
 }
+fun checkConnection(uri: String): Boolean {
+    val url = URL(uri)
+    val conn = url.openConnection() as HttpURLConnection
+    try {
+        val code = conn.responseCode
+        if (code >=200 && code < 400) return true
+    } catch (e: Exception) {
+        println("Got exception $e")
+    }
+    return false
+}
+
 
 @RunWith(AndroidJUnit4::class)
 class CacheLoadTest: BaseCacheAndroidTest() {
@@ -44,11 +60,13 @@ class CacheLoadTest: BaseCacheAndroidTest() {
 
     @Test
     fun testLoad() {
+
         Log.i(LOG_TAG,"Test of cache load")
         assertTrue(tmpDir.exists() && tmpDir.isDirectory())
 
         val baseUrl = PreferenceManager.getDefaultSharedPreferences(ctx).getString("pref_server_url", null)
         baseUrl!!
+        assumeTrue(baseUrl != null && checkConnection(baseUrl))
 
         val client = ApiClient.getInstance(ctx)
 
@@ -59,7 +77,7 @@ class CacheLoadTest: BaseCacheAndroidTest() {
             assertNull(it)
         }
 
-        cond.block(4000)
+        cond.block(8000)
 
         assertNotNull(client.token)
         val cacheMaxSize: Long = 100 * 1024 * 1024
