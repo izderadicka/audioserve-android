@@ -1,12 +1,16 @@
 language: android
 sudo: false
+env:
+  global:
+  - ADB_INSTALL_TIMEOUT=20 # minutes (2 minutes by default)
+  - QEMU_AUDIO_DRV=none # Remove audio
 android:
   components:
     # Uncomment the lines below if you want to
     # use the latest revision of Android SDK Tools
     - tools
     - platform-tools
-
+    - tools
     # The BuildTools version used by your project
     - build-tools-27.0.3
 
