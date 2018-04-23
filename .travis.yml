@@ -2,42 +2,35 @@ language: android
 sudo: false
 env:
   global:
-  - ADB_INSTALL_TIMEOUT=20 # minutes (2 minutes by default)
-  - QEMU_AUDIO_DRV=none # Remove audio
+  - ADB_INSTALL_TIMEOUT=20
+  - QEMU_AUDIO_DRV=none
 android:
   components:
-    # Uncomment the lines below if you want to
-    # use the latest revision of Android SDK Tools
-    - tools
-    - platform-tools
-    - tools
-    # The BuildTools version used by your project
-    - build-tools-27.0.3
-
-    # The SDK version used to compile your project
-    - android-27
-    - android-24
-
-    # Additional components
-    - extra-google-google_play_services
-    # - extra-google-m2repository
-    # - extra-android-m2repository
-    # - addon-google_apis-google-26
-
-    # Specify at least one system image,
-    # if you need to run emulator(s) during your tests
-    - sys-img-armeabi-v7a-android-24
-    # - sys-img-armeabi-v7a-android-17
+  - tools
+  - platform-tools
+  - tools
+  - build-tools-27.0.3
+  - android-27
+  - android-24
+  - extra-google-google_play_services
+  - sys-img-armeabi-v7a-android-24
 before_cache:
-  - rm -f  $HOME/.gradle/caches/modules-2/modules-2.lock
-  - rm -fr $HOME/.gradle/caches/*/plugin-resolution/
+- rm -f  $HOME/.gradle/caches/modules-2/modules-2.lock
+- rm -fr $HOME/.gradle/caches/*/plugin-resolution/
 cache:
   directories:
-    - $HOME/.gradle/caches/
-    - $HOME/.gradle/wrapper/
-    - $HOME/.android/build-cache
+  - "$HOME/.gradle/caches/"
+  - "$HOME/.gradle/wrapper/"
+  - "$HOME/.android/build-cache"
 before_script:
-  - echo no | android create avd --force -n test -t android-24 --abi armeabi-v7a
-  - emulator -avd test -no-window &
-  - android-wait-for-emulator
-  - adb shell input keyevent 82 &
+- echo no | android create avd --force -n test -t android-24 --abi armeabi-v7a
+- emulator -avd test -no-window &
+- android-wait-for-emulator
+- adb shell input keyevent 82 &
+deploy:
+  provider: releases
+  api_key:
+    secure: f8yw+q4hWcKg4LwUFZNcAJ110HqpFIPipEoKPCvfB8Q+Ht97boYeJsgP+aIllKq9rssRvVrMscqCj9pcx6bdCRV5aFWR3ek4NaE+2gfQ4Qi8RHR85sZ+qcH9bzO0GRnf8NjX49kq3F6tzn+cc8HWzdUESwQxG0E/svw7dSTolhVqdeDE8/S89mDoGVcu0GxuFMvYbOiu8H0yyXcyimkrQsdWuZQxOKhlKJsDI6dJ3wPmupRDyqRt7m7Wjyvt9ismRI4g9y2EGzEzG207mRVvjs0Zea8lopee8LpKraBAUjQ/EVtrXWfzyS3CczHNztZViNMZXvhcpzuJsOaHYM8YdjN7zESesDoHDKXWczy+je8kU1N9QWhjJ7UqJolhnHo65w4LBnO6DWKrrQjvZ2bSXMhM6UPXgsoLSImMRB8/fDu2kcBtIkGGfXS/5BTLSq8/st1hggTqoCrfAnupMBshSSd6DFgmv/HM7L7/S51b/1Umy2C5hLTc72nIV5uIMxe4/yCB5C/oPmluK25rPcsKA8TXreAZRkyhsoILyp04H0JXGgBu2U6RW4ZNlQeA8MXOngLomQpbXZB3PsezymxMbUF4KVmNWm3F3+dNYTFcCpgQTQ6NatHK6/RVm6u7QO+kBrZKWXYOFq0oC74bjrq34JlRVXlAw8HRSthKRIyW1dc=
+  file: app/build/outputs/apk/debug/app-debug.apk
+  on:
+    repo: izderadicka/audioserve-android

@@ -1,10 +1,13 @@
 Audioserve Client for Android
 ============================
+[![Build Status](https://travis-ci.org/izderadicka/audioserve-android.svg?branch=master)](https://travis-ci.org/izderadicka/audioserve-android)
 
 [audioserve](https://github.com/izderadicka/audioserve) client for Android written in Kotlin.
 Using Exoplayer and MediaController - MediaSession architecture.
 
 **EARLY BETA**  Generally works, most of functionality is there, but still there might be some issues
+
+
 
 Available features
 ------------------
