@@ -36,3 +36,4 @@ deploy:
   skip_cleanup: true
   on:
     repo: izderadicka/audioserve-android
+    tags: true
