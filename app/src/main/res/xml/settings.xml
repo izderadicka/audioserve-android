@@ -52,7 +52,7 @@
 
     <PreferenceCategory
         android:key="prefs_transcoding"
-        android:title="TRANSCODING">
+        android:title="@string/transcoding">
         <ListPreference
             android:defaultValue="m"
             android:entries="@array/pref_transcoding_names"
@@ -61,6 +61,19 @@
             android:title="@string/pref_transcoding_title" />
 
     </PreferenceCategory>
+    <PreferenceCategory
+        android:key="prefs_downloads"
+        android:title="DOWNLOADS"
+        >
+        <ListPreference
+            android:key="pref_downloads"
+            android:title="Parallel Downloads"
+            android:entries="@array/pref_downloads_values"
+            android:entryValues="@array/pref_downloads_values"
+            android:defaultValue="2"
+            />
+    </PreferenceCategory>
+
 
 
 </PreferenceScreen>

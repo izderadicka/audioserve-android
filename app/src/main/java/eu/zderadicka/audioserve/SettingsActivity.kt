@@ -141,7 +141,7 @@ class SettingsFragment: PreferenceFragment(), SharedPreferences.OnSharedPreferen
 
        activity.externalMediaDirs.forEachIndexed { index, file ->
             if (Environment.getExternalStorageState(file) == Environment.MEDIA_MOUNTED) {
-                val name = getString(R.string.storage_external, index)
+                val name = getString(R.string.storage_external, index.toString())
                 l.add(Pair(name+ " (${fileSize(file.freeSpace)})",file.absolutePath))
             }
        }
@@ -205,6 +205,14 @@ class SettingsFragment: PreferenceFragment(), SharedPreferences.OnSharedPreferen
                 val name = if (idx>=0) pref.entries.get(idx) else ""
                 pref.summary = "$name : $value"
             }
+            "pref_downloads" -> {
+                if (pref !is ListPreference) return
+                val p = sps.getString("pref_downloads", null) ?: return
+                pref.summary = getString(R.string.pref_downloads_summary, p)
+
+            }
+
+
         }
     }
 

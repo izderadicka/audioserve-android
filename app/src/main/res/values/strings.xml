@@ -67,4 +67,7 @@
     <string name="folder_image">Folder Image</string>
     <string name="image_about_current_folder">Image about current folder</string>
     <string name="player_not_ready">Player not ready - probably not connected to server</string>
+    <string name="transcoding">TRANSCODING</string>
+    <string name="pref_downloads_summary">When dowloading folder %1$s files will download in parallell.
+    Assure you have enough transcoding slots on the server</string>
 </resources>

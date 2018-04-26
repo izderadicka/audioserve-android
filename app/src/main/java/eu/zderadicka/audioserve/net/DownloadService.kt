@@ -4,6 +4,7 @@ import android.app.*
 import android.content.Context
 import android.content.Intent
 import android.os.*
+import android.preference.PreferenceManager
 import android.support.annotation.RequiresApi
 import android.support.v4.app.NotificationCompat
 import android.support.v4.media.MediaBrowserCompat
@@ -110,14 +111,16 @@ class DownloadService : Service() {
         doneCount = 0
         failedCount = 0
 
-        startLoaders()
+        val numLoaders = PreferenceManager.getDefaultSharedPreferences(this)
+                .getString("pref_downloads", "2").toInt()
+        startLoaders(numLoaders)
     }
 
-    private fun startLoaders() {
+    private fun startLoaders(numLoaders: Int) {
         if (downloadThreads.size > 0) {
             throw IllegalStateException("Loaders already started")
         }
-        val numLoaders = 2
+
         for (i in 1..numLoaders) {
 
             val loader = FileLoader(queue = queue, context = this, token = apiClient.token!!)
