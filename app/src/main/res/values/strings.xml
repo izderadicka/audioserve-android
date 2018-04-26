@@ -66,4 +66,5 @@
     <string name="note_image">Note image</string>
     <string name="folder_image">Folder Image</string>
     <string name="image_about_current_folder">Image about current folder</string>
+    <string name="player_not_ready">Player not ready - probably not connected to server</string>
 </resources>

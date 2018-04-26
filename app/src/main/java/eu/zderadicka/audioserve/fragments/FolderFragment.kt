@@ -20,6 +20,7 @@ import android.support.v4.content.ContextCompat
 import android.widget.*
 import eu.zderadicka.audioserve.MEDIA_CACHE_DELETED
 import eu.zderadicka.audioserve.MEDIA_FULLY_CACHED
+import eu.zderadicka.audioserve.PLAYER_NOT_READY
 import eu.zderadicka.audioserve.R
 import eu.zderadicka.audioserve.data.*
 import eu.zderadicka.audioserve.ui.SwipeRevealLayout
@@ -285,11 +286,17 @@ class FolderFragment : MediaFragment() {
 
         override fun onSessionEvent(event: String?, extras: Bundle?) {
             super.onSessionEvent(event, extras)
-            if (event == MEDIA_FULLY_CACHED || event == MEDIA_CACHE_DELETED) {
+            when (event) {
+            MEDIA_FULLY_CACHED, MEDIA_CACHE_DELETED -> {
                 val cached = event == MEDIA_FULLY_CACHED
                 val mediaId = extras?.getString(METADATA_KEY_MEDIA_ID)
                 if (mediaId != null) {
                     adapter.updatedCached(mediaId, cached)
+                }
+            }
+                PLAYER_NOT_READY -> {
+                    Toast.makeText(context,getString(R.string.player_not_ready),
+                            Toast.LENGTH_LONG).show()
                 }
             }
         }

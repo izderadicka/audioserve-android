@@ -78,7 +78,7 @@ class CachedFileDataSource(val cache: FileCache) : DataSource, CacheItem.Listene
             if (item.state == CacheItem.State.Empty) {
                 cacheReadyCondition.block(TIME_TO_WAIT_FOR_CACHE)
                 if (item.state == CacheItem.State.Empty) {
-                    throw IOException("Empty cache")
+                    throw IOException("Cache not filling - status of FileLoader - online = ${cache.loaderOnline}")
                 }
             }
 
@@ -290,6 +290,11 @@ class CacheManager private constructor(val context: Context) {
         }
 
         return false
+    }
+
+    internal val loaderOnline: Boolean
+    get(){
+        return cache.loaderOnline
     }
 
     companion object {

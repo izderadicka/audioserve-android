@@ -58,14 +58,18 @@ but it's not priority now.
 How to install
 --------------
 
-For now you have build yourself with Android SDK or Android Studio
+I provide built .apk file signed with dummy certificate on 
+[github releases page](https://github.com/izderadicka/audioserve-android/releases).
 
-This is how to build debug apk from commandline (when you have studio or SDK+tools installed):
-```bash
-./gradlew assembleDebug
-ls app/build/outputs/apk/debug/
+You can download to Android device and install it there 
+(provided you have allowed Unknown Sources in Security settings).
 
-```
+Supported platforms are from 5.0 Lollipop on ( but I'm testing mostly on 7.0 Nougat).
+
+You can also build yourself with Android Studio - just checkout the project from github and
+open in Android Studio.
+
+
 
 License
 -------

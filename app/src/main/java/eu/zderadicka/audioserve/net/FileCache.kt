@@ -14,7 +14,9 @@ import eu.zderadicka.audioserve.utils.defPrefs
 import eu.zderadicka.audioserve.utils.isNetworkConnected
 import java.io.File
 import java.io.IOException
+import java.io.InputStream
 import java.net.HttpURLConnection
+import java.net.SocketException
 import java.net.URL
 import java.util.concurrent.BlockingDeque
 import java.util.concurrent.LinkedBlockingDeque
@@ -324,6 +326,9 @@ class FileCache(val cacheDir: File,
         item
     }
 
+    internal val loaderOnline: Boolean
+    get() = loader?.isConnected?:false
+
     fun stopAllLoading(vararg keepLoading: String) = synchronized(this) {
         queue.clear()
         val shouldInterrupt: Boolean = if (keepLoading.size == 0) {
@@ -391,7 +396,7 @@ class FileLoader(private val queue: BlockingDeque<CacheItem>,
     private var putBack = false
     private var myThread: Thread? = null
 
-    private var isConnected = true
+    internal var isConnected = true
         set(v) {
             field = v
             if (field) {
@@ -403,6 +408,7 @@ class FileLoader(private val queue: BlockingDeque<CacheItem>,
                 myThread?.let {
                     putBack = true
                     Log.d(LOG_TAG, "Trying to interrupt thread ${it.name}")
+                    Thread{ stream?.close()}.start()
                     it.interrupt()
                 }
             }
@@ -418,6 +424,8 @@ class FileLoader(private val queue: BlockingDeque<CacheItem>,
         }
 
     }
+
+    private var stream: InputStream? = null
 
     init {
 
@@ -442,8 +450,8 @@ class FileLoader(private val queue: BlockingDeque<CacheItem>,
         }
     }
 
-    private fun retry(item: CacheItem) {
-        item.retries++
+    private fun retry(item: CacheItem, dontCount: Boolean = false) {
+        if (! dontCount) item.retries++
         if (item.retries <= MAX_DOWNLOAD_RETRIES) {
             returnToQueue(item)
         } else {
@@ -512,7 +520,8 @@ class FileLoader(private val queue: BlockingDeque<CacheItem>,
                             break
                         }
                         val buf = ByteArray(LOADER_BUFFER_SIZE)
-                        conn.inputStream.use {
+                        stream = conn.inputStream
+                        stream?.use {
                             while (true) {
                                 val read = it.read(buf)
                                 if (read < 0) {
@@ -533,6 +542,7 @@ class FileLoader(private val queue: BlockingDeque<CacheItem>,
 
                     } finally {
                         Log.d(LOG_TAG, "Finished download of $url complete $complete")
+                        stream = null
                         item.closeForAppend(complete)
                     }
 
@@ -546,8 +556,14 @@ class FileLoader(private val queue: BlockingDeque<CacheItem>,
                 putItemBack(item)
                 Log.d(LOG_TAG, "Load interrupted in wait")
             } catch (e: IOException) {
-                Log.e(LOG_TAG, "Network error for url $url", e)
-                item?.let { retry(it) }
+                val dontCount: Boolean = if (e is SocketException && e.message == "Socket closed") {
+                    Log.w(LOG_TAG, "Socket closed probaly due to drop in connection")
+                    true
+                } else {
+                    Log.e(LOG_TAG, "Network error for url $url", e)
+                    false
+                }
+                item?.let { retry(it, dontCount) }
             } catch (e: Exception) {
                 Log.e(LOG_TAG, "Other error for url $url", e)
                 item?.hasError = true

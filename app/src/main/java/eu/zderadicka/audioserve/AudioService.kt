@@ -50,6 +50,7 @@ private const val FF_MS = 30 * 1000L
 private const val REWIND_MS = 15 * 1000L
 const val MEDIA_FULLY_CACHED = "eu.zderadicka.audioserve.FULLY_CACHED"
 const val MEDIA_CACHE_DELETED = "eu.zderadicka.audioserve.CACHE_DELETED"
+const val PLAYER_NOT_READY = "eu.zderadicka.audioserve.PLAYER_NOT_READY"
 
 
 private class ResultWrapper(val result: MediaBrowserServiceCompat.Result<List<MediaBrowserCompat.MediaItem>>) {
@@ -208,7 +209,7 @@ class AudioService : MediaBrowserServiceCompat() {
 
 
             deletePreviousQueueItem = -1
-            if (folderPosition >= 0) {
+            if (folderPosition >= 0 && sourceFactory!=null) {
                 val factory = sourceFactory?: throw IllegalStateException("Session not ready")
                 var source: MediaSource
                 playQueue = currentFolder.slice(folderPosition until currentFolder.size).toMutableList()
@@ -235,9 +236,11 @@ class AudioService : MediaBrowserServiceCompat() {
 
             } else {
                 //source = factory.createMediaSource(apiClient.uriFromMediaId(mediaId))
-                Log.e(LOG_TAG, "Folder is not synched - cannot played")
+                Log.e(LOG_TAG, "Folder is not synched or offline- cannot played")
                 playQueue.clear()
                 currentSourcesList = null
+
+                session.sendSessionEvent(PLAYER_NOT_READY, null)
             }
 
         }
