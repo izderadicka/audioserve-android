@@ -28,7 +28,7 @@ const val SLEEP_EXTEND_ACTION = "eu.zderadicka.audioserve.SLEEP_EXTEND_ACTION"
 const val SLEEP_CANCEL_ACTION = "eu.zderadicka.audioserve.SLEEP_CANCEL_ACTION"
 
 private const val CHANNEL_ID = "eu.zderadicka.audioserve.sleep_timer.channel"
-private const val minuteMillis = 60_00L
+private const val minuteMillis = 60_000L
 private const val NOTIFICATION_ID = 74211
 private const val LOG_TAG = "SleepService"
 
