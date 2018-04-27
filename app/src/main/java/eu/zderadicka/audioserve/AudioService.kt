@@ -524,6 +524,7 @@ mediaSessionConnector.setErrorMessageProvider(messageProvider);
     fun pauseMe() {
         cancelSleepTimer(this)
         Log.d(LOG_TAG, "Pausing service - stopForeground")
+        //TODO - consider if we really want to stop foreground - as playback service might get recycled
         stopForeground(false)
         isStartedInForeground = false
 
