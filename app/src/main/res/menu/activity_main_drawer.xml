@@ -14,19 +14,28 @@
             android:title="@string/action_browse" />
         <item
             android:id="@+id/nav_recent"
-            android:icon="@drawable/ic_menu_recent"
+            android:icon="@drawable/ic_bookmark"
             android:title="@string/action_recently_listened" />
 
     </group>
 
     <group android:checkableBehavior="none">
 
+        <item android:title="@string/action_sleep_timer"
+            android:id="@+id/nav_sleep"
+            android:icon="@drawable/ic_timer"
+            />
+
+        <item android:title="@string/action_cancel_sleep_timer"
+            android:id="@+id/nav_cancel_sleep"
+            android:icon="@drawable/ic_timer_cancel"
+            />
+
         <item android:id="@+id/offline_switch"
             android:icon="@drawable/ic_menu_offline"
             app:actionLayout="@layout/action_switch_view"
             android:title="@string/action_offline" />
     </group>
-
 
     <group android:id="@+id/nav_group_system">
         <item

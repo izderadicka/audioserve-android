@@ -70,4 +70,13 @@
     <string name="transcoding">TRANSCODING</string>
     <string name="pref_downloads_summary">When dowloading folder %1$s files will download in parallell.
     Assure you have enough transcoding slots on the server</string>
+    <string name="action_sleep_timer">Sleep Timer</string>
+    <string name="minutes">Minutes</string>
+    <string name="extend_by">Extend By</string>
+    <string name="pause_after">Pause After</string>
+    <string name="cancel">Cancel</string>
+    <string name="extend">Extend</string>
+    <string name="sleep_notification_title">audioserve will pause after %1$s minutes</string>
+    <string name="sleep_notification_text">You can cancel timer or extend it by actions below</string>
+    <string name="action_cancel_sleep_timer">Cancel Sleep Timer</string>
 </resources>

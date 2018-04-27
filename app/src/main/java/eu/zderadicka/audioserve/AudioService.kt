@@ -1,6 +1,7 @@
 package eu.zderadicka.audioserve
 
 import android.app.Notification
+import android.app.Service
 import android.content.Context
 import android.content.Intent
 import android.content.SharedPreferences
@@ -41,6 +42,7 @@ import eu.zderadicka.audioserve.net.ApiError
 import eu.zderadicka.audioserve.net.CacheManager
 import eu.zderadicka.audioserve.net.FileCache
 import eu.zderadicka.audioserve.notifications.NotificationsManager
+import eu.zderadicka.audioserve.utils.cancelSleepTimer
 import java.io.File
 import kotlin.math.min
 
@@ -51,6 +53,9 @@ private const val REWIND_MS = 15 * 1000L
 const val MEDIA_FULLY_CACHED = "eu.zderadicka.audioserve.FULLY_CACHED"
 const val MEDIA_CACHE_DELETED = "eu.zderadicka.audioserve.CACHE_DELETED"
 const val PLAYER_NOT_READY = "eu.zderadicka.audioserve.PLAYER_NOT_READY"
+
+const val AUDIOSERVICE_ACTION_PAUSE = "eu.zderadicka.audioserve.ACTION_PAUSE"
+private val AUDIOSERVICE_ACTION_SELF_START = "eu.zderadicka.audioserve.SELF_START"
 
 
 private class ResultWrapper(val result: MediaBrowserServiceCompat.Result<List<MediaBrowserCompat.MediaItem>>) {
@@ -499,6 +504,7 @@ mediaSessionConnector.setErrorMessageProvider(messageProvider);
 
         if (!isStarted) {
             val intent = Intent(this, AudioService::class.java)
+            intent.action = AUDIOSERVICE_ACTION_SELF_START
             ContextCompat.startForegroundService(this, intent)
             isStarted = true
         }
@@ -507,6 +513,7 @@ mediaSessionConnector.setErrorMessageProvider(messageProvider);
     }
 
     fun stopMe() {
+        cancelSleepTimer(this)
         stopForeground(true)
         isStartedInForeground = false
         stopSelf()
@@ -515,10 +522,34 @@ mediaSessionConnector.setErrorMessageProvider(messageProvider);
     }
 
     fun pauseMe() {
+        cancelSleepTimer(this)
         Log.d(LOG_TAG, "Pausing service - stopForeground")
         stopForeground(false)
         isStartedInForeground = false
 
+    }
+
+
+
+    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        Log.d(LOG_TAG, "Started Audio Service with action ${intent?.action}")
+        if (intent == null) {
+            //started by system after kill
+
+        } else {
+            when (intent.action) {
+                AUDIOSERVICE_ACTION_PAUSE -> {
+                    if (isStarted) {
+                        player.playWhenReady = false
+                        pauseMe()
+                    } else {
+                        stopSelf(startId)
+                    }
+                }
+            }
+        }
+
+        return Service.START_STICKY
     }
 
 

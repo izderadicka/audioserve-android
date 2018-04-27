@@ -27,13 +27,18 @@ import kotlinx.android.synthetic.main.content_main.*
 import java.io.File
 import android.app.SearchManager
 import android.content.Context
+import android.content.ServiceConnection
 import android.content.pm.PackageManager
+import android.os.IBinder
 import android.preference.PreferenceManager
 import android.support.v7.widget.SearchView
 import android.support.v7.widget.SwitchCompat
 import eu.zderadicka.audioserve.data.*
 import eu.zderadicka.audioserve.net.DOWNLOAD_ACTION
 import eu.zderadicka.audioserve.net.DownloadService
+import eu.zderadicka.audioserve.utils.SLEEP_CANCEL_ACTION
+import eu.zderadicka.audioserve.utils.SleepService
+import eu.zderadicka.audioserve.utils.cancelSleepTimer
 
 
 private const val LOG_TAG = "Main"
@@ -326,6 +331,29 @@ class MainActivity : AppCompatActivity(),
         mCallback.onPlaybackStateChanged(mediaController?.playbackState)
     }
 
+
+    private fun onTimerChange(isRunning:Boolean) {
+        val menu = nav_view.menu
+        val startTimer = menu.findItem(R.id.nav_sleep)
+        val stopTimer = menu.findItem(R.id.nav_cancel_sleep)
+        startTimer.isVisible = !isRunning
+        stopTimer.isVisible = isRunning
+    }
+
+    private val timerServiceConnection = object: ServiceConnection {
+        private var svc: SleepService? = null
+        override fun onServiceDisconnected(name: ComponentName?) {
+            svc?.statusListener = null
+        }
+
+        override fun onServiceConnected(name: ComponentName?, service: IBinder) {
+            val svc = (service as SleepService.LocalBinder).service
+            svc.statusListener = this@MainActivity::onTimerChange
+            this.svc = svc
+        }
+
+    }
+
     override fun onStop() {
         super.onStop()
         mediaController?.unregisterCallback(mCallback)
@@ -334,12 +362,16 @@ class MainActivity : AppCompatActivity(),
     override fun onStart() {
         super.onStart()
         registerMediaCallback()
+        bindService(Intent(this, SleepService::class.java),
+                timerServiceConnection,
+                Context.BIND_AUTO_CREATE)
 
     }
 
     override fun onDestroy() {
         super.onDestroy()
         mBrowser.disconnect()
+        unbindService(timerServiceConnection)
 
     }
 
@@ -440,6 +472,15 @@ class MainActivity : AppCompatActivity(),
             }
             R.id.nav_recent -> {
                 openRecentFolder()
+            }
+
+            R.id.nav_sleep -> {
+                val d = SleepDialogFragment()
+                d.show(supportFragmentManager,"Sleep dialog")
+            }
+
+            R.id.nav_cancel_sleep -> {
+                cancelSleepTimer(this)
             }
 
             R.id.offline_switch -> return false
