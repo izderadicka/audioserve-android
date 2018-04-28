@@ -7,9 +7,7 @@ import android.content.Intent
 import android.content.SharedPreferences
 import android.media.AudioManager
 import android.net.Uri
-import android.os.Bundle
-import android.os.Process
-import android.os.ResultReceiver
+import android.os.*
 import android.preference.PreferenceManager
 import android.renderscript.RSInvalidStateException
 import android.support.v4.content.ContextCompat
@@ -55,7 +53,8 @@ const val MEDIA_CACHE_DELETED = "eu.zderadicka.audioserve.CACHE_DELETED"
 const val PLAYER_NOT_READY = "eu.zderadicka.audioserve.PLAYER_NOT_READY"
 
 const val AUDIOSERVICE_ACTION_PAUSE = "eu.zderadicka.audioserve.ACTION_PAUSE"
-private val AUDIOSERVICE_ACTION_SELF_START = "eu.zderadicka.audioserve.SELF_START"
+private const val AUDIOSERVICE_ACTION_SELF_START = "eu.zderadicka.audioserve.SELF_START"
+private const val PAUSE_DELAYED_TASKS = "pause_tasks"
 
 
 private class ResultWrapper(val result: MediaBrowserServiceCompat.Result<List<MediaBrowserCompat.MediaItem>>) {
@@ -97,6 +96,7 @@ class AudioService : MediaBrowserServiceCompat() {
     private var seekAfterPrepare: Long? = null
     private var deletePreviousQueueItem: Int = -1 // delete previous queue Item
     private var isOffline: Boolean = false
+    private val scheduler = Handler()
 
     private val playerController = object : DefaultPlaybackController(REWIND_MS, FF_MS, MediaSessionConnector.DEFAULT_REPEAT_TOGGLE_MODES) {
 
@@ -363,6 +363,10 @@ class AudioService : MediaBrowserServiceCompat() {
                     && deletePreviousQueueItem>=0 && player.currentWindowIndex == deletePreviousQueueItem+1) {
                 preparer.deleteInQueue()
             }
+
+            if (state.state != PlaybackStateCompat.STATE_PAUSED) {
+                scheduler.removeCallbacksAndMessages(PAUSE_DELAYED_TASKS)
+            }
         }
 
         override fun onMetadataChanged(metadata: MediaMetadataCompat?) {
@@ -514,6 +518,7 @@ mediaSessionConnector.setErrorMessageProvider(messageProvider);
 
     fun stopMe() {
         cancelSleepTimer(this)
+        saveCurrentlyListened()
         stopForeground(true)
         isStartedInForeground = false
         stopSelf()
@@ -523,6 +528,11 @@ mediaSessionConnector.setErrorMessageProvider(messageProvider);
 
     fun pauseMe() {
         cancelSleepTimer(this)
+        scheduler.postAtTime({
+            saveCurrentlyListened()
+        },
+                PAUSE_DELAYED_TASKS,
+                SystemClock.uptimeMillis()+ 10_000)
         Log.d(LOG_TAG, "Pausing service - stopForeground")
         //TODO - consider if we really want to stop foreground - as playback service might get recycled
         stopForeground(false)
@@ -553,18 +563,21 @@ mediaSessionConnector.setErrorMessageProvider(messageProvider);
         return Service.START_STICKY
     }
 
+    private fun saveCurrentlyListened() {
+        if (currentMediaItem != null && lastPositionUpdateTime>0) {
+            //update it with last known possition
+            currentMediaItem?.description?.extras?.putLong(METADATA_KEY_LAST_POSITION, lastKnownPosition)
+            currentMediaItem?.description?.extras?.putLong(METADATA_KEY_LAST_LISTENED_TIMESTAMP, lastPositionUpdateTime)
+            saveRecent(currentMediaItem!!, applicationContext)
+            Log.d(LOG_TAG, "Save lastly listened item ${currentMediaItem?.mediaId} pos ${lastKnownPosition} time ${lastPositionUpdateTime}")
+        }
+    }
 
     override fun onDestroy() {
         super.onDestroy()
         PreferenceManager.getDefaultSharedPreferences(this).unregisterOnSharedPreferenceChangeListener(prefsListener)
         try {
-            if (currentMediaItem != null && lastPositionUpdateTime>0) {
-                //update it with last known possition
-                currentMediaItem?.description?.extras?.putLong(METADATA_KEY_LAST_POSITION, lastKnownPosition)
-                currentMediaItem?.description?.extras?.putLong(METADATA_KEY_LAST_LISTENED_TIMESTAMP, lastPositionUpdateTime)
-                saveRecent(currentMediaItem!!, applicationContext)
-                Log.d(LOG_TAG, "Save lastly listened item ${currentMediaItem?.mediaId} pos ${lastKnownPosition} time ${lastPositionUpdateTime}")
-            }
+            saveCurrentlyListened()
             session.isActive = false
             session.release()
             player.release()

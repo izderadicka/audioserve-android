@@ -22,6 +22,9 @@ import eu.zderadicka.audioserve.R
 import kotlin.math.roundToInt
 import kotlin.math.sqrt
 import kotlin.properties.Delegates
+import android.media.MediaPlayer
+
+
 
 const val SLEEP_START_ACTION = "eu.zderadicka.audioserve.SLEEP_START_ACTION"
 const val SLEEP_EXTEND_ACTION = "eu.zderadicka.audioserve.SLEEP_EXTEND_ACTION"
@@ -32,7 +35,7 @@ private const val minuteMillis = 60_000L
 private const val NOTIFICATION_ID = 74211
 private const val LOG_TAG = "SleepService"
 
-private const val MIN_G_FOR_ACTION = 1.7F
+private const val MIN_G_FOR_ACTION = 1.5F
 
 fun cancelSleepTimer(context: Context) {
     val intent = Intent(context, SleepService::class.java)
@@ -125,7 +128,7 @@ class SleepService() : Service() {
         if (notificationManager.getNotificationChannel(CHANNEL_ID) == null) {
             val name = "Audioserve Sleep Time"
             val description = "Audioserve sleep timer"
-            val importance = NotificationManager.IMPORTANCE_HIGH
+            val importance = NotificationManager.IMPORTANCE_LOW
             val channel = NotificationChannel(CHANNEL_ID, name, importance)
             channel.description = description
             notificationManager.createNotificationChannel(channel)
@@ -156,15 +159,18 @@ class SleepService() : Service() {
         val allowSound = prefs.getBoolean("pref_sleep_notification_sound", false)
         if (allowSound) {
             if (mins == 1) {
-                builder.setSound(Uri.parse("android.resource://" + getPackageName() + "/" + R.raw.will_sleep_soon))
+                startSound("android.resource://" + getPackageName() + "/" + R.raw.will_sleep_soon2)
             } else if (extended) {
-                builder.setSound(Uri.parse("android.resource://" + getPackageName() + "/" + R.raw.extended))
+                startSound("android.resource://" + getPackageName() + "/" + R.raw.extended)
             }
         }
             return builder.build()
     }
 
     fun stopMe() {
+        mediaPlayer?.stop()
+        mediaPlayer?.release()
+        mediaPlayer = null
         stopForeground(true)
         stopSelf()
     }
@@ -179,6 +185,47 @@ class SleepService() : Service() {
                 timer?.startWithNotification(true)
 
             }
+    }
+
+    var mediaPlayer: MediaPlayer?  = null
+    var nextSound: Uri? = null
+
+    private fun startSound(uriString: String) {
+
+        // parse sound
+        val soundUri: Uri
+        try {
+            soundUri = Uri.parse(uriString)
+        } catch (e: Exception) {
+            return
+        }
+
+        // play sound
+        if (mediaPlayer == null) {
+            mediaPlayer = MediaPlayer()
+            mediaPlayer?.setOnPreparedListener(MediaPlayer.OnPreparedListener { mp -> mp.start() })
+            mediaPlayer?.setOnCompletionListener(MediaPlayer.OnCompletionListener { mp ->
+                mp.stop()
+                mp.reset()
+                if (nextSound!= null) {
+                    mediaPlayer?.setDataSource(this, nextSound!!)
+                    mediaPlayer?.prepareAsync()
+                    nextSound = null
+
+                }
+            })
+        }
+        try {
+            if (mediaPlayer?.isPlaying?:false) {
+                nextSound = Uri.parse(uriString)
+            } else {
+                mediaPlayer?.setDataSource(this, soundUri)
+                mediaPlayer?.prepareAsync()
+            }
+        } catch (e: Exception) {
+
+        }
+
     }
 
 
