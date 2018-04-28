@@ -151,7 +151,7 @@ class SleepService() : Service() {
         val builder = NotificationCompat.Builder(this, CHANNEL_ID)
         builder.setContentTitle(getString(R.string.sleep_notification_title, mins.toString()))
         builder.setContentText(getString(R.string.sleep_notification_text))
-        builder.setSmallIcon(R.drawable.ic_timer)
+        builder.setSmallIcon(R.drawable.ic_timer_white)
         builder.setPriority(NotificationCompat.PRIORITY_HIGH)
         builder.addAction(R.drawable.ic_cancel,getString(R.string.cancel),cancelPendingIntent)
         builder.addAction(R.drawable.ic_timer, getString(R.string.extend), extendPendingIntent)
