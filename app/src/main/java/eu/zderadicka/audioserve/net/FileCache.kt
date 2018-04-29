@@ -471,6 +471,8 @@ class FileLoader(private val queue: BlockingDeque<CacheItem>,
                 if (!isConnected) {
                     Log.d(LOG_TAG, "Network is not connected cannot load cache")
                     connectedCondition.block(NOT_CONNECTED_WAIT)
+                    //Check status again if we did not miss broadcast
+                    if (isNetworkConnected(context)) isConnected = true
                 }
                 if (stopFlag) break
                 item = queue.take()

@@ -55,6 +55,7 @@ fun isNetworkConnected(context:Context):Boolean {
         val activeNetwork = cm.activeNetworkInfo
         return activeNetwork != null && activeNetwork.isConnectedOrConnecting
     } catch(e: Exception) {
+        Log.e(LOG_TAG, "Cannot get network status due to error", e)
         return true
     }
 }
