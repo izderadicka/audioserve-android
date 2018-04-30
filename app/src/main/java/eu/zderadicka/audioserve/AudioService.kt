@@ -545,7 +545,7 @@ mediaSessionConnector.setErrorMessageProvider(messageProvider);
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         Log.d(LOG_TAG, "Started Audio Service with action ${intent?.action}")
         if (intent == null) {
-            //started by system after kill
+            Log.w(LOG_TAG, "Intent, null but always should start with intent")
 
         } else {
             when (intent.action) {
@@ -560,7 +560,7 @@ mediaSessionConnector.setErrorMessageProvider(messageProvider);
             }
         }
 
-        return Service.START_STICKY
+        return Service.START_NOT_STICKY
     }
 
     private fun saveCurrentlyListened() {
