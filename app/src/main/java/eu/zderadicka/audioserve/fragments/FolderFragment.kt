@@ -312,6 +312,10 @@ class FolderFragment : MediaFragment() {
     }
 
     private val subscribeCallback = object : MediaBrowserCompat.SubscriptionCallback() {
+        override fun onChildrenLoaded(parentId: String, children: MutableList<MediaItem>, options: Bundle) {
+            onChildrenLoaded(parentId, children)
+        }
+
         override fun onChildrenLoaded(parentId: String, children: MutableList<MediaItem>) {
             Log.d(LOG_TAG, "Received folder listing ${children.size} items")
             super.onChildrenLoaded(parentId, children)
@@ -384,7 +388,8 @@ class FolderFragment : MediaFragment() {
     }
 
     private fun startLoading() {
-        mediaActivity?.mediaBrowser?.subscribe(folderId, subscribeCallback)
+        val options = Bundle()
+        mediaActivity?.mediaBrowser?.subscribe(folderId, options, subscribeCallback)
         loadingProgress.visibility = View.INVISIBLE
         // do not show loading immediatelly for cached and quick responces
         handler.postDelayed(showProgress, 500)

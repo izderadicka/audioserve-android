@@ -599,7 +599,13 @@ mediaSessionConnector.setErrorMessageProvider(messageProvider);
     }
 
     private val SEARCH_RE = Regex("""^(\d+)_(.*)""")
-    override fun onLoadChildren(parentId: String, result:Result<List<MediaItem>>) {
+
+    override fun onLoadChildren(parentId: String, result: Result<List<MediaItem>>) {
+        val options = Bundle()
+        onLoadChildren(parentId, result, options)
+    }
+
+    override fun onLoadChildren(parentId: String, result:Result<List<MediaItem>>, options: Bundle) {
         if (parentId == RECENTLY_LISTENED_TAG) {
             result.detach()
             Log.d(LOG_TAG, "Requesting list of recently listened items")
