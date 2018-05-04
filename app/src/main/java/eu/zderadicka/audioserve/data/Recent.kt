@@ -19,6 +19,7 @@ object RecentContract {
     const val CONTENT_AUTHORITY = "eu.zderadicka.audioserve"
     object RecentEntry {
         val CONTENT_URI = Uri.parse("content://$CONTENT_AUTHORITY/$RECENT_PATH")
+        val CONTENT_URI_LATEST = CONTENT_URI.buildUpon().appendPath("latest").build()
         const val TABLE_NAME = "recent"
         const val _ID = BaseColumns._ID
         const val COLUMN_TIMESTAMP = "timestamp"
@@ -89,13 +90,20 @@ class RecentProvider: ContentProvider() {
     }
 
     override fun query(uri: Uri?, projection: Array<out String>?, selection: String?, selectionArgs: Array<out String>?, sortOrder: String?): Cursor {
-        if (uri != RecentEntry.CONTENT_URI) throw UnsupportedOperationException("Invalid content URI")
+        if (uri == RecentEntry.CONTENT_URI || uri == RecentEntry.CONTENT_URI_LATEST) {
 
-        val db = dbHelper.readableDatabase
-        val c =db.query(RecentEntry.TABLE_NAME, projection?: RecentEntry.DEFAULT_PROJECTION, selection, selectionArgs,
-                null,null, RecentEntry.COLUMN_TIMESTAMP + " DESC")
-        c.setNotificationUri(context.contentResolver, uri)
-        return c
+            val limit = if (uri == RecentEntry.CONTENT_URI_LATEST) "1" else null
+
+            val db = dbHelper.readableDatabase
+            val c = db.query(RecentEntry.TABLE_NAME, projection
+                    ?: RecentEntry.DEFAULT_PROJECTION, selection, selectionArgs,
+                    null, null, RecentEntry.COLUMN_TIMESTAMP + " DESC", limit)
+            c.setNotificationUri(context.contentResolver, uri)
+            return c
+        }
+
+        throw UnsupportedOperationException("Invalid content URI")
+
     }
 
     override fun onCreate(): Boolean {
@@ -131,7 +139,7 @@ fun saveRecent(item:MediaBrowserCompat.MediaItem, context: Context) {
     context.contentResolver.insert(RecentEntry.CONTENT_URI, v)
 }
 
-fun getRecents(context: Context, exceptPath: String? = null): List<MediaBrowserCompat.MediaItem> {
+fun getRecents(context: Context, exceptPath: String? = null, onlyLatest: Boolean = false): List<MediaBrowserCompat.MediaItem> {
     var selection:String? = null
     var selectionArgs:Array<String?>? = null
     if (exceptPath != null) {
@@ -139,7 +147,11 @@ fun getRecents(context: Context, exceptPath: String? = null): List<MediaBrowserC
         selectionArgs = arrayOf(exceptPath)
     }
     val l = ArrayList<MediaBrowserCompat.MediaItem>()
-    val c = context.contentResolver.query(RecentEntry.CONTENT_URI, null, selection,selectionArgs,null)
+    val c = context.contentResolver.query(
+            if (onlyLatest) RecentEntry.CONTENT_URI_LATEST else RecentEntry.CONTENT_URI,
+            null, selection,selectionArgs,
+            null
+            )
     c.use {
         while (c.moveToNext()) {
             val extras = Bundle()

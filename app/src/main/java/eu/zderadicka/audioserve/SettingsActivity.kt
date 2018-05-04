@@ -12,7 +12,6 @@ import eu.zderadicka.audioserve.net.ApiClient
 import eu.zderadicka.audioserve.net.CacheManager
 import eu.zderadicka.audioserve.net.MEDIA_CACHE_DIR
 import java.io.File
-import java.net.URL
 import java.util.*
 
 private const val LOG_TAG = "Settings"
@@ -127,22 +126,23 @@ class SettingsFragment: PreferenceFragment(), SharedPreferences.OnSharedPreferen
     private val storagesList: List<Pair<String,String>>
     get (){
 
-        fun fileSize(s:Long): String {
-            return android.text.format.Formatter.formatShortFileSize(activity, s)
+        fun freeSize(s:Long): String {
+            val size =  android.text.format.Formatter.formatShortFileSize(activity, s)
+            return getString(R.string.free_capacity, size)
         }
 
         val l = ArrayList<Pair<String,String>>()
         val cname = getString(R.string.storage_internal_cache)
         val cfile = activity.cacheDir
-        l.add(Pair(cname + " (${fileSize(cfile.freeSpace)})",cfile.absolutePath))
+        l.add(Pair(cname + " (${freeSize(cfile.freeSpace)})",cfile.absolutePath))
         val sname = R.string.storage_internal
         val sfile = activity.filesDir
-        l.add(Pair(getString(sname) + " (${fileSize(sfile.freeSpace)})",sfile.absolutePath))
+        l.add(Pair(getString(sname) + " (${freeSize(sfile.freeSpace)})",sfile.absolutePath))
 
        activity.externalMediaDirs.forEachIndexed { index, file ->
             if (Environment.getExternalStorageState(file) == Environment.MEDIA_MOUNTED) {
                 val name = getString(R.string.storage_external, index.toString())
-                l.add(Pair(name+ " (${fileSize(file.freeSpace)})",file.absolutePath))
+                l.add(Pair(name+ " (${freeSize(file.freeSpace)})",file.absolutePath))
             }
        }
         return l

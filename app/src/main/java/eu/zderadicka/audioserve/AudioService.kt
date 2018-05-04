@@ -19,8 +19,7 @@ import android.support.v4.media.MediaMetadataCompat
 import android.support.v4.media.session.MediaControllerCompat
 import android.support.v4.media.session.MediaSessionCompat
 import android.support.v4.media.session.PlaybackStateCompat
-import android.support.v4.media.session.PlaybackStateCompat.ACTION_PLAY_FROM_MEDIA_ID
-import android.support.v4.media.session.PlaybackStateCompat.ACTION_PREPARE_FROM_MEDIA_ID
+import android.support.v4.media.session.PlaybackStateCompat.*
 import android.util.Log
 import com.google.android.exoplayer2.ExoPlayer
 import com.google.android.exoplayer2.ExoPlayerFactory
@@ -602,7 +601,9 @@ mediaSessionConnector.setErrorMessageProvider(messageProvider);
     private val SEARCH_RE = Regex("""^(\d+)_(.*)""")
     override fun onLoadChildren(parentId: String, result:Result<List<MediaItem>>) {
         if (parentId == RECENTLY_LISTENED_TAG) {
+            result.detach()
             Log.d(LOG_TAG, "Requesting list of recently listened items")
+
             val list = ArrayList<MediaItem>()
             if (currentMediaItem != null) {
                 val mi = currentMediaItem!!
@@ -610,12 +611,21 @@ mediaSessionConnector.setErrorMessageProvider(messageProvider);
                 updateCurrentMediaItemTime()
                 list.add(mi)
             }
-            var path: String? = null
-            if (currentMediaItem != null) {
-                path = File(currentMediaItem!!.mediaId).parent
-            }
-            list.addAll(getRecents(applicationContext,path ))
-            result.sendResult(list)
+
+            Thread({
+
+                var path: String? = null
+                if (currentMediaItem != null) {
+                    path = File(currentMediaItem!!.mediaId).parent
+                }
+                    list.addAll(getRecents(applicationContext,path ))
+                    result.sendResult(list)
+                }).start()
+
+
+
+
+
 
         } else {
             if (isOffline) {
@@ -722,6 +732,23 @@ mediaSessionConnector.setErrorMessageProvider(messageProvider);
                 {
                     result.sendResult(it.getMediaItems(cacheManager))
                     currentFolder = it.getPlayableItems(cacheManager)
+
+                    if (session.controller.playbackState.state == PlaybackStateCompat.STATE_NONE ||
+                            session.controller.playbackState.state == PlaybackStateCompat.STATE_STOPPED) {
+                        // If player is stopped we can prepare latest bookmark
+
+                        val lastItems = getRecents(this, onlyLatest = true)
+                        if (lastItems.size>0) {
+                            val lastItem = lastItems[0]
+                            val lastFolderId = folderIdFromFileId(lastItem.mediaId!!)
+                            if (lastFolderId ==  parentId) {
+                                val idx = findIndexInFolder(lastItem.mediaId!!)
+                                if (idx >= 0) {
+                                    Log.d(LOG_TAG, "This folder can resume last played item ${lastItem.mediaId}")
+                                }
+                            }
+                        }
+                    }
                 }
 
             }

@@ -2,6 +2,7 @@ package eu.zderadicka.audioserve.fragments
 
 import android.content.Context
 import android.os.Bundle
+import android.os.Handler
 import android.support.v4.media.MediaBrowserCompat
 import android.support.v4.media.MediaBrowserCompat.MediaItem
 import android.support.v4.media.MediaMetadataCompat
@@ -261,6 +262,8 @@ class FolderFragment : MediaFragment() {
 
     private lateinit var folderView: RecyclerView
     private lateinit var loadingProgress: ProgressBar
+    private val handler = Handler()
+
     override val mCallback = object: MediaControllerCompat.Callback() {
 
         override fun onMetadataChanged(metadata: MediaMetadataCompat?) {
@@ -373,14 +376,23 @@ class FolderFragment : MediaFragment() {
         folderViewState = getFolderViewState()
     }
 
-    //TODO - consider additional caching here to minimize network need
+    private val showProgress = object: Runnable {
+        override fun run() {
+            loadingProgress.visibility = View.VISIBLE
+        }
+
+    }
+
     private fun startLoading() {
         mediaActivity?.mediaBrowser?.subscribe(folderId, subscribeCallback)
-        loadingProgress.visibility = View.VISIBLE
-        folderView.visibility = View.INVISIBLE
+        loadingProgress.visibility = View.INVISIBLE
+        // do not show loading immediatelly for cached and quick responces
+        handler.postDelayed(showProgress, 500)
+        folderView.visibility = View.VISIBLE
     }
 
     private fun doneLoading(folderDetails: Bundle?, error: Boolean = false, empty: Boolean = false) {
+        handler.removeCallbacks(showProgress)
         loadingProgress.visibility = View.INVISIBLE
         folderView.visibility = View.VISIBLE
 

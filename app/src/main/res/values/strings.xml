@@ -80,4 +80,5 @@
     <string name="sleep_notification_text">You can cancel timer or extend it by actions below</string>
     <string name="action_cancel_sleep_timer">Cancel Sleep Timer</string>
     <string name="label_sound_notifications">Sound Notifications</string>
+    <string name="free_capacity">%1$s free</string>
 </resources>
