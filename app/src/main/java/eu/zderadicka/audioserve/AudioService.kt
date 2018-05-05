@@ -251,7 +251,6 @@ class AudioService : MediaBrowserServiceCompat() {
         fun duplicateInQueue(mediaId: String, cb: (queueIndex:Int, playerPosition:Long) -> Unit){
             if (currentSourcesList != null && currentMediaItem != null && currentMediaItem?.mediaId == mediaId) {
                 val mi = currentMediaItem!!
-                val src = currentSourcesList!!
                 val playerPos = player.currentWindowIndex
                 val queuePos = findIndexInQueue(mi.mediaId!!)
                 if (playerPos == queuePos) {
@@ -350,7 +349,7 @@ class AudioService : MediaBrowserServiceCompat() {
                 val seekTo = seekAfterPrepare!!
                 seekAfterPrepare = null
                 Log.d(LOG_TAG, "Seeking to previous position $seekTo")
-                val ctl = session.controller.transportControls.seekTo(seekTo)
+                session.controller.transportControls.seekTo(seekTo)
 
             } else if ((state.state == PlaybackStateCompat.STATE_ERROR)
                     && seekAfterPrepare!=null) {
