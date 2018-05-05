@@ -9,7 +9,6 @@ import android.media.AudioManager
 import android.net.Uri
 import android.os.*
 import android.preference.PreferenceManager
-import android.renderscript.RSInvalidStateException
 import android.support.v4.content.ContextCompat
 import android.support.v4.media.MediaBrowserCompat
 import android.support.v4.media.MediaBrowserCompat.MediaItem
@@ -27,12 +26,10 @@ import com.google.android.exoplayer2.Player
 import com.google.android.exoplayer2.ext.mediasession.DefaultPlaybackController
 import com.google.android.exoplayer2.ext.mediasession.MediaSessionConnector
 import com.google.android.exoplayer2.ext.mediasession.TimelineQueueNavigator
-import com.google.android.exoplayer2.source.ConcatenatingMediaSource
 import com.google.android.exoplayer2.source.DynamicConcatenatingMediaSource
 import com.google.android.exoplayer2.source.ExtractorMediaSource
 import com.google.android.exoplayer2.source.MediaSource
 import com.google.android.exoplayer2.trackselection.DefaultTrackSelector
-import com.google.android.exoplayer2.upstream.DefaultHttpDataSourceFactory
 import eu.zderadicka.audioserve.data.*
 import eu.zderadicka.audioserve.net.ApiClient
 import eu.zderadicka.audioserve.net.ApiError
@@ -52,6 +49,8 @@ const val MEDIA_CACHE_DELETED = "eu.zderadicka.audioserve.CACHE_DELETED"
 const val PLAYER_NOT_READY = "eu.zderadicka.audioserve.PLAYER_NOT_READY"
 
 const val AUDIOSERVICE_ACTION_PAUSE = "eu.zderadicka.audioserve.ACTION_PAUSE"
+const val AUDIOSERVICE_FORCE_RELOAD = "eu.zderadicka.audioserve.FORCE_RELOAD"
+const val AUDIOSERVICE_DONT_PRELOAD_LATEST = "eu.zderadicka.audioserve.NO_PRELOAD_LATEST"
 private const val AUDIOSERVICE_ACTION_SELF_START = "eu.zderadicka.audioserve.SELF_START"
 private const val PAUSE_DELAYED_TASKS = "pause_tasks"
 
@@ -518,7 +517,11 @@ mediaSessionConnector.setErrorMessageProvider(messageProvider);
     fun stopMe() {
         cancelSleepTimer(this)
         saveCurrentlyListened()
-        stopForeground(true)
+        if (isStartedInForeground) {
+            stopForeground(true)
+        } else {
+            notifManager.deleteNotification()
+        }
         isStartedInForeground = false
         stopSelf()
         isStarted = false
@@ -635,14 +638,14 @@ mediaSessionConnector.setErrorMessageProvider(messageProvider);
 
         } else {
             if (isOffline) {
-                onLoadChildrenOffline(parentId, result)
+                onLoadChildrenOffline(parentId, result, options)
             } else {
-                onLoadChildrenOnline(parentId, result)
+                onLoadChildrenOnline(parentId, result, options)
             }
         }
     }
 
-    private fun onLoadChildrenOffline(parentId: String, result: Result<List<MediaBrowserCompat.MediaItem>>) {
+    private fun onLoadChildrenOffline(parentId: String, result: Result<List<MediaItem>>, options: Bundle) {
         if (parentId == EMPTY_ROOT_TAG) {
             result.sendResult(ArrayList())
         } else if (parentId == MEDIA_ROOT_TAG) {
@@ -654,6 +657,7 @@ mediaSessionConnector.setErrorMessageProvider(messageProvider);
                 val res =  cacheManager.cacheBrowser.listFolder(parentId)
                 currentFolder = res.filter{it.isPlayable}
                 result.sendResult(res)
+                prepareLatestItem(folderIdFromOfflinePath(parentId), options)
             }, "Retrieve folder")
             t.start()
         }
@@ -661,7 +665,7 @@ mediaSessionConnector.setErrorMessageProvider(messageProvider);
 
 
 
-    private fun onLoadChildrenOnline(parentId: String, result: Result<List<MediaBrowserCompat.MediaItem>>) {
+    private fun onLoadChildrenOnline(parentId: String, result: Result<List<MediaItem>>, options: Bundle) {
 
         @Suppress("NAME_SHADOWING")
         val result = ResultWrapper(result)
@@ -683,7 +687,7 @@ mediaSessionConnector.setErrorMessageProvider(messageProvider);
         } else if (parentId == MEDIA_ROOT_TAG) {
             Log.d(LOG_TAG, "Requesting listing of root of media")
             result.detach()
-            apiClient.loadCollections { cols, err ->
+            apiClient.loadCollections(options.getBoolean(AUDIOSERVICE_FORCE_RELOAD)) { cols, err ->
                 checkError(cols, err) {
                     val list = it.mapIndexed { idx, coll ->
                         val b = Bundle()
@@ -710,7 +714,8 @@ mediaSessionConnector.setErrorMessageProvider(messageProvider);
                 val query = m.groups.get(2)?.value?:""
 
                 result.detach()
-                apiClient.loadSearch(query, collection) {it, err->
+                apiClient.loadSearch(query, collection, options.getBoolean(AUDIOSERVICE_FORCE_RELOAD))
+                {it, err->
                     if (it != null) {
                         result.sendResult(it.getMediaItems(cacheManager))
                         currentFolder = ArrayList()//it.getPlayableItems(cacheManager)
@@ -733,34 +738,45 @@ mediaSessionConnector.setErrorMessageProvider(messageProvider);
             }
 
             result.detach()
-            apiClient.loadFolder(folder, index) { it, err ->
+            apiClient.loadFolder(folder, index, options.getBoolean(AUDIOSERVICE_FORCE_RELOAD))
+            { it, err ->
                 checkError(it, err)
                 {
                     result.sendResult(it.getMediaItems(cacheManager))
                     currentFolder = it.getPlayableItems(cacheManager)
-
-                    if (session.controller.playbackState.state == PlaybackStateCompat.STATE_NONE ||
-                            session.controller.playbackState.state == PlaybackStateCompat.STATE_STOPPED) {
-                        // If player is stopped we can prepare latest bookmark
-
-                        val lastItems = getRecents(this, onlyLatest = true)
-                        if (lastItems.size>0) {
-                            val lastItem = lastItems[0]
-                            val lastFolderId = folderIdFromFileId(lastItem.mediaId!!)
-                            if (lastFolderId ==  parentId) {
-                                val idx = findIndexInFolder(lastItem.mediaId!!)
-                                if (idx >= 0) {
-                                    Log.d(LOG_TAG, "This folder can resume last played item ${lastItem.mediaId}")
-                                }
-                            }
-                        }
-                    }
+                    prepareLatestItem(parentId, options)
                 }
 
             }
         }
 
 
+    }
+
+    private fun prepareLatestItem(parentId: String, options: Bundle) {
+        if (!options.getBoolean(AUDIOSERVICE_DONT_PRELOAD_LATEST) &&
+                (session.controller.playbackState.state == STATE_NONE ||
+                        session.controller.playbackState.state == STATE_STOPPED)) {
+            // If player is stopped we can prepare latest bookmark
+
+            val lastItems = getRecents(this, onlyLatest = true)
+            if (lastItems.size > 0) {
+                val lastItem = lastItems[0]
+                val lastFolderId = folderIdFromFileId(lastItem.mediaId!!)
+                if (lastFolderId == parentId) {
+                    val idx = findIndexInFolder(lastItem.mediaId!!)
+                    if (idx >= 0) {
+                        Log.d(LOG_TAG, "This folder can resume last played item ${lastItem.mediaId}")
+                        player.playWhenReady = false
+                        val extras = Bundle()
+                        extras.putLong(METADATA_KEY_LAST_POSITION,
+                                lastItem.description.extras?.getLong(METADATA_KEY_LAST_POSITION)
+                                        ?: 0L)
+                        preparer.onPrepareFromMediaId(lastItem.mediaId!!, extras)
+                    }
+                }
+            }
+        }
     }
 
 

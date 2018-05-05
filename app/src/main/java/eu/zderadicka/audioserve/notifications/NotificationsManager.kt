@@ -76,6 +76,10 @@ class NotificationsManager(private val mService: AudioService) {
 
     }
 
+    fun deleteNotification() {
+        notificationManager.cancel(NOTIFICATION_ID)
+    }
+
     private fun getNotification(): Notification {
         val description = mService.session.controller.metadata.description
         val state = mService.session.controller.playbackState

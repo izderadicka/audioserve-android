@@ -147,6 +147,21 @@ fun folderIdFromFileId(fileId: String): String {
     }
 }
 
+fun folderIdFromOfflinePath(offline: String): String {
+    val re = AUDIO_START_RE.matchEntire(offline)
+    if (re != null) {
+        val collectionNo = re.groups.get(1)?.value
+        val prefix = if (collectionNo != null && collectionNo.length>0) {
+            "$collectionNo/"
+        } else ""
+        val path = re.groups.get(2)?.value
+        return "${prefix}folder/$path"
+    } else {
+        throw IllegalArgumentException("Agrument is not offline path")
+    }
+}
+
+
 fun pathFromFolderId(folderId:String): String {
     if (folderId.startsWith(AudioService.COLLECTION_PREFIX)) return ""
     val m = FOLDER_START_RE.matchEntire(folderId)
@@ -158,6 +173,7 @@ fun pathFromFolderId(folderId:String): String {
     }
     return ""
 }
+
 
 fun collectionFromFolderId(folderId:String): Int? {
     if (folderId.startsWith(AudioService.COLLECTION_PREFIX)) {

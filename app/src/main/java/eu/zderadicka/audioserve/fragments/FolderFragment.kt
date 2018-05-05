@@ -19,10 +19,7 @@ import eu.zderadicka.audioserve.utils.ifStoppedOrDead
 import android.os.Parcelable
 import android.support.v4.content.ContextCompat
 import android.widget.*
-import eu.zderadicka.audioserve.MEDIA_CACHE_DELETED
-import eu.zderadicka.audioserve.MEDIA_FULLY_CACHED
-import eu.zderadicka.audioserve.PLAYER_NOT_READY
-import eu.zderadicka.audioserve.R
+import eu.zderadicka.audioserve.*
 import eu.zderadicka.audioserve.data.*
 import eu.zderadicka.audioserve.ui.SwipeRevealLayout
 
@@ -30,6 +27,7 @@ import eu.zderadicka.audioserve.ui.SwipeRevealLayout
 // the fragment initialization parameters, e.g. ARG_ITEM_NUMBER
 const val ARG_FOLDER_PATH = "folder-path"
 const val ARG_FOLDER_NAME = "folder-name"
+const val ARG_PREPARE = "folder-prepare"
 
 const val FOLDER_VIEW_STATE_KEY = "eu.zderadicka.audiserve.folderViewKey"
 
@@ -257,6 +255,8 @@ class FolderFragment : MediaFragment() {
     lateinit var folderName: String
     private set
 
+    private var willPrepare = false
+
     private var mediaActivity: MediaActivity? = null
     private lateinit var adapter: FolderAdapter
 
@@ -332,6 +332,10 @@ class FolderFragment : MediaFragment() {
             doneLoading(folderDetail, false, empty)
         }
 
+        override fun onError(parentId: String, options: Bundle) {
+            onError(parentId)
+        }
+
         override fun onError(parentId: String) {
             super.onError(parentId)
             Log.e(LOG_TAG, "Error loading folder ${parentId}")
@@ -345,6 +349,8 @@ class FolderFragment : MediaFragment() {
         arguments?.let {
             folderId = it.getString(ARG_FOLDER_PATH)
             folderName = it.getString(ARG_FOLDER_NAME)
+            willPrepare = it.getBoolean(ARG_PREPARE)
+            it.remove(ARG_PREPARE)
         }
     }
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?,
@@ -387,8 +393,15 @@ class FolderFragment : MediaFragment() {
 
     }
 
-    private fun startLoading() {
+    private fun startLoading(forceReload:Boolean=false) {
         val options = Bundle()
+        if (willPrepare) {
+            willPrepare = false
+            options.putBoolean(AUDIOSERVICE_DONT_PRELOAD_LATEST, true)
+        }
+        if (forceReload) {
+            options.putBoolean(AUDIOSERVICE_FORCE_RELOAD, true)
+        }
         mediaActivity?.mediaBrowser?.subscribe(folderId, options, subscribeCallback)
         loadingProgress.visibility = View.INVISIBLE
         // do not show loading immediatelly for cached and quick responces
@@ -453,9 +466,8 @@ class FolderFragment : MediaFragment() {
 
 
     fun reload() {
-        startLoading()
         mediaActivity?.mediaBrowser?.unsubscribe(folderId, subscribeCallback)
-        mediaActivity?.mediaBrowser?.subscribe(folderId, subscribeCallback)
+        startLoading(forceReload = true)
     }
 
 
@@ -466,11 +478,14 @@ class FolderFragment : MediaFragment() {
          *
          */
         @JvmStatic
-        fun newInstance(folderPath: String, folderName: String) =
+        fun newInstance(folderPath: String, folderName: String, preparePlay:Boolean = false) =
                 FolderFragment().apply {
                     arguments = Bundle().apply {
                         putString(ARG_FOLDER_NAME, folderName)
                         putString(ARG_FOLDER_PATH, folderPath)
+                        if (preparePlay) {
+                            putBoolean(ARG_PREPARE, true)
+                        }
 
                     }
                 }

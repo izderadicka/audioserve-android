@@ -5,7 +5,7 @@ Audioserve Client for Android
 [audioserve](https://github.com/izderadicka/audioserve) client for Android written in Kotlin.
 Using Exoplayer and MediaController - MediaSession architecture.
 
-**EARLY BETA**  Generally works, most of functionality is there, but still there might be some issues
+**BETA 1**  Generally works, majority of functionality is there, but still there might be some issues
 
 
 
@@ -16,6 +16,7 @@ Available features
 * Plays files in folder one after another
 * Progressive playback - starts as soon as possible
 * Caches ahead next n files (1 - 5 as per preferences)
+* Aggressively caches server responses (use reload to force latest data)
 * Downloads part of or whole folder to cache (swipe playable item to right to see download button)
 * Offline mode - plays only from cache
 * Remembers up to 100 recently listened positions

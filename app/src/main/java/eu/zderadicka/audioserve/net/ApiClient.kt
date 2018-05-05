@@ -3,8 +3,11 @@ package eu.zderadicka.audioserve.net
 import android.content.Context
 import android.graphics.Bitmap
 import android.net.Uri
+import android.os.Build
 import android.preference.PreferenceManager
 import android.text.Html
+import android.text.Spanned
+import android.text.format.DateUtils
 import android.util.Base64
 import android.util.Log
 import android.widget.ImageView
@@ -52,8 +55,8 @@ private const val LOGIN_REQUEST_TAG = "LOGIN"
 private const val IMAGE_REQUEST_TAG = "IMAGE"
 private const val TEXT_REQUEST_TAG = "TEXT"
 
-private const val CACHE_SOFT_TTL: Long = 5 * 60 * 1000
-private const val CACHE_MAX_TTL: Long = 24 * 3600 * 1000
+private const val CACHE_SOFT_TTL: Long = 24  * DateUtils.HOUR_IN_MILLIS
+private const val CACHE_MAX_TTL: Long = 7 * DateUtils.DAY_IN_MILLIS
 
 internal fun encodeSecret(secret: String): String {
     val secretBytes = secret.toByteArray(Charset.forName("UTF-8"))
@@ -133,9 +136,12 @@ class ApiClient private constructor(val context: Context) {
         }
     }
 
-    private fun <T> sendRequest(uri: String, convert: (String) -> T, callback: (T?, ApiError?) -> Unit) {
+    private fun <T> sendRequest(uri: String, forceReload: Boolean, convert: (String) -> T, callback: (T?, ApiError?) -> Unit) {
         val request = ConvertingRequest(uri,convert, callback)
         request.setShouldCache(true)
+        if (forceReload) {
+            requestQueue.cache.remove(uri)
+        }
         request.tag = API_REQUEST_TAG
         addToRequestQueue(request)
     }
@@ -144,15 +150,18 @@ class ApiClient private constructor(val context: Context) {
         return Uri.parse(baseUrl + mediaId + if (transcode != null) "?${TRANSCODE_QUERY}=$transcode" else "")
     }
 
-
     fun loadFolder(folder: String = "", collection: Int, callback: (AudioFolder?, ApiError?) -> Unit) {
+        loadFolder(folder, collection, false, callback)
+    }
+
+    fun loadFolder(folder: String = "", collection: Int, forceReload: Boolean, callback: (AudioFolder?, ApiError?) -> Unit) {
         var uri = baseUrl
         if (collection > 0) {
             uri += "$collection/"
         }
         uri += folder
 
-        sendRequest(uri, {
+        sendRequest(uri, forceReload, {
             val f = parseFolderfromJson(it, "", folder)
             if (collection > 0) {
                 f.collectionIndex = collection
@@ -161,7 +170,11 @@ class ApiClient private constructor(val context: Context) {
         }, callback)
     }
 
-    fun loadSearch(query: String, collection: Int, callback: (AudioFolder?, ApiError?) -> Unit) {
+    fun loadSearch(query: String, collection: Int,  callback: (AudioFolder?, ApiError?) -> Unit) {
+        loadSearch(query, collection, false, callback)
+    }
+
+    fun loadSearch(query: String, collection: Int, forceReload: Boolean, callback: (AudioFolder?, ApiError?) -> Unit) {
         var uri = baseUrl
         if (collection > 0) {
             uri += "$collection/"
@@ -169,7 +182,7 @@ class ApiClient private constructor(val context: Context) {
         uri += "search"
 
         var queryUri = Uri.parse(uri).buildUpon().appendQueryParameter("q", query).build()
-        sendRequest(queryUri.toString(), {
+        sendRequest(queryUri.toString(), forceReload, {
             val f = parseFolderfromJson(it, "search", "")
             if (collection > 0) {
                 f.collectionIndex = collection
@@ -180,13 +193,21 @@ class ApiClient private constructor(val context: Context) {
     }
 
     fun loadCollections(callback: (ArrayList<String>?, ApiError?) -> Unit) {
+        loadCollections(false, callback)
+    }
+
+    fun loadCollections(forceReload: Boolean, callback: (ArrayList<String>?, ApiError?) -> Unit) {
         val uri = baseUrl + "collections"
-        sendRequest(uri, ::parseCollectionsFromJson, callback)
+        sendRequest(uri, forceReload, ::parseCollectionsFromJson, callback)
     }
 
     fun loadTranscodings(callback: (TranscodingLimits?, ApiError?) -> Unit) {
+        loadTranscodings(false,callback)
+    }
+
+    fun loadTranscodings(forceReload: Boolean, callback: (TranscodingLimits?, ApiError?) -> Unit) {
         val uri = baseUrl + "transcodings"
-        sendRequest(uri, ::parseTranscodingsFromJson, callback)
+        sendRequest(uri, forceReload, ::parseTranscodingsFromJson, callback)
     }
 
     fun loadPicture(path: String, callback: (Bitmap?, ApiError?) -> Unit) {
@@ -239,7 +260,9 @@ class ApiClient private constructor(val context: Context) {
                 }
 
                 if (contentType == "text/html") {
-                    val html = Html.fromHtml(parsed)
+                    @Suppress("DEPRECATION")
+                    val html = if (Build.VERSION.SDK_INT>=24) Html.fromHtml(parsed, Html.FROM_HTML_MODE_LEGACY)
+                                else Html.fromHtml(parsed)
                     return Response.success(html, HttpHeaderParser.parseCacheHeaders(response))
                 }
 

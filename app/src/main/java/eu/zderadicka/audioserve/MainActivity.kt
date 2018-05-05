@@ -36,7 +36,6 @@ import android.support.v7.widget.SwitchCompat
 import eu.zderadicka.audioserve.data.*
 import eu.zderadicka.audioserve.net.DOWNLOAD_ACTION
 import eu.zderadicka.audioserve.net.DownloadService
-import eu.zderadicka.audioserve.utils.SLEEP_CANCEL_ACTION
 import eu.zderadicka.audioserve.utils.SleepService
 import eu.zderadicka.audioserve.utils.cancelSleepTimer
 
@@ -99,8 +98,8 @@ class MainActivity : AppCompatActivity(),
         }
     }
 
-    private fun newFolderFragment(id: String, name: String) {
-        val newFragment = FolderFragment.newInstance(id, name)
+    private fun newFolderFragment(id: String, name: String, preparePlay: Boolean = false) {
+        val newFragment = FolderFragment.newInstance(id, name, preparePlay)
         supportFragmentManager.beginTransaction().replace(R.id.folderContainer, newFragment)
                 .addToBackStack(id)
                 .commit()
@@ -137,7 +136,7 @@ class MainActivity : AppCompatActivity(),
                         Log.d(LOG_TAG, "Processing bookmark ${item.mediaId}")
                         val folderId = folderIdFromFileId(item.mediaId.toString())
                         val folderName = File(folderId).name
-                        newFolderFragment(folderId, folderName)
+                        newFolderFragment(folderId, folderName, preparePlay=true)
                         pendingMediaItem = item
 
 
@@ -512,7 +511,7 @@ class MainActivity : AppCompatActivity(),
             if (query != null && query.length > 3) {
                 val searchId = search_prefix + query
                 Log.d(LOG_TAG, "Seaching for $query")
-                newFolderFragment(searchId, query)
+                newFolderFragment(searchId, query, true)
             } else {
                 Toast.makeText(this, getString(R.string.search_warning), Toast.LENGTH_LONG).show()
             }
