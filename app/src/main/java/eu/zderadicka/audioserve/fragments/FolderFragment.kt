@@ -43,8 +43,8 @@ enum class ItemAction {
 private const val LOG_TAG = "FolderFragment"
 
 //TODO icon for item type - folder or audio file
-// TODO icon for currently played icon - that ice equlizer bar from Universal player
-class FolderItemViewHolder(itemView: View, val viewType: Int, val clickCB: (Int, ItemAction) -> Unit) : RecyclerView.ViewHolder(itemView) {
+// TODO icon for currently played icon - that nice equlizer bar from Universal player
+class FolderItemViewHolder(itemView: View, viewType: Int, val clickCB: (Int, ItemAction) -> Unit) : RecyclerView.ViewHolder(itemView) {
 
     var itemName: TextView = itemView.findViewById(R.id.folderItemName)
     var durationView: TextView? = null
@@ -105,8 +105,8 @@ class FolderAdapter(val context: Context,
     private var pendingMediaId: String? = null  // if we got now playing metadata, but list is not loaded yet
     private val idMap: HashMap<String,Int> = HashMap()
 
-    override fun onCreateViewHolder(parent: ViewGroup?, viewType: Int): FolderItemViewHolder {
-        val inflater = LayoutInflater.from(parent?.context)
+    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): FolderItemViewHolder {
+        val inflater = LayoutInflater.from(parent.context)
         var viewId = R.layout.folder_item
         if (viewType == ITEM_TYPE_FILE) {
             viewId = R.layout.file_item
@@ -144,10 +144,10 @@ class FolderAdapter(val context: Context,
         }
     }
 
-    override fun onBindViewHolder(holder: FolderItemViewHolder?, position: Int) {
+    override fun onBindViewHolder(holder: FolderItemViewHolder, position: Int) {
         val item = items?.get(position)
         if (item == null) return
-        holder!!.itemName.text = item.description.title
+        holder.itemName.text = item.description.title
 
         if ((holder.isFile || holder.isBookmark) && item.isPlayable) {
             holder.durationView?.text =
@@ -418,6 +418,8 @@ class FolderFragment : MediaFragment() {
             folderView.getLayoutManager().onRestoreInstanceState(folderViewState)
             folderViewState = null
         }
+
+
 
         mediaActivity?.onFolderLoaded(folderId, folderDetails, error, empty)
     }

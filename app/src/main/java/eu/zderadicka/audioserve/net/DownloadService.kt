@@ -66,7 +66,7 @@ class DownloadService : Service() {
 
 
     private inner class Worker(looper: Looper) : Handler(looper) {
-
+        @Suppress("UNCHECKED_CAST")
         override fun handleMessage(msg: Message) {
             when (msg.what) {
                 MSG_PREPARE_DOWNLOAD -> {
@@ -75,7 +75,6 @@ class DownloadService : Service() {
                 }
 
                 MSG_PROCESS_DOWNLOAD -> {
-
                     val (downloadId, mediaId) = msg.obj as Pair<String, FileCache.Status>
                     onProcessDownload(downloadId, mediaId)
                 }
@@ -163,7 +162,7 @@ class DownloadService : Service() {
             }
         }
 
-        return Service.START_STICKY //TODO reconsider as not sticky? Because after restart anyhow there is nothing to do unless we reconstruct pending downloads
+        return Service.START_NOT_STICKY
     }
 
     private fun onProcessDownload(mediaId: String, status: FileCache.Status) {
@@ -204,7 +203,7 @@ class DownloadService : Service() {
 
         val folderId = folderIdFromFileId(fileId)
 
-        apiClient.loadFolder(folderId!!, 0) { data, err ->
+        apiClient.loadFolder(folderId, 0) { data, err ->
             if (err != null) {
                 Log.e(LOG_TAG, "Server error $err")
                 return@loadFolder

@@ -15,7 +15,7 @@ fun readAsString(stream: InputStream): String {
     val reader = stream.bufferedReader()
 
     while(true) {
-        var line = reader.readLine()
+        val line = reader.readLine()
         if (line == null) break
         sb.append(line)
     }
@@ -29,7 +29,7 @@ fun readCollectionsFromJson(stream: InputStream): ArrayList<String> {
 }
 
 fun parseCollectionsFromJson(data: String): ArrayList<String> {
-    val json = JSONObject(data);
+    val json = JSONObject(data)
 
     val count = json.getInt("count")
     val names = json.getJSONArray("names")
@@ -58,8 +58,9 @@ fun readFolderFromJson(stream: InputStream, name: String, path: String): AudioFo
     return parseFolderfromJson(data, name, path)
 }
 
+@Suppress("NAME_SHADOWING")
 fun parseFolderfromJson(data: String, name: String, path: String) :AudioFolder{
-    val json = JSONObject(data);
+    val json = JSONObject(data)
     val fs = json.getJSONArray("files")
     val files = if (fs != null && fs.length()> 0) {
         val t = ArrayList<AudioFile>()
@@ -121,7 +122,7 @@ fun parseFolderfromJson(data: String, name: String, path: String) :AudioFolder{
     val details = Bundle()
     details.putInt(METADATA_KEY_FOLDERS_COUNT, subfolders?.size?:0)
     details.putInt(METADATA_KEY_FILES_COUNT, files?.size?:0)
-    details.putLong(METADATA_KEY_TOTAL_DURATION, files?.map{it?.meta?.duration?.toLong()?:0L}?.sum()?:0L)
+    details.putLong(METADATA_KEY_TOTAL_DURATION, files?.map{it.meta?.duration?.toLong()?:0L}?.sum()?:0L)
     if (cover!=null )
         details.putString(METADATA_KEY_FOLDER_PICTURE_PATH, cover.path)
     if (description!= null)
@@ -148,6 +149,10 @@ fun folderIdFromFileId(fileId: String): String {
 }
 
 fun folderIdFromOfflinePath(offline: String): String {
+    if (FOLDER_START_RE.matchEntire(offline) != null) {
+                return offline
+            }
+
     val re = AUDIO_START_RE.matchEntire(offline)
     if (re != null) {
         val collectionNo = re.groups.get(1)?.value
@@ -157,7 +162,7 @@ fun folderIdFromOfflinePath(offline: String): String {
         val path = re.groups.get(2)?.value
         return "${prefix}folder/$path"
     } else {
-        throw IllegalArgumentException("Agrument is not offline path")
+        throw IllegalArgumentException("Argument $offline is not offline path")
     }
 }
 

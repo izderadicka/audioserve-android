@@ -102,7 +102,7 @@ class CacheIndex(val maxCacheSize: Long, private val changeListener: CacheItem.L
 
     private fun makeSpace(sz: Long) {
 
-        //TODO consider if there is better way then to recaclculate - but since cache items can change asynchronoulsy
+        //TODO consider if there is better way then to recaclculate - but since cache items can change asynchronously
         cacheSize = map.values.map { it.knownLength }.sum()
 
         val toRemote = ArrayList<MutableMap.MutableEntry<String, CacheItem>>()
@@ -180,7 +180,7 @@ class FileCache(val cacheDir: File,
             return URL(baseUrl).path
         }
 
-    private var dirObserver: FileObserver? = null;
+    private var dirObserver: FileObserver? = null
 
     init {
         if (!cacheDir.exists()) {

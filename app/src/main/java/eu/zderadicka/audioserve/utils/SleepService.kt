@@ -1,6 +1,7 @@
 package eu.zderadicka.audioserve.utils
 
 
+import android.annotation.SuppressLint
 import android.app.*
 import android.content.Context
 import android.content.Intent
@@ -53,7 +54,7 @@ class SleepService() : Service() {
         }
 
     private var timer: MyTimer? by Delegates.observable<MyTimer?>(null) {
-        _property, _oldValue, newValue ->
+        _, _, newValue ->
             statusListener?.invoke(newValue!= null)
     }
     private lateinit var prefs: SharedPreferences
@@ -181,7 +182,7 @@ class SleepService() : Service() {
                 val remains = timer?.remains?:0
                 timer?.cancel()
                 val totalTime = time+remains
-                timer = MyTimer(time+remains)
+                timer = MyTimer(totalTime)
                 timer?.startWithNotification(true)
 
             }
@@ -203,8 +204,8 @@ class SleepService() : Service() {
         // play sound
         if (mediaPlayer == null) {
             mediaPlayer = MediaPlayer()
-            mediaPlayer?.setOnPreparedListener(MediaPlayer.OnPreparedListener { mp -> mp.start() })
-            mediaPlayer?.setOnCompletionListener(MediaPlayer.OnCompletionListener { mp ->
+            mediaPlayer?.setOnPreparedListener({ mp -> mp.start() })
+            mediaPlayer?.setOnCompletionListener({ mp ->
                 mp.stop()
                 mp.reset()
                 if (nextSound!= null) {
@@ -312,13 +313,6 @@ class SleepService() : Service() {
 
 
 abstract class CountDownTimer
-/**
- * @param millisInFuture The number of millis in the future from the call
- * to [.start] until the countdown is done and [.onFinish]
- * is called.
- * @param countDownInterval The interval along the way to receive
- * [.onTick] callbacks.
- */
 (
         /**
          * Millis since epoch when alarm should stop.
@@ -338,7 +332,8 @@ abstract class CountDownTimer
 
 
     // handles counting down
-    private val mHandler = object : Handler() {
+    private val mHandler = @SuppressLint("HandlerLeak") //TODO verify in future if leak is real
+    object : Handler() {
 
         override fun handleMessage(msg: Message) {
 

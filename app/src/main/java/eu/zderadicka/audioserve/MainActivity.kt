@@ -1,5 +1,6 @@
 package eu.zderadicka.audioserve
 
+import android.annotation.SuppressLint
 import android.content.ComponentName
 import android.content.Intent
 import android.os.Bundle
@@ -58,13 +59,13 @@ class MainActivity : AppCompatActivity(),
     private lateinit var mBrowser: MediaBrowserCompat
     private lateinit var controllerFragment: ControllerFragment
     private var pendingMediaItem: MediaBrowserCompat.MediaItem? = null
-    private var search_prefix: String? = null
+    private var searchPrefix: String? = null
     private var folderDetails: Bundle? = null
 
     private val mediaServiceConnectionCallback = object : MediaBrowserCompat.ConnectionCallback() {
         override fun onConnected() {
             super.onConnected()
-            val token = mBrowser.getSessionToken()
+            val token = mBrowser.sessionToken
             val mediaController = MediaControllerCompat(this@MainActivity, // Context
                     token)
             MediaControllerCompat.setMediaController(this@MainActivity, mediaController)
@@ -166,7 +167,7 @@ class MainActivity : AppCompatActivity(),
         }
 
         val collection: Int? = collectionFromFolderId(folderId)
-        search_prefix = if (collection == null || isOffline) null else "${AudioService.SEARCH_PREFIX}${collection}_"
+        searchPrefix = if (collection == null || isOffline) null else "${AudioService.SEARCH_PREFIX}${collection}_"
         this.folderDetails = folderDetails
         invalidateOptionsMenu()
     }
@@ -183,6 +184,7 @@ class MainActivity : AppCompatActivity(),
 
     private lateinit var drawerToggle: ActionBarDrawerToggle
 
+    @SuppressLint("SetTextI18n")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
@@ -217,8 +219,8 @@ class MainActivity : AppCompatActivity(),
         navHeader.findViewById<TextView>(R.id.homeLinkView).movementMethod = LinkMovementMethod()
 
         try {
-            val pInfo = this.getPackageManager().getPackageInfo(getPackageName(), 0);
-            val version = pInfo?.versionName;
+            val pInfo = this.packageManager.getPackageInfo(packageName, 0)
+            val version = pInfo?.versionName
             val nameView = navHeader.findViewById<TextView>(R.id.appNameView)
             nameView.text =  "audioserve v. $version"
         } catch (e: PackageManager.NameNotFoundException) {
@@ -231,7 +233,7 @@ class MainActivity : AppCompatActivity(),
                 val itemId = intent.getStringExtra(METADATA_KEY_MEDIA_ID)
                 val folderId = folderIdFromFileId(itemId)
                 val name = File(folderId).name
-                openInitalFolder(folderId, name)
+                openInitialFolder(folderId, name)
                 rootFolder = ROOT_RECENT
 
             } else {
@@ -248,8 +250,8 @@ class MainActivity : AppCompatActivity(),
         createOfflineSwitch()
 
         val prefs = PreferenceManager.getDefaultSharedPreferences(this)
-        val haveServer = prefs.getString("pref_server_url", "").length>0
-        val haveSecret = prefs.getString(("pref_shared_secret"), "").length>0
+        val haveServer = prefs.getString("pref_server_url", "").isNotEmpty()
+        val haveSecret = prefs.getString(("pref_shared_secret"), "").isNotEmpty()
 
         if (!haveSecret || !haveServer) startActivity(Intent(this, SettingsActivity::class.java))
 
@@ -260,9 +262,9 @@ class MainActivity : AppCompatActivity(),
 
     private fun createOfflineSwitch() {
         // test switch
-        val actionView = nav_view.menu.findItem(R.id.offline_switch).getActionView()
+        val actionView = nav_view.menu.findItem(R.id.offline_switch).actionView
         val switcher =  actionView.findViewById(R.id.switcher) as SwitchCompat
-        switcher.isChecked = isOffline;
+        switcher.isChecked = isOffline
         switcher.setOnClickListener{
             val makeOffline = switcher.isChecked
             val editor = PreferenceManager.getDefaultSharedPreferences(this@MainActivity).edit()
@@ -281,7 +283,7 @@ class MainActivity : AppCompatActivity(),
 
     private fun openRootFolder() {
         stopPlayback()
-        openInitalFolder(AudioService.MEDIA_ROOT_TAG,
+        openInitialFolder(AudioService.MEDIA_ROOT_TAG,
                 if (isOffline) getString(R.string.collection_offline)
                     else getString(R.string.collections_title))
         rootFolder = ROOT_BROWSE
@@ -289,13 +291,13 @@ class MainActivity : AppCompatActivity(),
 
     private fun openRecentFolder() {
         stopPlayback()
-        openInitalFolder(AudioService.RECENTLY_LISTENED_TAG, getString(R.string.recently_listened))
+        openInitialFolder(AudioService.RECENTLY_LISTENED_TAG, getString(R.string.recently_listened))
         rootFolder = ROOT_RECENT
     }
 
 
     private fun showUpNavigation() {
-        drawerToggle.isDrawerIndicatorEnabled = supportFragmentManager.getBackStackEntryCount() < 1
+        drawerToggle.isDrawerIndicatorEnabled = supportFragmentManager.backStackEntryCount < 1
 
 
     }
@@ -315,7 +317,7 @@ class MainActivity : AppCompatActivity(),
             val folderId = folderIdFromFileId(mediaId)
             if (folderId != folderFragment?.folderId) {
                 val name = File(folderId).name
-                openInitalFolder(folderId, name)
+                openInitialFolder(folderId, name)
             }
         }
     }
@@ -345,6 +347,7 @@ class MainActivity : AppCompatActivity(),
         private var svc: SleepService? = null
         override fun onServiceDisconnected(name: ComponentName?) {
             svc?.statusListener = null
+            svc = null
         }
 
         override fun onServiceConnected(name: ComponentName?, service: IBinder) {
@@ -400,7 +403,7 @@ class MainActivity : AppCompatActivity(),
 
         menuInflater.inflate(R.menu.main, menu)
         val searchItem = menu.findItem(R.id.action_search)
-        searchItem.isVisible = search_prefix != null
+        searchItem.isVisible = searchPrefix != null
         val infoItem = menu.findItem(R.id.action_info)
         infoItem.isVisible = folderDetails != null
         val searchManager = getSystemService(Context.SEARCH_SERVICE) as SearchManager
@@ -415,7 +418,7 @@ class MainActivity : AppCompatActivity(),
         // Handle action bar item clicks here. The action bar will
         // automatically handle clicks on the Home/Up button, so long
         // as you specify a parent activity in AndroidManifest.xml.
-        Log.d(LOG_TAG, "Clicked menu item id ${item.itemId} which is resource ${getResources().getResourceName(item.itemId)}")
+        Log.d(LOG_TAG, "Clicked menu item id ${item.itemId} which is resource ${resources.getResourceName(item.itemId)}")
         when (item.itemId) {
             R.id.action_reload -> {
                 folderFragment?.reload()
@@ -436,7 +439,7 @@ class MainActivity : AppCompatActivity(),
         }
     }
 
-    private fun openInitalFolder(folderId: String, folderName: String) {
+    private fun openInitialFolder(folderId: String, folderName: String) {
         //
         for (i in 0..supportFragmentManager.backStackEntryCount) {
             supportFragmentManager.popBackStack()
@@ -504,13 +507,13 @@ class MainActivity : AppCompatActivity(),
 
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
-        Log.d(LOG_TAG, "New intent arrived with action ${intent?.action}")
+        Log.d(LOG_TAG, "New intent arrived with action ${intent.action}")
 
-        if (Intent.ACTION_SEARCH == intent.getAction() && search_prefix != null) {
+        if (Intent.ACTION_SEARCH == intent.action && searchPrefix != null) {
             val query = intent.getStringExtra(SearchManager.QUERY)
             if (query != null && query.length > 3) {
-                val searchId = search_prefix + query
-                Log.d(LOG_TAG, "Seaching for $query")
+                val searchId = searchPrefix + query
+                Log.d(LOG_TAG, "Searching for $query")
                 newFolderFragment(searchId, query, true)
             } else {
                 Toast.makeText(this, getString(R.string.search_warning), Toast.LENGTH_LONG).show()

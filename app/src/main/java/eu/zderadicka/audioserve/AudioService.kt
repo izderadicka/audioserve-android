@@ -5,6 +5,7 @@ import android.app.Service
 import android.content.Context
 import android.content.Intent
 import android.content.SharedPreferences
+import android.media.AudioFocusRequest
 import android.media.AudioManager
 import android.net.Uri
 import android.os.*
@@ -28,7 +29,6 @@ import com.google.android.exoplayer2.ext.mediasession.MediaSessionConnector
 import com.google.android.exoplayer2.ext.mediasession.TimelineQueueNavigator
 import com.google.android.exoplayer2.source.DynamicConcatenatingMediaSource
 import com.google.android.exoplayer2.source.ExtractorMediaSource
-import com.google.android.exoplayer2.source.MediaSource
 import com.google.android.exoplayer2.trackselection.DefaultTrackSelector
 import eu.zderadicka.audioserve.data.*
 import eu.zderadicka.audioserve.net.ApiClient
@@ -133,8 +133,17 @@ class AudioService : MediaBrowserServiceCompat() {
             }
         }
 
+        private var audioRequest: AudioFocusRequest? = null
+
         fun requestAudioFocus(): Boolean {
-            val result = am.requestAudioFocus(focusCallback, AudioManager.STREAM_MUSIC, AudioManager.AUDIOFOCUS_GAIN)
+            val result = if (Build.VERSION.SDK_INT >= 26) {
+                audioRequest = AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN)
+                        .setOnAudioFocusChangeListener(focusCallback).build()
+                am.requestAudioFocus(audioRequest)
+            } else {
+                @Suppress("DEPRECATION")
+                am.requestAudioFocus(focusCallback, AudioManager.STREAM_MUSIC, AudioManager.AUDIOFOCUS_GAIN)
+            }
             return result == AudioManager.AUDIOFOCUS_REQUEST_GRANTED
         }
 
@@ -152,7 +161,12 @@ class AudioService : MediaBrowserServiceCompat() {
             super.onStop(player)
             session.isActive = false
             stopMe()
-            am.abandonAudioFocus(focusCallback)
+            if (Build.VERSION.SDK_INT >= 26) {
+                audioRequest?.let { am.abandonAudioFocusRequest(it) }
+            } else {
+                @Suppress("DEPRECATION")
+                am.abandonAudioFocus(focusCallback)
+            }
         }
     }
 
@@ -214,7 +228,7 @@ class AudioService : MediaBrowserServiceCompat() {
             deletePreviousQueueItem = -1
             if (folderPosition >= 0 && sourceFactory!=null) {
                 val factory = sourceFactory?: throw IllegalStateException("Session not ready")
-                var source: MediaSource
+
                 playQueue = currentFolder.slice(folderPosition until currentFolder.size).toMutableList()
                 cacheManager.resetLoading(* playQueue.slice(0 until min(preloadFiles+1, playQueue.size))
                         .map{it.mediaId!!}.toTypedArray())
@@ -223,7 +237,7 @@ class AudioService : MediaBrowserServiceCompat() {
                     val transcode = cacheManager.shouldTranscode(it)
                     factory.createMediaSource(apiClient.uriFromMediaId(it.mediaId!!, transcode))
                 }
-                source = DynamicConcatenatingMediaSource()
+                val source  = DynamicConcatenatingMediaSource()
                 source.addMediaSources(ms)
                 currentSourcesList =source
 
@@ -425,23 +439,21 @@ class AudioService : MediaBrowserServiceCompat() {
         }
     }
 
-    private val prefsListener = object : SharedPreferences.OnSharedPreferenceChangeListener {
-        override fun onSharedPreferenceChanged(sharedPreferences: SharedPreferences, key: String?) {
-            when (key) {
-                "pref_server_url", "pref_shared_secret" -> apiClient.loadPreferences()
-                "pref_preload" -> {
-                    preloadFiles = sharedPreferences.getString("pref_preload","2").toInt()
-                }
-                "pref_cache_location" -> {
-                    preparer.sourceFactory = null
-                }
-                "pref_offline" -> {
-                    isOffline = sharedPreferences.getBoolean("pref_offline", false)
-                    preparer.sourceFactory = null
-                }
+    private val prefsListener = SharedPreferences.OnSharedPreferenceChangeListener {
+        sharedPreferences, key ->
+        when (key) {
+            "pref_server_url", "pref_shared_secret" -> apiClient.loadPreferences()
+            "pref_preload" -> {
+                preloadFiles = sharedPreferences.getString("pref_preload","2").toInt()
+            }
+            "pref_cache_location" -> {
+                preparer.sourceFactory = null
+            }
+            "pref_offline" -> {
+                isOffline = sharedPreferences.getBoolean("pref_offline", false)
+                preparer.sourceFactory = null
             }
         }
-
     }
 
     private lateinit var queueManager: QueueManager
@@ -499,7 +511,7 @@ mediaSessionConnector.setErrorMessageProvider(messageProvider);
 
 
     var isStartedInForeground = false
-    var isStarted = false
+    private var isStarted = false
 
     fun startMe(notification: Notification) {
 
@@ -645,20 +657,22 @@ mediaSessionConnector.setErrorMessageProvider(messageProvider);
     }
 
     private fun onLoadChildrenOffline(parentId: String, result: Result<List<MediaItem>>, options: Bundle) {
-        if (parentId == EMPTY_ROOT_TAG) {
-            result.sendResult(ArrayList())
-        } else if (parentId == MEDIA_ROOT_TAG) {
-            Log.d(LOG_TAG, "Requesting offline root")
-            result.sendResult(cacheManager.cacheBrowser.rootFolder)
-        } else {
-            result.detach()
-            val t = Thread({
-                val res =  cacheManager.cacheBrowser.listFolder(parentId)
-                currentFolder = res.filter{it.isPlayable}
-                result.sendResult(res)
-                prepareLatestItem(folderIdFromOfflinePath(parentId), options)
-            }, "Retrieve folder")
-            t.start()
+        when (parentId) {
+            EMPTY_ROOT_TAG -> result.sendResult(ArrayList())
+            MEDIA_ROOT_TAG -> {
+                Log.d(LOG_TAG, "Requesting offline root")
+                result.sendResult(cacheManager.cacheBrowser.rootFolder)
+            }
+            else -> {
+                result.detach()
+                val t = Thread({
+                    val res =  cacheManager.cacheBrowser.listFolder(parentId)
+                    currentFolder = res.filter{it.isPlayable}
+                    result.sendResult(res)
+                    prepareLatestItem(folderIdFromOfflinePath(parentId), options)
+                }, "Retrieve folder")
+                t.start()
+            }
         }
     }
 
@@ -782,10 +796,10 @@ mediaSessionConnector.setErrorMessageProvider(messageProvider);
     override fun onGetRoot(clientPackageName: String, clientUid: Int, rootHints: Bundle?): MediaBrowserServiceCompat.BrowserRoot? {
         Log.d(LOG_TAG, "Requesting root mediaId")
         // TODO For now allow browser access from same application - latter consider Package manager from Universal player
-        if (Process.SYSTEM_UID == clientUid || Process.myUid() == clientUid) {
-            return BrowserRoot(MEDIA_ROOT_TAG, null)
+        return if (Process.SYSTEM_UID == clientUid || Process.myUid() == clientUid) {
+            BrowserRoot(MEDIA_ROOT_TAG, null)
         } else {
-            return BrowserRoot(EMPTY_ROOT_TAG, null)
+            BrowserRoot(EMPTY_ROOT_TAG, null)
         }
     }
 

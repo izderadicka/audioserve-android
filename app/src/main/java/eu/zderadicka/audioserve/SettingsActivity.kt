@@ -1,5 +1,6 @@
 package eu.zderadicka.audioserve
 
+import android.annotation.SuppressLint
 import android.content.SharedPreferences
 import android.net.Uri
 import android.support.v7.app.AppCompatActivity
@@ -19,6 +20,7 @@ private const val LOG_TAG = "Settings"
 class SettingsFragment: PreferenceFragment(), SharedPreferences.OnSharedPreferenceChangeListener {
 
 
+    @SuppressLint("ApplySharedPref")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         addPreferencesFromResource(R.xml.settings)
@@ -56,7 +58,7 @@ class SettingsFragment: PreferenceFragment(), SharedPreferences.OnSharedPreferen
 
 
         // validate url
-        findPreference("pref_server_url").setOnPreferenceChangeListener { preference, newValue ->
+        findPreference("pref_server_url").setOnPreferenceChangeListener { _, newValue ->
 
             val ok = try {
                 val uri = Uri.parse(newValue as String)
@@ -78,14 +80,14 @@ class SettingsFragment: PreferenceFragment(), SharedPreferences.OnSharedPreferen
 
                 } else {
                     Toast.makeText(activity,
-                            getString(R.string.connection_error, err?.name?:getString(R.string.unknown_error)),
+                            getString(R.string.connection_error, err.name),
                             Toast.LENGTH_LONG).show()
                 }
             }
             true
         }
 
-        findPreference("pref_cache_size").setOnPreferenceChangeListener{ pref, newValue ->
+        findPreference("pref_cache_size").setOnPreferenceChangeListener{ _, newValue ->
             try {
                 val n = (newValue as String).toInt()
                 n>= 0 && n<=50000

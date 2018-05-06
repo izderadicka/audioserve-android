@@ -29,7 +29,7 @@ class ControllerFragment : MediaFragment() {
 
     // Receive callbacks from the MediaController. Here we update our state such as which queue
     // is being shown, the current title and description and the PlaybackState.
-    internal override val mCallback = object : MediaControllerCompat.Callback() {
+    override val mCallback = object : MediaControllerCompat.Callback() {
         override fun onPlaybackStateChanged(state: PlaybackStateCompat) {
             Log.d(LOG_TAG, "Received playback state change to state ${state.state}")
             if (activity == null) {
@@ -49,7 +49,7 @@ class ControllerFragment : MediaFragment() {
                     val msg = state.errorMessage?:"Playback error"
                     Log.e(LOG_TAG, "error playbackstate:  $msg")
                     Toast.makeText(activity, msg, Toast.LENGTH_LONG).show()
-                    enablePlay = true // TODO - check if work - hoping to be able to try again
+                    enablePlay = true
                 }
             }
 
