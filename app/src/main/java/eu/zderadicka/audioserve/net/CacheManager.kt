@@ -1,5 +1,6 @@
 package eu.zderadicka.audioserve.net
 
+import android.annotation.SuppressLint
 import android.content.Context
 import android.content.SharedPreferences
 import android.net.Uri
@@ -200,7 +201,6 @@ class CacheManager private constructor(val context: Context) {
         cacheDir = File(File(cacheBase), MEDIA_CACHE_DIR)
         val cacheSize: Long = PreferenceManager.getDefaultSharedPreferences(context).getString("pref_cache_size",
                 DEFAULT_CACHE_SIZE_MB.toString()).toLong() * 1024 * 1024
-        val baseUrl:String = PreferenceManager.getDefaultSharedPreferences(context).getString("pref_server_url","")
         cache =  FileCache(cacheDir,cacheSize, context)
         transcode = transcodingFromPrefs(context)
         PreferenceManager.getDefaultSharedPreferences(context).registerOnSharedPreferenceChangeListener(prefsListener)
@@ -217,7 +217,7 @@ class CacheManager private constructor(val context: Context) {
         cache.stopLoader()
     }
 
-
+    @Suppress("UNCHECKED_CAST")
     private fun reset() {
         cache.stopLoader()
         val cacheBase = PreferenceManager.getDefaultSharedPreferences(context).getString("pref_cache_location",
@@ -225,7 +225,6 @@ class CacheManager private constructor(val context: Context) {
         cacheDir = File(File(cacheBase), MEDIA_CACHE_DIR)
         val cacheSize: Long = PreferenceManager.getDefaultSharedPreferences(context).getString("pref_cache_size",
                 DEFAULT_CACHE_SIZE_MB.toString()).toLong() * 1024 * 1024
-        val baseUrl:String = PreferenceManager.getDefaultSharedPreferences(context).getString("pref_server_url","")
         val oldListeners: HashSet<FileCache.Listener> = cache.listeners.clone() as HashSet<FileCache.Listener>
         cache.removeAllListeners()
         cache = FileCache(cacheDir, cacheSize, context)
@@ -242,6 +241,7 @@ class CacheManager private constructor(val context: Context) {
 
     private fun clearCache() {
        cache.resetIndex(true)
+        cacheBrowser.clearCache()
     }
 
     fun isCached(mediaId: String): Boolean {
@@ -298,6 +298,7 @@ class CacheManager private constructor(val context: Context) {
     }
 
     companion object {
+        @SuppressLint("StaticFieldLeak") // should be OK as we save only app context
         @Volatile
         private var instance: CacheManager? = null
 
@@ -310,7 +311,7 @@ class CacheManager private constructor(val context: Context) {
         }
 
         @Synchronized
-        fun clearCache(context: Context) {
+        fun clearCache() {
             try {
                 instance?.clearCache()
             } catch (e: Exception) {

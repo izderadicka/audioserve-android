@@ -666,7 +666,7 @@ mediaSessionConnector.setErrorMessageProvider(messageProvider);
             else -> {
                 result.detach()
                 val t = Thread({
-                    val res =  cacheManager.cacheBrowser.listFolder(parentId)
+                    val res =  cacheManager.cacheBrowser.listFolder(parentId, options.getBoolean(AUDIOSERVICE_FORCE_RELOAD))
                     currentFolder = res.filter{it.isPlayable}
                     result.sendResult(res)
                     prepareLatestItem(folderIdFromOfflinePath(parentId), options)

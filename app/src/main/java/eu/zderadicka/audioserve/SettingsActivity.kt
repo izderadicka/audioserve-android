@@ -101,7 +101,7 @@ class SettingsFragment: PreferenceFragment(), SharedPreferences.OnSharedPreferen
 
             Thread({
                 ApiClient.clearCache(activity)
-                CacheManager.clearCache(activity)
+                CacheManager.clearCache()
                 activity.runOnUiThread({
                     Toast.makeText(activity, "Cache cleared", Toast.LENGTH_LONG).show()
                 })

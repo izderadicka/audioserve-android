@@ -3,7 +3,9 @@ import android.media.MediaMetadataRetriever
 import android.os.Bundle
 import android.support.v4.media.MediaBrowserCompat
 import android.support.v4.media.MediaDescriptionCompat
+import android.text.format.DateUtils
 import android.util.Log
+import android.util.LruCache
 import eu.zderadicka.audioserve.data.*
 import eu.zderadicka.audioserve.utils.splitExtension
 import java.io.File
@@ -40,8 +42,6 @@ private fun fileToItem(mediaId: String, cacheDir: File): MediaBrowserCompat.Medi
     try {
         val duration = metaExtractor.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION)?.toLong()
         extras.putLong(METADATA_KEY_DURATION, duration!!) // in miliseconds
-        val bitrate = metaExtractor.extractMetadata(MediaMetadataRetriever.METADATA_KEY_BITRATE)?.toInt()
-
     } catch (e: NumberFormatException) {
         Log.e(LOG_TAG, "Wrong duration value")
     }
@@ -71,7 +71,10 @@ private fun fileToItem(mediaId: String, cacheDir: File): MediaBrowserCompat.Medi
     return item
 }
 
+private const val MAX_CACHE_LIVE = 24 * DateUtils.HOUR_IN_MILLIS
 class CacheBrowser(val ids: List<String>, val cacheDir:File) {
+    private val cache = LruCache<String, CacheItem>(16)
+
     val rootFolder :List<MediaBrowserCompat.MediaItem> by lazy() {
         listRootFolder()
     }
@@ -80,8 +83,8 @@ class CacheBrowser(val ids: List<String>, val cacheDir:File) {
         val rootFolders = HashSet<String>()
         for (id in ids) {
             val segments = id.split(SEP)
-            val name_idx = if (segments[0] == "audio") 1 else if (segments[1] == "audio")  2 else continue
-            rootFolders.add(segments.take(name_idx+1).joinToString(SEP))
+            val nameIdx = if (segments[0] == "audio") 1 else if (segments[1] == "audio")  2 else continue
+            rootFolders.add(segments.take(nameIdx+1).joinToString(SEP))
         }
 
         return rootFolders.toList().sorted().map{ subfolderToItem(it)}
@@ -90,7 +93,7 @@ class CacheBrowser(val ids: List<String>, val cacheDir:File) {
 
     }
     val FOLDER_RE = Regex("""^(\d+/)?folder/""")
-    fun listFolder(folderId: String):List<MediaBrowserCompat.MediaItem> {
+    fun listFolder(folderId: String, noCache:Boolean = false):List<MediaBrowserCompat.MediaItem> {
         val folderMatch = FOLDER_RE.find(folderId)
         @Suppress("NAME_SHADOWING")
         val folderId = if (folderMatch!= null) {
@@ -99,6 +102,14 @@ class CacheBrowser(val ids: List<String>, val cacheDir:File) {
         } else {
             folderId
         }
+
+        if (!noCache) {
+            val cachedEntry = cache.get(folderId)
+            if (cachedEntry != null && System.currentTimeMillis() - cachedEntry.timestamp < MAX_CACHE_LIVE) {
+                return cachedEntry.data
+            }
+        }
+
         val folders = HashSet<String>()
         val files = ArrayList<String>()
         val items = ArrayList<MediaBrowserCompat.MediaItem>()
@@ -123,6 +134,13 @@ class CacheBrowser(val ids: List<String>, val cacheDir:File) {
             if (item == null) continue
             items.add(item)
         }
+        cache.put(folderId, CacheItem(System.currentTimeMillis(), items))
         return items
     }
+
+    fun clearCache() {
+        cache.evictAll()
+    }
+    private data class  CacheItem(val timestamp: Long, val data: List<MediaBrowserCompat.MediaItem>)
 }
+
