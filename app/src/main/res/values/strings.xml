@@ -73,9 +73,10 @@
     <string name="pause_after">Pause After</string>
     <string name="cancel">Cancel</string>
     <string name="extend">Extend</string>
-    <string name="sleep_notification_title">audioserve will pause after %1$s minutes</string>
-    <string name="sleep_notification_text">You can cancel timer or extend it by actions below</string>
+    <string name="sleep_notification_title">audioserve will sleep in</string>
+    <string name="sleep_notification_text">Expand for actions</string>
     <string name="action_cancel_sleep_timer">Cancel Sleep Timer</string>
     <string name="label_sound_notifications">Sound Notifications</string>
     <string name="free_capacity">%1$s free</string>
+    <string name="minutes_abr">m</string>
 </resources>

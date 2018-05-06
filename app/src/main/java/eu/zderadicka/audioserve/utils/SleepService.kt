@@ -24,7 +24,8 @@ import kotlin.math.roundToInt
 import kotlin.math.sqrt
 import kotlin.properties.Delegates
 import android.media.MediaPlayer
-
+import android.widget.RemoteViews
+import android.widget.TextView
 
 
 const val SLEEP_START_ACTION = "eu.zderadicka.audioserve.SLEEP_START_ACTION"
@@ -149,13 +150,17 @@ class SleepService() : Service() {
         extendIntent.action = SLEEP_EXTEND_ACTION
         val extendPendingIntent = PendingIntent.getService(this, 0, extendIntent, 0)
 
+        val content = RemoteViews(packageName, R.layout.notif_sleep)
+        content.setCharSequence(R.id.countDown, "setText", mins.toString())
+
         val builder = NotificationCompat.Builder(this, CHANNEL_ID)
-        builder.setContentTitle(getString(R.string.sleep_notification_title, mins.toString()))
-        builder.setContentText(getString(R.string.sleep_notification_text))
-        builder.setSmallIcon(R.drawable.ic_timer_white)
-        builder.setPriority(NotificationCompat.PRIORITY_HIGH)
-        builder.addAction(R.drawable.ic_cancel,getString(R.string.cancel),cancelPendingIntent)
-        builder.addAction(R.drawable.ic_timer, getString(R.string.extend), extendPendingIntent)
+                .setStyle(NotificationCompat.DecoratedCustomViewStyle())
+                .setCustomContentView(content)
+                .setContentText(getString(R.string.sleep_notification_text))
+                .setSmallIcon(R.drawable.ic_timer_white)
+                .setPriority(NotificationCompat.PRIORITY_HIGH)
+                .addAction(R.drawable.ic_cancel,getString(R.string.cancel),cancelPendingIntent)
+                .addAction(R.drawable.ic_timer, getString(R.string.extend), extendPendingIntent)
 
         val allowSound = prefs.getBoolean("pref_sleep_notification_sound", false)
         if (allowSound) {

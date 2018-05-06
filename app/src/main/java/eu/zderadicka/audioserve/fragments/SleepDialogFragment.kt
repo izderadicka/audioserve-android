@@ -58,10 +58,10 @@ class SleepDialogFragment : DialogFragment() {
             sps.edit().putInt("pref_extend", currentExtend).commit()
         }
         extendByPicker.value = minsToVal(currentExtend)
-        sleepAfterPicker.setOnValueChangedListener{p, oldValue, newValue ->
+        sleepAfterPicker.setOnValueChangedListener{_, _, newValue ->
             sps.edit().putInt("pref_sleep", valToMins(newValue)).apply()
         }
-        extendByPicker.setOnValueChangedListener{p, oldValue, newValue ->
+        extendByPicker.setOnValueChangedListener{_, _, newValue ->
             sps.edit().putInt("pref_extend", valToMins(newValue)).apply()
         }
 
@@ -69,7 +69,7 @@ class SleepDialogFragment : DialogFragment() {
         val soundSwitch = view.findViewById<Switch>(R.id.soundSwitch)
         soundSwitch.isChecked = soundState
         soundSwitch.setOnCheckedChangeListener{
-            switch, isChecked ->
+            _, isChecked ->
             sps.edit().putBoolean("pref_sleep_notification_sound", isChecked).apply()
         }
 
@@ -77,14 +77,14 @@ class SleepDialogFragment : DialogFragment() {
                 .setTitle(R.string.action_sleep_timer)
                 .setIcon(R.drawable.ic_timer)
                 .setView(view)
-                .setPositiveButton("Start",  { dialog, id ->
+                .setPositiveButton("Start",  { _, _ ->
 
                     val intent = Intent(context, SleepService::class.java)
                     intent.action = SLEEP_START_ACTION
                     activity?.startService(intent)
 
                 })
-                .setNegativeButton("Cancel",  { dialog, id ->
+                .setNegativeButton("Cancel",  { _, _ ->
 
                 })
         return builder.create()
