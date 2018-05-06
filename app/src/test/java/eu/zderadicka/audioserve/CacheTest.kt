@@ -158,6 +158,7 @@ class CacheTest:BaseCacheTest() {
                 } else {
                     cacheItem.closeForAppend(false)
                 }
+                if (randomInterrupts>0) Thread.sleep(10)
             }
 
         }, "writeThread")
@@ -180,6 +181,12 @@ class CacheTest:BaseCacheTest() {
                         readTotal+= read
                         digest.update(buf, 0, read)
                     } else {
+                        if (randomInterrupts >0 &&
+                                cacheItem.state == CacheItem.State.Exists) {
+                            // we are not done yet, wait for more
+                            Thread.sleep(10)
+                            continue
+                        }
                         break
                     }
                     if (readDelay>0) Thread.sleep(readDelay)
@@ -217,7 +224,8 @@ class CacheTest:BaseCacheTest() {
 
 
         readThread.join()
-        assertEquals(testFile.length(), readBytes)
+        assertEquals("File lenght incompletete,should be ${testFile.length()}, but is $readBytes",
+                testFile.length(), readBytes)
         assertArrayEquals(testFileHash, resHash!!)
 
     }
