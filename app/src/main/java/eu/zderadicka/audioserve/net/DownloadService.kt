@@ -9,9 +9,12 @@ import android.support.annotation.RequiresApi
 import android.support.v4.app.NotificationCompat
 import android.support.v4.media.MediaBrowserCompat
 import android.util.Log
+import android.widget.RemoteViews
+import android.widget.Toast
 import eu.zderadicka.audioserve.R
 import eu.zderadicka.audioserve.data.METADATA_KEY_MEDIA_ID
 import eu.zderadicka.audioserve.data.folderIdFromFileId
+import eu.zderadicka.audioserve.notifications.NotificationsManager
 import java.util.concurrent.LinkedBlockingDeque
 
 const val DOWNLOAD_ACTION = "eu.zderadicka.audioserve.DOWNLOAD"
@@ -24,6 +27,7 @@ private const val MSG_CANCEL_DOWNLOAD = 4
 private const val LOG_TAG = "DownloadService"
 private const val CHANNEL_ID = "eu.zderadicka.audioserve.downloads.channel"
 private const val NOTIFICATION_ID = 8432
+private const val ERRORS_NOTIFICATION_ID = 9433
 
 
 enum class DownloadStatus(val details: Any? = null) {
@@ -120,6 +124,12 @@ class DownloadService : Service() {
             throw IllegalStateException("Loaders already started")
         }
 
+        if (apiClient.token == null) {
+            Toast.makeText(this, "Cannot download - not connected", Toast.LENGTH_LONG).show()
+            stopSelf()
+            return
+        }
+
         for (i in 1..numLoaders) {
 
             val loader = FileLoader(queue = queue, context = this, token = apiClient.token!!)
@@ -135,7 +145,7 @@ class DownloadService : Service() {
         queue.clear()
         downloadLoaders.forEach { it.stop() }
         downloadThreads.forEach { it.interrupt() }
-        downloadThreads.forEach{
+        downloadThreads.forEach {
             it.join(1000)
             if (it.isAlive) {
                 Log.w(LOG_TAG, "Download thread is not finished")
@@ -170,16 +180,16 @@ class DownloadService : Service() {
             if (status == FileCache.Status.FullyCached) {
                 Log.d(LOG_TAG, "Finished download of $mediaId")
                 pendingDownloads.remove(mediaId)
-                doneCount+=1
-                pendingCount-=1
+                doneCount += 1
+                pendingCount -= 1
                 fireChange()
 
             } else if (status == FileCache.Status.Error) {
-                failedCount +=1
-                pendingCount-=1
+                failedCount += 1
+                pendingCount -= 1
                 pendingDownloads.remove(mediaId)
                 fireChange()
-            }else {
+            } else {
                 pendingDownloads.put(mediaId, DownloadStatus.fromCacheStatus(status))
                 fireChange()
             }
@@ -189,6 +199,9 @@ class DownloadService : Service() {
         if (pendingDownloads.size == 0) {
             stopForeground(false)
             stopSelf()
+            if (failedCount>0) {
+                notificationManager.notify(ERRORS_NOTIFICATION_ID, createErrorsNotification())
+            }
         }
     }
 
@@ -247,30 +260,49 @@ class DownloadService : Service() {
         }
         val cancelIntent = Intent(this, DownloadService::class.java)
         cancelIntent.action = CANCEL_DOWNLOAD_ACTION
-        val cancelPendingIntent = PendingIntent.getService(this,0,cancelIntent,0)
+        val cancelPendingIntent = PendingIntent.getService(this, 0, cancelIntent, 0)
+
+        val content = RemoteViews(packageName, R.layout.notif_download)
+        content.setTextViewText(R.id.remainsToDownload, pendingCount.toString())
+        content.setTextViewText(R.id.downloadSummary,
+                getString(R.string.download_notification_details, doneCount, failedCount))
+        content.setOnClickPendingIntent(R.id.downloadNotification,
+                NotificationsManager.createPendingIntentGeneral(this))
 
         val builder = NotificationCompat.Builder(this, CHANNEL_ID)
-        builder.setContentTitle(getString(R.string.downloading_notification_title, pendingCount))
-        builder.setContentText(getString(R.string.download_notification_details, doneCount, failedCount))
-        builder.setSmallIcon(R.drawable.ic_download)
-        builder.setPriority(NotificationCompat.PRIORITY_DEFAULT)
-        builder.addAction(R.drawable.ic_cancel,getString(R.string.action_cancel_all),cancelPendingIntent)
+                .setStyle(NotificationCompat.DecoratedCustomViewStyle())
+                .setCustomContentView(content)
+                .setSmallIcon(R.drawable.ic_download)
+                .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+                .addAction(R.drawable.ic_cancel, getString(R.string.action_cancel_all), cancelPendingIntent)
 
         return builder.build()
+    }
 
+    private fun createErrorsNotification(): Notification {
+        val content = RemoteViews(packageName, R.layout.notif_failed_download)
+        content.setTextViewText(R.id.downloadError, getString(R.string.download_notification_errors, failedCount.toString()))
+        content.setOnClickPendingIntent(R.id.failedDownloadNotification, NotificationsManager.createPendingIntentGeneral(this))
+        val builder = NotificationCompat.Builder(this, CHANNEL_ID)
+                .setStyle(NotificationCompat.DecoratedCustomViewStyle())
+                .setCustomContentView(content)
+                .setSmallIcon(R.drawable.ic_download)
+                .setPriority(NotificationCompat.PRIORITY_DEFAULT)
 
+        return builder.build()
     }
 
     private fun onScheduleDownload(itemsToDownload: List<MediaBrowserCompat.MediaItem>) {
         itemsToDownload
                 .filter { !cacheManager.isCached(it.mediaId!!) }
-                .filter { !(it.mediaId in pendingDownloads)}
+                .filter { !(it.mediaId in pendingDownloads) }
                 .forEach {
 
                     val cacheItem = cacheManager.getCacheItemFor(it)
                     try {
+                        cacheItem.hasError = false
                         queue.add(cacheItem)
-                        pendingCount+=1
+                        pendingCount += 1
                         pendingDownloads.put(it.mediaId!!, DownloadStatus.Pending)
                     } catch (e: IllegalStateException) {
                         Log.e(LOG_TAG, "Cannot add to queue - it's full")
@@ -278,11 +310,12 @@ class DownloadService : Service() {
 
                 }
 
-                if (pendingCount> 0 ) {
-                    fireChange()
-                } else {
-                    stopSelf()
-                }
+        if (pendingCount > 0) {
+            notificationManager.cancel(ERRORS_NOTIFICATION_ID)
+            fireChange()
+        } else {
+            stopSelf()
+        }
     }
 
 
@@ -297,11 +330,11 @@ class DownloadService : Service() {
     }
 
 
-    inner class LocalBinder: Binder() {
+    inner class LocalBinder : Binder() {
         val service: DownloadService
-        get (){
-           return  this@DownloadService
-        }
+            get () {
+                return this@DownloadService
+            }
     }
 
     private val binder = LocalBinder()
@@ -316,7 +349,7 @@ class DownloadService : Service() {
 
     private val listeners = HashSet<ChangeListener>()
     fun addListener(l: ChangeListener) = listeners.add(l)
-    fun removeListener(l:ChangeListener) = listeners.remove(l)
+    fun removeListener(l: ChangeListener) = listeners.remove(l)
     fun clearListeners() = listeners.clear()
 
     fun fireChange() {

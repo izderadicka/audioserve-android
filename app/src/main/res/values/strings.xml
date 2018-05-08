@@ -53,7 +53,7 @@
     <string name="action_recently_listened">Recently Listened</string>
     <string name="action_offline">Force Offline</string>
     <string name="collection_offline">Select Offline Folder</string>
-    <string name="downloading_notification_title">Downloading files - %1$d remaining</string>
+    <string name="downloading_notification_title">Downloading, remaining files</string>
     <string name="download_notification_details">Summary - Success %1$d,  Errors %2$d</string>
     <string name="action_cancel_all">Cancel All</string>
     <string name="no_downloads_offline">No downloads in offline mode</string>
@@ -79,4 +79,5 @@
     <string name="label_sound_notifications">Sound Notifications</string>
     <string name="free_capacity">%1$s free</string>
     <string name="minutes_abr">m</string>
+    <string name="download_notification_errors">Download ended with %1$s errors!</string>
 </resources>

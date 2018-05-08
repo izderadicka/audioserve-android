@@ -20,7 +20,7 @@ private const val DEFAULT_SLEEP = 30
 private const val MAX_EXTEND = 120
 private const val DEFAULT_EXTEND = 15
 
-private fun calc_steps (max:Int): Array<String> {
+private fun calcSteps (max:Int): Array<String> {
     return (1..minsToVal(max)).map{ valToMins(it).toString()}.toTypedArray()
 }
 
@@ -43,8 +43,8 @@ class SleepDialogFragment : DialogFragment() {
         extendByPicker.minValue=1
         extendByPicker.maxValue= minsToVal(MAX_EXTEND)
         extendByPicker.wrapSelectorWheel = false
-        sleepAfterPicker.displayedValues = calc_steps(MAX_SLEEP)
-        extendByPicker.displayedValues = calc_steps(MAX_EXTEND)
+        sleepAfterPicker.displayedValues = calcSteps(MAX_SLEEP)
+        extendByPicker.displayedValues = calcSteps(MAX_EXTEND)
         var currentSleep = sps.getInt("pref_sleep", -1)
         if (currentSleep < 0)  {
             currentSleep = DEFAULT_SLEEP

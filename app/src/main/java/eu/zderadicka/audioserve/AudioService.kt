@@ -776,7 +776,7 @@ mediaSessionConnector.setErrorMessageProvider(messageProvider);
             if (lastItems.size > 0) {
                 val lastItem = lastItems[0]
                 val lastFolderId = folderIdFromFileId(lastItem.mediaId!!)
-                if (lastFolderId == parentId) {
+                 if (lastFolderId == parentId) {
                     val idx = findIndexInFolder(lastItem.mediaId!!)
                     if (idx >= 0) {
                         Log.d(LOG_TAG, "This folder can resume last played item ${lastItem.mediaId}")

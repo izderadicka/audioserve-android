@@ -6,7 +6,6 @@ import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
-import android.graphics.Color
 import android.os.Build
 import android.support.annotation.RequiresApi
 import android.support.v4.app.NotificationCompat
@@ -126,7 +125,7 @@ class NotificationsManager(private val mService: AudioService) {
                 .setColor(ContextCompat.getColor(mService, R.color.colorAccent))
                 .setSmallIcon(R.drawable.ic_pulse)
                 // Pending intent that is fired when user clicks on notification.
-                .setContentIntent(createContentIntent(description))
+                .setContentIntent(createPendingIntentForMedia(mService, description))
                 // Title - Usually Song name.
                 .setContentTitle(description.title)
                 // Subtitle - Usually Artist name.
@@ -161,14 +160,7 @@ class NotificationsManager(private val mService: AudioService) {
         }
     }
 
-    private fun createContentIntent(description: MediaDescriptionCompat): PendingIntent {
-        val openUI = Intent(mService, MainActivity::class.java)
-        openUI.action = ACTION_NAVIGATE_TO_ITEM
-        openUI.putExtra(METADATA_KEY_MEDIA_ID, description.mediaId)
-        openUI.flags = Intent.FLAG_ACTIVITY_SINGLE_TOP
-        return PendingIntent.getActivity(
-                mService, REQUEST_CODE, openUI, PendingIntent.FLAG_CANCEL_CURRENT)
-    }
+
 
     companion object {
 
@@ -177,6 +169,21 @@ class NotificationsManager(private val mService: AudioService) {
         private val LOG_TAG = NotificationsManager::class.java.simpleName
         private const val CHANNEL_ID = "eu.zderadicka.audioserve.playback.channel"
         private const val REQUEST_CODE = 501
+
+        fun createPendingIntentForMedia(context: Context, description: MediaDescriptionCompat): PendingIntent {
+            val openUI = Intent(context, MainActivity::class.java)
+            openUI.action = ACTION_NAVIGATE_TO_ITEM
+            openUI.putExtra(METADATA_KEY_MEDIA_ID, description.mediaId)
+            openUI.flags = Intent.FLAG_ACTIVITY_SINGLE_TOP
+            return PendingIntent.getActivity(
+                    context, REQUEST_CODE, openUI, PendingIntent.FLAG_CANCEL_CURRENT)
+        }
+
+        fun createPendingIntentGeneral(context: Context): PendingIntent {
+            val intent = Intent(context, MainActivity::class.java)
+            intent.flags = Intent.FLAG_ACTIVITY_SINGLE_TOP
+            return PendingIntent.getActivity(context, 0, intent, PendingIntent.FLAG_CANCEL_CURRENT)
+        }
     }
 
 }

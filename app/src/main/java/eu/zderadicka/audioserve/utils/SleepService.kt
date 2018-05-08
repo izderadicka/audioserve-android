@@ -26,6 +26,7 @@ import kotlin.properties.Delegates
 import android.media.MediaPlayer
 import android.widget.RemoteViews
 import android.widget.TextView
+import eu.zderadicka.audioserve.notifications.NotificationsManager
 
 
 const val SLEEP_START_ACTION = "eu.zderadicka.audioserve.SLEEP_START_ACTION"
@@ -151,7 +152,8 @@ class SleepService() : Service() {
         val extendPendingIntent = PendingIntent.getService(this, 0, extendIntent, 0)
 
         val content = RemoteViews(packageName, R.layout.notif_sleep)
-        content.setCharSequence(R.id.countDown, "setText", mins.toString())
+        content.setTextViewText(R.id.countDown, mins.toString())
+        content.setOnClickPendingIntent(R.id.sleepNotification, NotificationsManager.createPendingIntentGeneral(this))
 
         val builder = NotificationCompat.Builder(this, CHANNEL_ID)
                 .setStyle(NotificationCompat.DecoratedCustomViewStyle())

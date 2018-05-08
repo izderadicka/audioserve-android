@@ -4,45 +4,33 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:id="@+id/sleepNotification">
+    android:id="@+id/downloadNotification">
 
     <TextView
-        android:id="@+id/countDown"
+        android:id="@+id/remainsToDownload"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_toLeftOf="@id/minutes_label"
+        android:layout_alignParentEnd="true"
         android:layout_alignParentTop="true"
         android:layout_marginEnd="8dp"
         android:textAppearance="@style/NotifCounter"
         tools:text="123" />
 
     <TextView
-        android:id="@+id/minutes_label"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_alignParentEnd="true"
-        android:layout_alignParentTop="true"
-        android:layout_marginEnd="8dp"
-        android:text="@string/minutes_abr"
-        android:textAppearance="@style/NotifCounter"
-        />
-
-    <TextView
         android:id="@+id/textView7"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginStart="8dp"
-        android:text="@string/sleep_notification_title"
-        android:textAppearance="@style/NotifTitle"
-        />
+        android:text="@string/downloading_notification_title"
+        android:textAppearance="@style/NotifTitle" />
 
     <TextView
-        android:id="@+id/textView8"
+        android:id="@+id/downloadSummary"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_below="@+id/textView7"
         android:layout_alignParentStart="true"
+        android:layout_below="@+id/textView7"
         android:layout_marginStart="24dp"
         android:textAppearance="@style/TextAppearance.Compat.Notification"
-        android:text="@string/sleep_notification_text" />
+        tools:text="@string/download_notification_details" />
 </RelativeLayout>

@@ -188,6 +188,7 @@ class CacheManager private constructor(val context: Context) {
                 "pref_transcoding" -> {
                     transcode = transcodingFromPrefs(context)
                     resetTranscodeLimit()
+                   removePartiallyLoaded()
                 }
                 "pref_cache_location",  "pref_offline" -> reset()
 
@@ -206,6 +207,12 @@ class CacheManager private constructor(val context: Context) {
         PreferenceManager.getDefaultSharedPreferences(context).registerOnSharedPreferenceChangeListener(prefsListener)
         Log.d(LOG_TAG, "Cache initialized in directory ${cacheDir.absolutePath}")
         cacheBrowser = CacheBrowser(cache.cacheKeys, cacheDir)
+    }
+
+
+
+    private fun removePartiallyLoaded() {
+        cache.removePartialyLoaded()
     }
 
 

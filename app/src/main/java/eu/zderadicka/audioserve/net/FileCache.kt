@@ -86,6 +86,13 @@ class CacheIndex(val maxCacheSize: Long, private val changeListener: CacheItem.L
         cacheSize = 0
     }
 
+    fun removePartiallyLoaded() = synchronized(this) {
+        map.filter{it.value.state == CacheItem.State.Exists}.forEach{
+            it.value.destroy()
+            map.remove(it.key)
+        }
+    }
+
     fun fastClear() {
         map.clear()
         cacheSize = 0
@@ -226,6 +233,10 @@ class FileCache(val cacheDir: File,
         }
     }
 
+    internal fun removePartialyLoaded() {
+        index.removePartiallyLoaded()
+    }
+
     val numberOfFiles: Int
         get() = index.size
 
@@ -276,8 +287,8 @@ class FileCache(val cacheDir: File,
 
     fun getOrAddTranscoded(path: String, transcode: String?): CacheItem {
         val item = getOrAdd(path)
-        // set transcode only for item that is not partly loaded
-        if (item.state == CacheItem.State.Empty) {
+        // set transcode only for item that is not loaded or loading
+        if (item.state == CacheItem.State.Empty || item.state == CacheItem.State.Exists) {
             item.transcode = transcode
         }
         return item
@@ -307,9 +318,9 @@ class FileCache(val cacheDir: File,
     private fun scheduleDownload(item: CacheItem, transcode: String?) {
         if (item.state != CacheItem.State.Complete) {
             try {
-                // set transcode only for item that is not partly loaded
-                if (item.state == CacheItem.State.Empty) {
-                    item.transcode = transcode
+                // set transcode only for item that is not loaded or loading
+                if (item.state == CacheItem.State.Empty || item.state == CacheItem.State.Exists) {
+                item.transcode = transcode
                 }
                 queue.add(item)
             } catch (e: IllegalStateException) {
