@@ -6,7 +6,6 @@ import android.net.Uri
 import android.os.Build
 import android.preference.PreferenceManager
 import android.text.Html
-import android.text.Spanned
 import android.text.format.DateUtils
 import android.util.Base64
 import android.util.Log
@@ -226,7 +225,7 @@ class ApiClient private constructor(val context: Context) {
                 })
         {
             override fun getHeaders(): MutableMap<String, String> {
-                return auhorizationHeaders
+                return authorizationHeaders
             }
         }
 
@@ -297,6 +296,7 @@ class ApiClient private constructor(val context: Context) {
                 {
                     cb(null)
                     token = it
+                    Log.d(LOG_TAG, "Login success")
                     afterLogin()
                     loadTranscodings { tr, err ->
                         if (tr != null) {
@@ -332,7 +332,7 @@ class ApiClient private constructor(val context: Context) {
 
     }
 
-    private val auhorizationHeaders: HashMap<String, String>
+    private val authorizationHeaders: HashMap<String, String>
     get() {
         val headers = HashMap<String, String>(1)
         if (token != null) {
@@ -359,7 +359,7 @@ class ApiClient private constructor(val context: Context) {
 
 
         override fun getHeaders(): MutableMap<String, String> {
-            return auhorizationHeaders
+            return authorizationHeaders
         }
 
         override fun cancel() {

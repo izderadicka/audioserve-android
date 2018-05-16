@@ -258,6 +258,7 @@ class AudioService : MediaBrowserServiceCompat() {
                 currentSourcesList = null
 
                 session.sendSessionEvent(PLAYER_NOT_READY, null)
+                stopMe()
             }
 
         }

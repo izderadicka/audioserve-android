@@ -469,6 +469,9 @@ class MainActivity : AppCompatActivity(),
             R.id.nav_exit -> {
                 mediaController?.transportControls?.stop()
                 finish()
+                Handler().postDelayed({ System.exit(0)}, 1000)
+                // or android.os.Process.killProcess(android.os.Process.myPid());
+
             }
             R.id.nav_browse -> {
                 openRootFolder()
