@@ -22,9 +22,11 @@ import eu.zderadicka.audioserve.data.parseTranscodingsFromJson
 import eu.zderadicka.audioserve.utils.fromMarkdown
 import java.io.File
 import java.io.UnsupportedEncodingException
+import java.nio.ByteBuffer
 import java.nio.charset.Charset
 import java.security.MessageDigest
 import java.security.SecureRandom
+import java.util.*
 
 
 enum class ApiError {
@@ -72,6 +74,27 @@ internal fun encodeSecret(secret: String): String {
     return res
 
 }
+
+internal fun tokenValidityEpoch(token:String): Long {
+
+    val bytes = Base64.decode(token, Base64.DEFAULT)
+    val buf = ByteBuffer.allocate(8)
+    buf.put(bytes, 32, 8)
+    buf.flip()
+    val epoch = buf.long
+    return epoch
+}
+
+
+internal fun tokenValidityDays(token:String): Int {
+    val now = System.currentTimeMillis() / 1000
+    val secs = tokenValidityEpoch(token) - now
+    val days = secs / 3600 / 24
+    return days.toInt()
+}
+
+
+
 
 data class TranscodingLimits(var low: Int, var medium: Int, var high: Int)
 
@@ -296,6 +319,8 @@ class ApiClient private constructor(val context: Context) {
                 {
                     cb(null)
                     token = it
+                    val pref = PreferenceManager.getDefaultSharedPreferences(context)
+                    pref.edit().putString("pref_token", token).apply()
                     Log.d(LOG_TAG, "Login success")
                     afterLogin()
                     loadTranscodings { tr, err ->
@@ -306,6 +331,12 @@ class ApiClient private constructor(val context: Context) {
                 },
                 {
                     Log.e(LOG_TAG, "Login error: $it")
+                    val pref = PreferenceManager.getDefaultSharedPreferences(context)
+                    val saved_token = pref.getString("pref_token", null)
+                    if (saved_token != null && tokenValidityDays(saved_token)>1) {
+                        Log.i(LOG_TAG, "Reusing saved token as it's still valid")
+                        token = saved_token
+                    }
                     cb(ApiError.fromResponseError(it))
                     afterLogin()
                 }) {
