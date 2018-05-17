@@ -12,12 +12,10 @@ import android.support.v7.widget.LinearLayoutManager
 import android.support.v7.widget.RecyclerView
 import android.text.format.DateUtils
 import android.util.Log
-import android.view.LayoutInflater
-import android.view.View
-import android.view.ViewGroup
 import eu.zderadicka.audioserve.utils.ifStoppedOrDead
 import android.os.Parcelable
 import android.support.v4.content.ContextCompat
+import android.view.*
 import android.widget.*
 import eu.zderadicka.audioserve.*
 import eu.zderadicka.audioserve.data.*
@@ -34,6 +32,8 @@ const val FOLDER_VIEW_STATE_KEY = "eu.zderadicka.audiserve.folderViewKey"
 const val ITEM_TYPE_FOLDER = 0
 const val ITEM_TYPE_FILE = 1
 const val ITEM_TYPE_BOOKMARK = 2
+
+private const val MIN_BORDER_DISTANCE: Float = 0.07f
 
 enum class ItemAction {
     Open,
@@ -63,13 +63,12 @@ class FolderItemViewHolder(itemView: View, viewType: Int, val clickCB: (Int, Ite
     var isBookmark = false
     private set
 
-    init {
-        itemView.setOnClickListener { clickCB(adapterPosition, ItemAction.Open) }
+    private val clickDetector: GestureDetector
 
+    init {
         if (viewType == ITEM_TYPE_FILE) {
             contentView = itemView.findViewById(R.id.contentView)
             itemContainer = itemView.findViewById(R.id.itemContainer)
-            contentView?.setOnClickListener { clickCB(adapterPosition, ItemAction.Open) }
             downloadButton = itemView.findViewById(R.id.downloadButton)
             downloadButton?.setOnClickListener{
                 //val animator = ObjectAnimator.ofInt(itemContainer, "left", 0)
@@ -90,7 +89,36 @@ class FolderItemViewHolder(itemView: View, viewType: Int, val clickCB: (Int, Ite
             lastListenedView = itemView.findViewById(R.id.lastListenedView)
             folderPathView = itemView.findViewById(R.id.folderPathView)
             isBookmark = true
+            contentView = itemView
+        } else {
+            contentView = itemView
         }
+
+        contentView?.setOnClickListener {
+            clickCB(adapterPosition, ItemAction.Open)
+        }
+
+        // disable clicks on very right and left borders of the screen to limit accidental touches
+        val xdpi = itemView.resources.displayMetrics.xdpi
+        clickDetector = GestureDetector(itemView.context, object: GestureDetector.SimpleOnGestureListener(){
+            override fun onSingleTapUp(e: MotionEvent): Boolean {
+                val borderDistance = Math.min(e.x, (contentView?.right?.toFloat()?: Float.MAX_VALUE) - e.x) / xdpi
+                if (borderDistance> MIN_BORDER_DISTANCE) {
+                    Log.d(LOG_TAG, "Click perform - border distance ${borderDistance}")
+                    contentView?.performClick()
+                } else {
+                    Log.d(LOG_TAG, "No Click too close to border distance ${borderDistance}")
+                }
+                return super.onSingleTapUp(e)
+
+            }
+        })
+        contentView?.setOnTouchListener({
+            view, event ->
+            clickDetector.onTouchEvent(event)
+            true
+
+        })
 
     }
 }
