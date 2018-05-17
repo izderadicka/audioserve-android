@@ -457,6 +457,12 @@ class AudioService : MediaBrowserServiceCompat() {
         }
     }
 
+    private val loginListener = object:ApiClient.LoginListener {
+        override fun loginSuccess(token: String) {
+            cacheManager.updateToken(token)
+        }
+    }
+
     private lateinit var queueManager: QueueManager
     private lateinit var cacheManager: CacheManager
 
@@ -502,6 +508,7 @@ mediaSessionConnector.setErrorMessageProvider(messageProvider);
          */
 
         apiClient = ApiClient.getInstance(this)
+        apiClient.addLoginListener(loginListener)
 
         PreferenceManager.getDefaultSharedPreferences(this).registerOnSharedPreferenceChangeListener(prefsListener)
 

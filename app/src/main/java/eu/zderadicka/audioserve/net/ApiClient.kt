@@ -27,6 +27,7 @@ import java.nio.charset.Charset
 import java.security.MessageDigest
 import java.security.SecureRandom
 import java.util.*
+import kotlin.collections.ArrayList
 
 
 enum class ApiError {
@@ -323,6 +324,7 @@ class ApiClient private constructor(val context: Context) {
                     pref.edit().putString("pref_token", token).apply()
                     Log.d(LOG_TAG, "Login success")
                     afterLogin()
+                    fireLoginSuccess(it)
                     loadTranscodings { tr, err ->
                         if (tr != null) {
                             transcodingBitrates = tr
@@ -332,13 +334,15 @@ class ApiClient private constructor(val context: Context) {
                 {
                     Log.e(LOG_TAG, "Login error: $it")
                     val pref = PreferenceManager.getDefaultSharedPreferences(context)
-                    val saved_token = pref.getString("pref_token", null)
-                    if (saved_token != null && tokenValidityDays(saved_token)>1) {
+                    val savedToken = pref.getString("pref_token", null)
+                    if (savedToken != null && tokenValidityDays(savedToken)>1 && token == null) {
                         Log.i(LOG_TAG, "Reusing saved token as it's still valid")
-                        token = saved_token
+                        token = savedToken
                     }
-                    cb(ApiError.fromResponseError(it))
+                    val err = ApiError.fromResponseError(it)
+                    cb(err)
                     afterLogin()
+                    fireLoginError(err)
                 }) {
             override fun getParams(): MutableMap<String, String>? {
                 val p = HashMap<String, String>()
@@ -362,6 +366,24 @@ class ApiClient private constructor(val context: Context) {
         requestQueue.add(request)
 
     }
+
+    interface LoginListener {
+        fun loginSuccess(token:String) {}
+
+        fun loginError(error: ApiError) {}
+    }
+
+    private val loginListeners:ArrayList<LoginListener> = ArrayList()
+    private fun fireLoginError(error: ApiError) = synchronized(this) {
+        loginListeners.forEach{it.loginError(error)}
+    }
+    private fun fireLoginSuccess(token:String) = synchronized(this) {
+        loginListeners.forEach{it.loginSuccess(token)}
+    }
+
+    fun addLoginListener(l:LoginListener) = loginListeners.add(l)
+    fun removeLoginListener(l:LoginListener) = loginListeners.remove(l)
+
 
     private val authorizationHeaders: HashMap<String, String>
     get() {

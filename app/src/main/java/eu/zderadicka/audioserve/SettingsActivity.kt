@@ -162,7 +162,7 @@ class SettingsFragment: PreferenceFragment(), SharedPreferences.OnSharedPreferen
     }
 
     override fun onSharedPreferenceChanged(sharedPreferences: SharedPreferences?, key: String?) {
-        updateSummary(findPreference(key))
+        findPreference(key)?.let {updateSummary(it)}
     }
 
     private fun updateSummary(pref: Preference) {

@@ -360,6 +360,10 @@ class FileCache(val cacheDir: File,
 
     }
 
+    fun updateToken(token:String) {
+        loader?.updateToken(token)
+    }
+
     private fun itemStateConv(state: CacheItem.State?, hasError: Boolean) =
             if (hasError) {
                 Status.Error
@@ -392,7 +396,7 @@ class FileCache(val cacheDir: File,
 private const val LOADER_BUFFER_SIZE = 10 * 1024
 
 class FileLoader(private val queue: BlockingDeque<CacheItem>,
-                 private val token: String,
+                 private var token: String,
                  private val context: Context) : Runnable {
     @Volatile
     private var stopFlag = false
@@ -468,6 +472,11 @@ class FileLoader(private val queue: BlockingDeque<CacheItem>,
         } else {
             item.hasError = true
         }
+    }
+
+
+    fun updateToken(token: String) {
+        this.token = token
     }
 
 

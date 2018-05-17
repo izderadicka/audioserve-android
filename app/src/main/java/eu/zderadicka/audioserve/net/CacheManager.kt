@@ -224,6 +224,10 @@ class CacheManager private constructor(val context: Context) {
         cache.stopLoader()
     }
 
+    fun updateToken(token:String) {
+        cache.updateToken(token)
+    }
+
     @Suppress("UNCHECKED_CAST")
     private fun reset() {
         cache.stopLoader()
