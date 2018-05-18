@@ -4,9 +4,14 @@ import android.content.Context
 import android.graphics.Bitmap
 import android.net.Uri
 import android.os.Build
+import android.os.Handler
+import android.os.Looper
+import android.os.SystemClock
 import android.preference.PreferenceManager
 import android.text.Html
 import android.text.format.DateUtils
+import android.text.format.DateUtils.DAY_IN_MILLIS
+import android.text.format.DateUtils.MINUTE_IN_MILLIS
 import android.util.Base64
 import android.util.Log
 import android.widget.ImageView
@@ -57,6 +62,8 @@ private const val LOGIN_REQUEST_TAG = "LOGIN"
 private const val IMAGE_REQUEST_TAG = "IMAGE"
 private const val TEXT_REQUEST_TAG = "TEXT"
 
+private const val RELOGIN_TAG= "RELOGIN"
+
 private const val CACHE_SOFT_TTL: Long = 24  * DateUtils.HOUR_IN_MILLIS
 private const val CACHE_MAX_TTL: Long = 7 * DateUtils.DAY_IN_MILLIS
 
@@ -90,6 +97,7 @@ internal fun tokenValidityEpoch(token:String): Long {
 internal fun tokenValidityDays(token:String): Int {
     val now = System.currentTimeMillis() / 1000
     val secs = tokenValidityEpoch(token) - now
+    if (secs < 0 ) return 0
     val days = secs / 3600 / 24
     return days.toInt()
 }
@@ -119,6 +127,8 @@ class ApiClient private constructor(val context: Context) {
         Volley.newRequestQueue(context.getApplicationContext())
 
     }
+
+    private val handler = Handler(Looper.getMainLooper())
 
     @Synchronized
     fun loadPreferences(cb: ((ApiError?) -> Unit)? = null) {
@@ -204,7 +214,7 @@ class ApiClient private constructor(val context: Context) {
         }
         uri += "search"
 
-        var queryUri = Uri.parse(uri).buildUpon().appendQueryParameter("q", query).build()
+        val queryUri = Uri.parse(uri).buildUpon().appendQueryParameter("q", query).build()
         sendRequest(queryUri.toString(), forceReload, {
             val f = parseFolderfromJson(it, "search", "")
             if (collection > 0) {
@@ -266,8 +276,8 @@ class ApiClient private constructor(val context: Context) {
         {
             override fun parseNetworkResponse(response: NetworkResponse?): Response<CharSequence> {
 
-                var parsed: String = ""
-                var contentType = response?.headers?.get("Content-Type")?:"text/plain"
+                var parsed = ""
+                val contentType = response?.headers?.get("Content-Type")?:"text/plain"
                 val semi = contentType.indexOf(';')
                 if (semi>0) {
                     contentType.substring(0, semi).trim()
@@ -305,6 +315,8 @@ class ApiClient private constructor(val context: Context) {
 
     }
 
+
+
     fun login(cb: (ApiError?) -> Unit) {
         fun afterLogin() {
             synchronized(this@ApiClient) {
@@ -315,7 +327,15 @@ class ApiClient private constructor(val context: Context) {
                 unsentRequests.clear()
             }
         }
+        fun renewToken(token:String) {
+            val days = tokenValidityDays(token)
+            val dur: Long = if (days > 1) (days-1) * DAY_IN_MILLIS else 5 * MINUTE_IN_MILLIS
+            val renewAt = SystemClock.uptimeMillis() + dur
+            handler.postAtTime({login({})},RELOGIN_TAG, renewAt)
 
+        }
+
+        handler.removeCallbacksAndMessages(RELOGIN_TAG)
         val request = object : StringRequest(Request.Method.POST, baseUrl + "authenticate",
                 {
                     cb(null)
@@ -325,6 +345,7 @@ class ApiClient private constructor(val context: Context) {
                     Log.d(LOG_TAG, "Login success")
                     afterLogin()
                     fireLoginSuccess(it)
+                    renewToken(it)
                     loadTranscodings { tr, err ->
                         if (tr != null) {
                             transcodingBitrates = tr
@@ -340,6 +361,8 @@ class ApiClient private constructor(val context: Context) {
                         token = savedToken
                     }
                     val err = ApiError.fromResponseError(it)
+                    // renew only if not Unauthorized access, because in that case we have probably wrong shared secret
+                    if (err != ApiError.UnauthorizedAccess) token?.let{renewToken(it)}
                     cb(err)
                     afterLogin()
                     fireLoginError(err)
@@ -398,7 +421,7 @@ class ApiClient private constructor(val context: Context) {
         :Request<T>( Request.Method.GET, uri,
             {
                 Log.e(LOG_TAG, "Network Error $it")
-                var err = ApiError.fromResponseError(it)
+                val err = ApiError.fromResponseError(it)
                 if (err == ApiError.UnauthorizedAccess && token == null) {
                     // started offline - try again to log in
                     login {}
