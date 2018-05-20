@@ -80,4 +80,9 @@
     <string name="free_capacity">%1$s free</string>
     <string name="minutes_abr">m</string>
     <string name="download_notification_errors">Download ended with %1$s errors!</string>
+    <string name="prefs_category_downloads">DOWNLOADS</string>
+    <string name="prefs_category_playback">PLAYBACK</string>
+    <string name="pref_autorewind_title">Auto Rewind</string>
+    <string name="pref_autorewind_unselected_title">No auto rewind, playback will start exactly where it was paused</string>
+    <string name="pref_autorewind_selected_title">Before continuing playback it\'\'ll be rewind by a small amount (2s-30s), depending how long it was paused</string>
 </resources>

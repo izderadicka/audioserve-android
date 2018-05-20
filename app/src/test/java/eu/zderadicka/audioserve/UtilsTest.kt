@@ -1,6 +1,7 @@
 package eu.zderadicka.audioserve
 
 import eu.zderadicka.audioserve.data.collectionFromFolderId
+import eu.zderadicka.audioserve.data.collectionFromSearchId
 import eu.zderadicka.audioserve.data.folderIdFromFileId
 import eu.zderadicka.audioserve.data.pathFromFolderId
 import eu.zderadicka.audioserve.net.parseContentRange
@@ -68,5 +69,11 @@ class UtilsTest {
         val fid2 = "2/folder/Verne, Jules/Around the World in Eighty Days"
         val path2 = pathFromFolderId(fid)
         assertEquals("Verne, Jules", path2)
+    }
+
+    @Test
+    fun testCollectionFromSearch() {
+        val c = collectionFromSearchId("__AUDIOSERVE_SEARCH_5")
+        assertEquals(5,c)
     }
 }

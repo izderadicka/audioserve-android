@@ -191,6 +191,18 @@ fun collectionFromFolderId(folderId:String): Int? {
     return n.toInt()
 }
 
+
+private val BEGIN_NUMBERS_RE = Regex("""^\d+""")
+fun collectionFromSearchId(folderId:String): Int? {
+    if (folderId.startsWith(AudioService.SEARCH_PREFIX)) {
+        val m = BEGIN_NUMBERS_RE.find(folderId.substring(AudioService.SEARCH_PREFIX.length))
+        if (m!=null) {
+            return m.value.toInt()
+        }
+    }
+    return null
+}
+
 fun duplicateMediaItemWithExtrasAssured(item: MediaBrowserCompat.MediaItem):MediaBrowserCompat.MediaItem {
     val desc = MediaDescriptionCompat.Builder()
             .setMediaId(item.description.mediaId)

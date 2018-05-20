@@ -63,7 +63,7 @@
     </PreferenceCategory>
     <PreferenceCategory
         android:key="prefs_downloads"
-        android:title="DOWNLOADS"
+        android:title="@string/prefs_category_downloads"
         >
         <ListPreference
             android:key="pref_downloads"
@@ -72,6 +72,17 @@
             android:entryValues="@array/pref_downloads_values"
             android:defaultValue="2"
             />
+    </PreferenceCategory>
+    <PreferenceCategory
+        android:key="prefs_playback"
+        android:title="@string/prefs_category_playback">
+
+        <CheckBoxPreference
+            android:key="pref_autorewind"
+            android:title="@string/pref_autorewind_title"
+            android:defaultValue="true"
+            />
+
     </PreferenceCategory>
 
 

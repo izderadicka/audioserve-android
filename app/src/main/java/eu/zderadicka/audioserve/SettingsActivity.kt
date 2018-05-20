@@ -213,6 +213,17 @@ class SettingsFragment: PreferenceFragment(), SharedPreferences.OnSharedPreferen
                 pref.summary = getString(R.string.pref_downloads_summary, p)
 
             }
+            "pref_autorewind" -> {
+                if (pref !is CheckBoxPreference) return
+                val checked = sps.getBoolean("pref_autorewind", false)
+                if (checked) {
+                    pref.summary=getString(R.string.pref_autorewind_selected_title)
+
+                } else {
+                    pref.summary=getString(R.string.pref_autorewind_unselected_title)
+                }
+
+            }
 
 
         }

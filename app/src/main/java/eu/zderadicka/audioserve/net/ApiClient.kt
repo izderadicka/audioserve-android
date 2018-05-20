@@ -316,7 +316,6 @@ class ApiClient private constructor(val context: Context) {
     }
 
 
-
     fun login(cb: (ApiError?) -> Unit) {
         fun afterLogin() {
             synchronized(this@ApiClient) {

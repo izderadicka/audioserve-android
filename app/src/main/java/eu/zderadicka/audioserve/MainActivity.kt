@@ -160,13 +160,15 @@ class MainActivity : AppCompatActivity(),
             val extras = Bundle()
             val startAt: Long = item.description.extras?.getLong(METADATA_KEY_LAST_POSITION) ?: 0
             if (startAt > 0) {
-                ctl.seekTo(startAt)
+                //ctl.seekTo(startAt)
                 extras.putLong(METADATA_KEY_LAST_POSITION, startAt)
             }
+            extras.putLong(METADATA_KEY_LAST_LISTENED_TIMESTAMP,
+                    item.description.extras?.getLong(METADATA_KEY_LAST_LISTENED_TIMESTAMP)?: 0)
             ctl.prepareFromMediaId(item.mediaId, extras)
         }
 
-        val collection: Int? = collectionFromFolderId(folderId)
+        val collection: Int? = collectionFromFolderId(folderId)?: collectionFromSearchId(folderId)
         searchPrefix = if (collection == null || isOffline) null else "${AudioService.SEARCH_PREFIX}${collection}_"
         this.folderDetails = folderDetails
         invalidateOptionsMenu()

@@ -20,6 +20,8 @@ import android.support.v4.media.session.MediaControllerCompat
 import android.support.v4.media.session.MediaSessionCompat
 import android.support.v4.media.session.PlaybackStateCompat
 import android.support.v4.media.session.PlaybackStateCompat.*
+import android.text.format.DateUtils.MINUTE_IN_MILLIS
+import android.text.format.DateUtils.YEAR_IN_MILLIS
 import android.util.Log
 import com.google.android.exoplayer2.ExoPlayer
 import com.google.android.exoplayer2.ExoPlayerFactory
@@ -88,6 +90,7 @@ class AudioService : MediaBrowserServiceCompat() {
     private var currentMediaItem: MediaItem? = null
     private var lastKnownPosition = 0L
     private var lastPositionUpdateTime = 0L
+    private var previousPositionUpdateTime = 0L
     private var playQueue: MutableList<MediaItem> = ArrayList<MediaItem>()
     private lateinit var apiClient: ApiClient
     private var preloadFiles: Int = 2
@@ -95,6 +98,7 @@ class AudioService : MediaBrowserServiceCompat() {
     private var deletePreviousQueueItem: Int = -1 // delete previous queue Item
     private var isOffline: Boolean = false
     private val scheduler = Handler()
+    private var enableAutoRewind = false
 
     private val playerController = object : DefaultPlaybackController(REWIND_MS, FF_MS, MediaSessionConnector.DEFAULT_REPEAT_TOGGLE_MODES) {
 
@@ -128,6 +132,10 @@ class AudioService : MediaBrowserServiceCompat() {
 
         override fun onPlay(player: Player) {
             Log.d(LOG_TAG, "Playback started")
+            val autoRewind = calcAutoRewind()
+            if (autoRewind>100) {
+                super.onSeekTo(player, player.currentPosition - autoRewind)
+            }
             if (requestAudioFocus()) {
                 super.onPlay(player)
             }
@@ -168,6 +176,18 @@ class AudioService : MediaBrowserServiceCompat() {
                 am.abandonAudioFocus(focusCallback)
             }
         }
+    }
+
+    private fun calcAutoRewind():Int {
+        if (!enableAutoRewind) return 0
+        val prevPos = if (previousPositionUpdateTime >0) previousPositionUpdateTime else lastPositionUpdateTime
+        previousPositionUpdateTime = 0
+        val updatedBefore = System.currentTimeMillis() - prevPos
+        Log.d(LOG_TAG,"Determine autorewind for item ${currentMediaItem}, updated before${updatedBefore}")
+        return if  (updatedBefore < 5* MINUTE_IN_MILLIS) 2000
+            else if (updatedBefore < 30 * MINUTE_IN_MILLIS) 15_000
+            else if (updatedBefore < YEAR_IN_MILLIS) 30_000
+            else 0
     }
 
     private fun findIndexInFolder(mediaId: String): Int {
@@ -249,6 +269,8 @@ class AudioService : MediaBrowserServiceCompat() {
                 if (seekTo != null && seekTo > 1000) {
                     seekAfterPrepare = seekTo
                 }
+
+                previousPositionUpdateTime = extras?.getLong(METADATA_KEY_LAST_LISTENED_TIMESTAMP)?:0
 
 
             } else {
@@ -454,6 +476,9 @@ class AudioService : MediaBrowserServiceCompat() {
                 isOffline = sharedPreferences.getBoolean("pref_offline", false)
                 preparer.sourceFactory = null
             }
+            "pref_autorewind" -> {
+                enableAutoRewind = sharedPreferences.getBoolean("pref_autorewind", false)
+            }
         }
     }
 
@@ -479,6 +504,7 @@ class AudioService : MediaBrowserServiceCompat() {
         super.onCreate()
         preloadFiles = PreferenceManager.getDefaultSharedPreferences(this).getString("pref_preload","2").toInt()
         isOffline = PreferenceManager.getDefaultSharedPreferences(this).getBoolean("pref_offline",false)
+        enableAutoRewind = PreferenceManager.getDefaultSharedPreferences(this).getBoolean("pref_autorewind", false)
         session = MediaSessionCompat(this, LOG_TAG)
         session.controller.registerCallback(sessionCallback)
         player = ExoPlayerFactory.newSimpleInstance(this, DefaultTrackSelector())
@@ -792,6 +818,9 @@ mediaSessionConnector.setErrorMessageProvider(messageProvider);
                         val extras = Bundle()
                         extras.putLong(METADATA_KEY_LAST_POSITION,
                                 lastItem.description.extras?.getLong(METADATA_KEY_LAST_POSITION)
+                                        ?: 0L)
+                        extras.putLong(METADATA_KEY_LAST_LISTENED_TIMESTAMP,
+                                lastItem.description.extras?.getLong(METADATA_KEY_LAST_LISTENED_TIMESTAMP)
                                         ?: 0L)
                         preparer.onPrepareFromMediaId(lastItem.mediaId!!, extras)
                     }
