@@ -9,6 +9,8 @@ import eu.zderadicka.audioserve.utils.splitExtension
 import java.io.File
 
 const val METADATA_KEY_DURATION = MediaMetadataCompat.METADATA_KEY_DURATION
+const val METADATA_KEY_TITLE = MediaMetadataCompat.METADATA_KEY_TITLE
+const val METADATA_KEY_ARTIST = MediaMetadataCompat.METADATA_KEY_ARTIST
 const val METADATA_KEY_LAST_POSITION = "eu.zderadicka.audioserve.last_position"
 const val METADATA_KEY_BITRATE = "eu.zderadicka.audioserve.bitrate"
 const val METADATA_KEY_TRANSCODED = "eu.zderadicka.audioserve.transcoded"
@@ -88,10 +90,11 @@ class AudioFolder(name: String, path: String, val subfolders: ArrayList<Subfolde
         val extras = Bundle()
         val mediaId = prefixPath(f.path, ITEM_TYPE_AUDIOFILE)
         val (name, ext) = splitExtension(f.name)
+        val album = File(f.path).parent
         val descBuilder = MediaDescriptionCompat.Builder()
                 .setMediaId(mediaId)
                 .setTitle(name)
-                .setSubtitle(File(f.path).parent)
+                .setSubtitle(album)
         if (ext != null) {
             extras.putString(METADATA_KEY_EXTENSION, ext)
         }
@@ -102,6 +105,10 @@ class AudioFolder(name: String, path: String, val subfolders: ArrayList<Subfolde
         if (cache != null && cache.isCached(mediaId)) {
             extras.putBoolean(METADATA_KEY_CACHED, true)
         }
+        //this is needed for proper presentation to other MediaSession clients as Lock screen ...
+        extras.putString(METADATA_KEY_TITLE, name)
+        extras.putString(METADATA_KEY_ARTIST, album)
+
         descBuilder.setExtras(extras)
         val item =  MediaItem(descBuilder.build(), MediaItem.FLAG_PLAYABLE)
         if (cache?.shouldTranscode(item) != null) {

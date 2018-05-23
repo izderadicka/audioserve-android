@@ -130,6 +130,11 @@ class AudioService : MediaBrowserServiceCompat() {
 
         }
 
+        override fun onSeekTo(player: Player?, position: Long) {
+            previousPositionUpdateTime = 0
+            super.onSeekTo(player, position)
+        }
+
         override fun onPlay(player: Player) {
             Log.d(LOG_TAG, "Playback started")
             val autoRewind = calcAutoRewind()
@@ -184,7 +189,8 @@ class AudioService : MediaBrowserServiceCompat() {
         previousPositionUpdateTime = 0
         val updatedBefore = System.currentTimeMillis() - prevPos
         Log.d(LOG_TAG,"Determine autorewind for item ${currentMediaItem}, updated before${updatedBefore}")
-        return if  (updatedBefore < 5* MINUTE_IN_MILLIS) 2000
+        return if  (updatedBefore < 10_000) 0
+            else if  (updatedBefore < 5* MINUTE_IN_MILLIS) 2000
             else if (updatedBefore < 30 * MINUTE_IN_MILLIS) 15_000
             else if (updatedBefore < YEAR_IN_MILLIS) 30_000
             else 0
@@ -477,7 +483,7 @@ class AudioService : MediaBrowserServiceCompat() {
                 preparer.sourceFactory = null
             }
             "pref_autorewind" -> {
-                enableAutoRewind = sharedPreferences.getBoolean("pref_autorewind", false)
+                enableAutoRewind = sharedPreferences.getBoolean("pref_autorewind", true)
             }
         }
     }
@@ -504,7 +510,7 @@ class AudioService : MediaBrowserServiceCompat() {
         super.onCreate()
         preloadFiles = PreferenceManager.getDefaultSharedPreferences(this).getString("pref_preload","2").toInt()
         isOffline = PreferenceManager.getDefaultSharedPreferences(this).getBoolean("pref_offline",false)
-        enableAutoRewind = PreferenceManager.getDefaultSharedPreferences(this).getBoolean("pref_autorewind", false)
+        enableAutoRewind = PreferenceManager.getDefaultSharedPreferences(this).getBoolean("pref_autorewind", true)
         session = MediaSessionCompat(this, LOG_TAG)
         session.controller.registerCallback(sessionCallback)
         player = ExoPlayerFactory.newSimpleInstance(this, DefaultTrackSelector())

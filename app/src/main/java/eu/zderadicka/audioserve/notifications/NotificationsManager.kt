@@ -23,39 +23,46 @@ import eu.zderadicka.audioserve.data.METADATA_KEY_MEDIA_ID
 
 class NotificationsManager(private val mService: AudioService) {
 
-    private val playAction: NotificationCompat.Action
-    private val pauseAction: NotificationCompat.Action
-    private val nextAction: NotificationCompat.Action
-    private val prevAction: NotificationCompat.Action
+    private val playAction= NotificationCompat.Action(
+            R.drawable.ic_play_white,
+            mService.getString(R.string.label_play),
+            MediaButtonReceiver.buildMediaButtonPendingIntent(
+                    mService,
+                    PlaybackStateCompat.ACTION_PLAY))
+    private val pauseAction = NotificationCompat.Action(
+            R.drawable.ic_pause_white,
+            mService.getString(R.string.label_pause),
+            MediaButtonReceiver.buildMediaButtonPendingIntent(
+                    mService,
+                    PlaybackStateCompat.ACTION_PAUSE))
+    private val nextAction = NotificationCompat.Action(
+            R.drawable.ic_next_white,
+            mService.getString(R.string.label_next),
+            MediaButtonReceiver.buildMediaButtonPendingIntent(
+                    mService,
+                    PlaybackStateCompat.ACTION_SKIP_TO_NEXT))
+    private val prevAction = NotificationCompat.Action(
+            R.drawable.ic_previous_white,
+            mService.getString(R.string.label_previous),
+            MediaButtonReceiver.buildMediaButtonPendingIntent(
+                    mService,
+                    PlaybackStateCompat.ACTION_SKIP_TO_PREVIOUS))
+    private val rewindAction= NotificationCompat.Action(
+            R.drawable.ic_rewind_white,
+            mService.getString(R.string.label_rewind),
+            MediaButtonReceiver.buildMediaButtonPendingIntent(
+                    mService,
+                    PlaybackStateCompat.ACTION_REWIND))
+    private val forwardAction= NotificationCompat.Action(
+            R.drawable.ic_forward_white,
+            mService.getString(R.string.label_forward),
+            MediaButtonReceiver.buildMediaButtonPendingIntent(
+                    mService,
+                    PlaybackStateCompat.ACTION_FAST_FORWARD))
+
     private val notificationManager: NotificationManager = mService.getSystemService(Context.NOTIFICATION_SERVICE)!! as NotificationManager
 
     init {
-
-        playAction = NotificationCompat.Action(
-                R.drawable.ic_play_white,
-                mService.getString(R.string.label_play),
-                MediaButtonReceiver.buildMediaButtonPendingIntent(
-                        mService,
-                        PlaybackStateCompat.ACTION_PLAY))
-        pauseAction = NotificationCompat.Action(
-                R.drawable.ic_pause_white,
-                mService.getString(R.string.label_pause),
-                MediaButtonReceiver.buildMediaButtonPendingIntent(
-                        mService,
-                        PlaybackStateCompat.ACTION_PAUSE))
-        nextAction = NotificationCompat.Action(
-                R.drawable.ic_next_white,
-                mService.getString(R.string.label_next),
-                MediaButtonReceiver.buildMediaButtonPendingIntent(
-                        mService,
-                        PlaybackStateCompat.ACTION_SKIP_TO_NEXT))
-        prevAction = NotificationCompat.Action(
-                R.drawable.ic_previous_white,
-                mService.getString(R.string.label_previous),
-                MediaButtonReceiver.buildMediaButtonPendingIntent(
-                        mService,
-                        PlaybackStateCompat.ACTION_SKIP_TO_PREVIOUS))
-
         // Cancel all notifications to handle the case where the Service was killed and
         // restarted by the system.
         notificationManager.cancelAll()
@@ -105,9 +112,18 @@ class NotificationsManager(private val mService: AudioService) {
             playIndex+=1
         }
 
+        if (state.actions and PlaybackStateCompat.ACTION_SEEK_TO != 0L) {
+            builder.addAction(rewindAction)
+            playIndex+=1
+        }
+
         builder.addAction(if (state.state != PlaybackStateCompat.STATE_PLAYING) playAction else pauseAction)
 
-        // If skip to prev action is enabled.
+        if (state.actions and PlaybackStateCompat.ACTION_SEEK_TO != 0L) {
+            builder.addAction(forwardAction)
+        }
+
+
         if (state.actions and PlaybackStateCompat.ACTION_SKIP_TO_NEXT != 0L) {
             builder.addAction(nextAction)
         }
@@ -137,6 +153,7 @@ class NotificationsManager(private val mService: AudioService) {
                         mService, PlaybackStateCompat.ACTION_STOP))
                 // Show controls on lock screen even when user hides sensitive content.
                 .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
+                .setPriority(NotificationCompat.PRIORITY_DEFAULT)
 
         return builder
     }
@@ -149,7 +166,7 @@ class NotificationsManager(private val mService: AudioService) {
             val name = "Audioserve"
             // The user-visible description of the channel.
             val description = "Audioserve playback notification channel"
-            val importance = NotificationManager.IMPORTANCE_LOW
+            val importance = NotificationManager.IMPORTANCE_DEFAULT
             val mChannel = NotificationChannel(CHANNEL_ID, name, importance)
             // Configure the notification channel.
             mChannel.description = description
