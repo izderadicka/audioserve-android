@@ -87,4 +87,7 @@
     <string name="pref_autorewind_selected_title">Before continuing playback it\'\'ll be rewind by a small amount (2s-30s), depending how long it was paused</string>
     <string name="label_rewind">Rewind</string>
     <string name="label_forward">Forward</string>
+    <string name="pref_web_search_prefix_title">Web search prefix</string>
+    <string name="pref_web_search_prefix_summary_empty">No prefix. You can set one to limit web search for folder details</string>
+    <string name="pref_web_search_prefix_summary">Prefix %1$s is used to search web for folder details</string>
 </resources>

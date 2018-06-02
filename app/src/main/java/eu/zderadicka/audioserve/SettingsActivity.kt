@@ -225,6 +225,16 @@ class SettingsFragment: PreferenceFragment(), SharedPreferences.OnSharedPreferen
 
             }
 
+            "pref_web_search_prefix" -> {
+                if (pref !is EditTextPreference) return
+                val prefix = sps.getString("pref_web_search_prefix", null)
+                if (prefix.isNullOrBlank()) {
+                    pref.summary = getString(R.string.pref_web_search_prefix_summary_empty)
+                } else {
+                    pref.summary = getString(R.string.pref_web_search_prefix_summary, prefix)
+                }
+            }
+
 
         }
     }

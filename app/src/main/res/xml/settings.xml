@@ -85,6 +85,18 @@
 
     </PreferenceCategory>
 
+    <PreferenceCategory
+        android:key="prefs_other"
+        android:title="OTHER"
+        >
+        <EditTextPreference
+            android:key="pref_web_search_prefix"
+            android:title="@string/pref_web_search_prefix_title"
+            android:selectAllOnFocus="true"
+            android:singleLine="true"
+            />
+    </PreferenceCategory>
+
 
 
 </PreferenceScreen>
