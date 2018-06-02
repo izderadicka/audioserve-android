@@ -516,7 +516,7 @@ class MainActivity : AppCompatActivity(),
 
         if (Intent.ACTION_SEARCH == intent.action && searchPrefix != null) {
             val query = intent.getStringExtra(SearchManager.QUERY)
-            if (query != null && query.length > 3) {
+            if (query != null && query.length >= 3) {
                 val searchId = searchPrefix + query
                 Log.d(LOG_TAG, "Searching for $query")
                 newFolderFragment(searchId, query, true)
