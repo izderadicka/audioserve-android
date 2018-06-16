@@ -84,7 +84,7 @@
     <string name="prefs_category_playback">PLAYBACK</string>
     <string name="pref_autorewind_title">Auto Rewind</string>
     <string name="pref_autorewind_unselected_title">No auto rewind, playback will start exactly where it was paused</string>
-    <string name="pref_autorewind_selected_title">Before continuing playback it\'\'ll be rewind by a small amount (2s-30s), depending how long it was paused</string>
+    <string name="pref_autorewind_selected_title">Before continuing playback track\'\'ll be rewound by a small amount (2s-30s), depending how long it was paused</string>
     <string name="label_rewind">Rewind</string>
     <string name="label_forward">Forward</string>
     <string name="pref_web_search_prefix_title">Web search prefix</string>
