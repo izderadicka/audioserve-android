@@ -82,6 +82,12 @@
             android:title="@string/pref_autorewind_title"
             android:defaultValue="true"
             />
+        <EditTextPreference
+            android:key="pref_delayed_fg_stop"
+            android:title="@string/pref_delayed_fg_stop_title"
+            android:defaultValue="0"
+            android:numeric="integer"
+            />
 
     </PreferenceCategory>
 

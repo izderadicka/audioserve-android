@@ -97,6 +97,15 @@ class SettingsFragment: PreferenceFragment(), SharedPreferences.OnSharedPreferen
             }
         }
 
+        findPreference("pref_delayed_fg_stop").setOnPreferenceChangeListener{_, newValue ->
+            try {
+                val n = (newValue as String).toInt();
+                n>=0 && n< 365 * 24
+            } catch (e: Exception) {
+                false
+            }
+        }
+
         findPreference("pref_clear_cache").setOnPreferenceClickListener {
 
             Thread({
@@ -232,6 +241,17 @@ class SettingsFragment: PreferenceFragment(), SharedPreferences.OnSharedPreferen
                     pref.summary = getString(R.string.pref_web_search_prefix_summary_empty)
                 } else {
                     pref.summary = getString(R.string.pref_web_search_prefix_summary, prefix)
+                }
+            }
+
+            "pref_delayed_fg_stop" -> {
+                if (pref !is EditTextPreference) return
+                val delay = sps.getString("pref_delayed_fg_stop", null)
+                val isOff = delay.isNullOrBlank() || delay.toInt() == 0
+                if (isOff) {
+                    pref.summary = getString(R.string.pref_delayed_fg_stop_summary_off)
+                } else {
+                    pref.summary = getString(R.string.pref_delayed_fg_stop_summary_on, delay)
                 }
             }
 

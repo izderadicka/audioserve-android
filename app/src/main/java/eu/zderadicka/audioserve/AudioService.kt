@@ -20,8 +20,7 @@ import android.support.v4.media.session.MediaControllerCompat
 import android.support.v4.media.session.MediaSessionCompat
 import android.support.v4.media.session.PlaybackStateCompat
 import android.support.v4.media.session.PlaybackStateCompat.*
-import android.text.format.DateUtils.MINUTE_IN_MILLIS
-import android.text.format.DateUtils.YEAR_IN_MILLIS
+import android.text.format.DateUtils.*
 import android.util.Log
 import com.google.android.exoplayer2.ExoPlayer
 import com.google.android.exoplayer2.ExoPlayerFactory
@@ -54,7 +53,8 @@ const val AUDIOSERVICE_ACTION_PAUSE = "eu.zderadicka.audioserve.ACTION_PAUSE"
 const val AUDIOSERVICE_FORCE_RELOAD = "eu.zderadicka.audioserve.FORCE_RELOAD"
 const val AUDIOSERVICE_DONT_PRELOAD_LATEST = "eu.zderadicka.audioserve.NO_PRELOAD_LATEST"
 private const val AUDIOSERVICE_ACTION_SELF_START = "eu.zderadicka.audioserve.SELF_START"
-private const val PAUSE_DELAYED_TASKS = "pause_tasks"
+private const val PAUSE_DELAYED_TASK_SAVE_POSITION = "pause_task_save_position"
+private const val PAUSE_DELAYED_TASK_STOP_FOREGROUND = "pause_task_stop_fg"
 
 
 private class ResultWrapper(val result: MediaBrowserServiceCompat.Result<List<MediaBrowserCompat.MediaItem>>) {
@@ -99,6 +99,7 @@ class AudioService : MediaBrowserServiceCompat() {
     private var isOffline: Boolean = false
     private val scheduler = Handler()
     private var enableAutoRewind = false
+    private var delayedFgStop = 0
 
     private val playerController = object : DefaultPlaybackController(REWIND_MS, FF_MS, MediaSessionConnector.DEFAULT_REPEAT_TOGGLE_MODES) {
 
@@ -405,7 +406,11 @@ class AudioService : MediaBrowserServiceCompat() {
             }
 
             if (state.state != PlaybackStateCompat.STATE_PAUSED) {
-                scheduler.removeCallbacksAndMessages(PAUSE_DELAYED_TASKS)
+                scheduler.removeCallbacksAndMessages(PAUSE_DELAYED_TASK_SAVE_POSITION)
+            }
+
+            if (state.state == PlaybackStateCompat.STATE_PLAYING) {
+                scheduler.removeCallbacksAndMessages(PAUSE_DELAYED_TASK_STOP_FOREGROUND)
             }
         }
 
@@ -485,6 +490,9 @@ class AudioService : MediaBrowserServiceCompat() {
             "pref_autorewind" -> {
                 enableAutoRewind = sharedPreferences.getBoolean("pref_autorewind", true)
             }
+            "pref_delayed_fg_stop" -> {
+                delayedFgStop = PreferenceManager.getDefaultSharedPreferences(this).getString("pref_delayed_fg_stop", "0").toInt()
+            }
         }
     }
 
@@ -511,6 +519,7 @@ class AudioService : MediaBrowserServiceCompat() {
         preloadFiles = PreferenceManager.getDefaultSharedPreferences(this).getString("pref_preload","2").toInt()
         isOffline = PreferenceManager.getDefaultSharedPreferences(this).getBoolean("pref_offline",false)
         enableAutoRewind = PreferenceManager.getDefaultSharedPreferences(this).getBoolean("pref_autorewind", true)
+        delayedFgStop = PreferenceManager.getDefaultSharedPreferences(this).getString("pref_delayed_fg_stop", "0").toInt()
         session = MediaSessionCompat(this, LOG_TAG)
         session.controller.registerCallback(sessionCallback)
         player = ExoPlayerFactory.newSimpleInstance(this, DefaultTrackSelector())
@@ -579,18 +588,29 @@ mediaSessionConnector.setErrorMessageProvider(messageProvider);
 
     }
 
+    fun stopFg() {
+        Log.d(LOG_TAG, "Stop foreground")
+        stopForeground(false)
+        isStartedInForeground = false
+    }
+
     fun pauseMe() {
         cancelSleepTimer(this)
         scheduler.postAtTime({
             saveCurrentlyListened()
         },
-                PAUSE_DELAYED_TASKS,
+                PAUSE_DELAYED_TASK_SAVE_POSITION,
                 SystemClock.uptimeMillis()+ 10_000)
-        Log.d(LOG_TAG, "Pausing service - stopForeground")
-        //TODO - consider if we really want to stop foreground - as playback service might get recycled
-        stopForeground(false)
-        isStartedInForeground = false
-
+        Log.d(LOG_TAG, "Pausing service")
+        if (delayedFgStop == 0) {
+            stopFg()
+        } else {
+            scheduler.postAtTime(
+                    {stopFg()},
+                    PAUSE_DELAYED_TASK_STOP_FOREGROUND,
+                    SystemClock.uptimeMillis()+ HOUR_IN_MILLIS * delayedFgStop
+            )
+        }
     }
 
 

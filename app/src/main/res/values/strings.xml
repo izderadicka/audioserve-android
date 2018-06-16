@@ -90,4 +90,7 @@
     <string name="pref_web_search_prefix_title">Web search prefix</string>
     <string name="pref_web_search_prefix_summary_empty">No prefix. You can set one to limit web search for folder details</string>
     <string name="pref_web_search_prefix_summary">Prefix %1$s is used to search web for folder details</string>
+    <string name="pref_delayed_fg_stop_title">Keep running in foreground</string>
+    <string name="pref_delayed_fg_stop_summary_off">After pause player service is not running in foreground. This can save some batteries, but system can recycle it soon. You can set number of hours service will be kept in foreground after pause.</string>
+    <string name="pref_delayed_fg_stop_summary_on">After pause player service will remain in foreground for %1$s hours. This will assure quicker continuation, but can consume some very small amount of power. By setting to 0 you can turn this off.</string>
 </resources>

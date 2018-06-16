@@ -44,6 +44,7 @@ class ControllerFragment : MediaFragment() {
                     enablePlay = false
                 }
                 PlaybackStateCompat.STATE_PAUSED,
+                PlaybackStateCompat.STATE_BUFFERING,
                 PlaybackStateCompat.STATE_STOPPED-> enablePlay = true
                 PlaybackStateCompat.STATE_ERROR -> {
                     val msg = state.errorMessage?:"Playback error"
