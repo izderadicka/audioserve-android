@@ -166,7 +166,7 @@ class NotificationsManager(private val mService: AudioService) {
             val name = "Audioserve"
             // The user-visible description of the channel.
             val description = "Audioserve playback notification channel"
-            val importance = NotificationManager.IMPORTANCE_DEFAULT
+            val importance = NotificationManager.IMPORTANCE_LOW
             val mChannel = NotificationChannel(CHANNEL_ID, name, importance)
             // Configure the notification channel.
             mChannel.description = description
