@@ -151,10 +151,12 @@ class SettingsFragment: PreferenceFragment(), SharedPreferences.OnSharedPreferen
         l.add(Pair(getString(sname) + " (${freeSize(sfile.freeSpace)})",sfile.absolutePath))
 
        activity.externalMediaDirs.forEachIndexed { index, file ->
-            if (Environment.getExternalStorageState(file) == Environment.MEDIA_MOUNTED) {
-                val name = getString(R.string.storage_external, index.toString())
-                l.add(Pair(name+ " (${freeSize(file.freeSpace)})",file.absolutePath))
-            }
+
+           if (file != null && Environment.getExternalStorageState(file) == Environment.MEDIA_MOUNTED) {
+               val name = getString(R.string.storage_external, index.toString())
+               l.add(Pair(name + " (${freeSize(file.freeSpace)})", file.absolutePath))
+           }
+
        }
         return l
     }
