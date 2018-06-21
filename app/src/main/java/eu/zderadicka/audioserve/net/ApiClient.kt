@@ -24,6 +24,7 @@ import eu.zderadicka.audioserve.data.AudioFolder
 import eu.zderadicka.audioserve.data.parseCollectionsFromJson
 import eu.zderadicka.audioserve.data.parseFolderfromJson
 import eu.zderadicka.audioserve.data.parseTranscodingsFromJson
+import eu.zderadicka.audioserve.utils.encodeUri
 import eu.zderadicka.audioserve.utils.fromMarkdown
 import java.io.File
 import java.io.UnsupportedEncodingException
@@ -417,7 +418,7 @@ class ApiClient private constructor(val context: Context) {
     }
 
     inner abstract class MyRequest<T>(val uri: String, private val callback: (T?, ApiError?) -> Unit)
-        :Request<T>( Request.Method.GET, uri,
+        :Request<T>( Request.Method.GET, encodeUri(uri),
             {
                 Log.e(LOG_TAG, "Network Error $it")
                 val err = ApiError.fromResponseError(it)

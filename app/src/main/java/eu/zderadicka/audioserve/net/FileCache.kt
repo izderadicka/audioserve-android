@@ -11,6 +11,7 @@ import android.os.FileObserver
 import android.preference.PreferenceManager
 import android.util.Log
 import eu.zderadicka.audioserve.utils.defPrefs
+import eu.zderadicka.audioserve.utils.encodeUri
 import eu.zderadicka.audioserve.utils.isNetworkConnected
 import java.io.File
 import java.io.IOException
@@ -514,7 +515,7 @@ class FileLoader(private val queue: BlockingDeque<CacheItem>,
                 if (item.transcode != null) {
                     urlStr += "?${TRANSCODE_QUERY}=${item.transcode}"
                 }
-                url = URL(urlStr)
+                url = URL(encodeUri(urlStr))
                 val conn = url.openConnection() as HttpURLConnection
                 Log.d(LOG_TAG, "Started download of $url")
 

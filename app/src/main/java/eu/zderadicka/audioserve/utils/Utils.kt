@@ -5,6 +5,8 @@ import android.support.v4.media.session.PlaybackStateCompat
 import android.util.Log
 import android.net.NetworkInfo
 import android.net.ConnectivityManager
+import android.net.Uri
+import android.os.Build
 import java.io.File
 import java.io.FileInputStream
 import java.io.FileOutputStream
@@ -109,6 +111,17 @@ fun splitExtension(name:String): Pair<String,String?> {
                 })
     } else {
         return Pair(name, null)
+    }
+}
+
+fun encodeUri(uri:String):String {
+    //encoding of uri path is only needed for API level <= 23
+    if (Build.VERSION.SDK_INT > 23) {
+        return uri
+    } else {
+        val u = Uri.parse(uri)
+        val p = u.encodedPath
+        return u.buildUpon().path(p).build().toString()
     }
 }
 
