@@ -443,7 +443,7 @@ class FolderFragment : MediaFragment() {
         folderView.visibility = View.VISIBLE
 
         if (!error && folderViewState!= null) {
-            folderView.getLayoutManager().onRestoreInstanceState(folderViewState)
+            folderView.getLayoutManager()?.onRestoreInstanceState(folderViewState)
             folderViewState = null
         }
 
@@ -463,8 +463,8 @@ class FolderFragment : MediaFragment() {
 
     }
 
-    private fun getFolderViewState(): Parcelable =
-        folderView.getLayoutManager().onSaveInstanceState()
+    private fun getFolderViewState(): Parcelable? =
+        folderView.getLayoutManager()?.onSaveInstanceState()
 
 
     override fun onViewStateRestored(savedInstanceState: Bundle?) {
