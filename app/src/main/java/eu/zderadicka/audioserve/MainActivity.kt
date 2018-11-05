@@ -43,6 +43,7 @@ import eu.zderadicka.audioserve.utils.cancelSleepTimer
 
 private const val LOG_TAG = "Main"
 const val ACTION_NAVIGATE_TO_ITEM = "eu.zderadicka.audioserve.navigate_to_item"
+const val ACTION_NAVIGATE_TO_FOLDER = "eu.zderadicka.audioserve.navigate_to_folder"
 private const val ROOT_RECENT = 0
 private const val ROOT_BROWSE = 1
 
@@ -231,7 +232,7 @@ class MainActivity : AppCompatActivity(),
 
 
         if (savedInstanceState == null) {
-            if (intent != null && intent.action == ACTION_NAVIGATE_TO_ITEM) {
+            if (intent?.action == ACTION_NAVIGATE_TO_ITEM) {
                 val itemId = intent.getStringExtra(METADATA_KEY_MEDIA_ID)
                 val folderId = folderIdFromFileId(itemId)
                 val name = File(folderId).name
@@ -252,8 +253,8 @@ class MainActivity : AppCompatActivity(),
         createOfflineSwitch()
 
         val prefs = PreferenceManager.getDefaultSharedPreferences(this)
-        val haveServer = prefs.getString("pref_server_url", "").isNotEmpty()
-        val haveSecret = prefs.getString(("pref_shared_secret"), "").isNotEmpty()
+        val haveServer = !prefs.getString("pref_server_url", null).isNullOrBlank()
+        val haveSecret = !prefs.getString(("pref_shared_secret"), null).isNullOrBlank()
 
         if (!haveSecret || !haveServer) startActivity(Intent(this, SettingsActivity::class.java))
 
@@ -522,6 +523,12 @@ class MainActivity : AppCompatActivity(),
                 newFolderFragment(searchId, query, true)
             } else {
                 Toast.makeText(this, getString(R.string.search_warning), Toast.LENGTH_LONG).show()
+            }
+        } else if (intent.action == ACTION_NAVIGATE_TO_FOLDER) {
+            val folderId = intent.getStringExtra(METADATA_KEY_MEDIA_ID)
+            if (!folderId.isNullOrBlank()) {
+                val name = File(folderId).name?:"uknown"
+                newFolderFragment(folderId, name)
             }
         }
 

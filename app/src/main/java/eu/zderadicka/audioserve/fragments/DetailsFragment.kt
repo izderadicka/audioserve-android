@@ -1,27 +1,36 @@
 package eu.zderadicka.audioserve.fragments
 
 
+import android.content.Intent
 import android.os.Bundle
 import android.support.v4.app.Fragment
 import android.text.format.DateUtils
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageView
 import android.widget.TextView
+import android.widget.Toast
+import eu.zderadicka.audioserve.ACTION_NAVIGATE_TO_FOLDER
+import eu.zderadicka.audioserve.MainActivity
 
 import eu.zderadicka.audioserve.R
 import eu.zderadicka.audioserve.data.*
 import eu.zderadicka.audioserve.net.ApiClient
+import java.io.File
 
 
 const val ARG_FOLDER_DETAILS = "folder_details"
+const val ARG_FOLDER_FULL_ID = "folder_full_id"
+private const val LOG_TAG = "DetailsFragment"
 
 
 class DetailsFragment : Fragment() {
     private lateinit var folderDetails: Bundle
     private lateinit var folderPath: String
     private lateinit var folderName: String
+    private lateinit var folderId: String
 
     lateinit var folderNameView: TextView
     lateinit var folderPathView: TextView
@@ -33,9 +42,10 @@ class DetailsFragment : Fragment() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         arguments?.let {
-            folderDetails = it.getBundle(ARG_FOLDER_DETAILS)
-            folderPath = it.getString(ARG_FOLDER_PATH)
-            folderName = it.getString(ARG_FOLDER_NAME)
+            folderDetails = it.getBundle(ARG_FOLDER_DETAILS)!!
+            folderPath = it.getString(ARG_FOLDER_PATH)!!
+            folderName = it.getString(ARG_FOLDER_NAME)!!
+            folderId = it.getString(ARG_FOLDER_FULL_ID)!!
         }
     }
 
@@ -46,6 +56,23 @@ class DetailsFragment : Fragment() {
         folderPathView = view.findViewById(R.id.folderPath)
         folderNameView.text = folderName
         folderPathView.text = folderPath
+
+        folderPathView.setOnClickListener{
+            if ( it is TextView && ! it.text.isBlank()) {
+                // navigate to folder path
+                val parentFolder = File(folderId).parent
+                if (!parentFolder.isNullOrBlank()) {
+                    val intent = Intent(activity, MainActivity::class.java)
+                    intent.action = ACTION_NAVIGATE_TO_FOLDER
+
+                    intent.putExtra(METADATA_KEY_MEDIA_ID, parentFolder)
+                    intent.addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP)
+                    Log.d(LOG_TAG, "Folder id is ${parentFolder}")
+                    activity?.finish()
+                    startActivity(intent)
+                }
+            }
+        }
 
         totalDurationView = view.findViewById(R.id.totalTime)
         totalDurationView.text = DateUtils.formatElapsedTime(folderDetails
@@ -76,9 +103,10 @@ class DetailsFragment : Fragment() {
     companion object {
 
         @JvmStatic
-        fun newInstance(folderPath:String, folderName:String, folderDetails: Bundle) =
+        fun newInstance(folderId: String, folderPath:String, folderName:String, folderDetails: Bundle) =
                 DetailsFragment().apply {
                     arguments = Bundle().apply {
+                        putString(ARG_FOLDER_FULL_ID, folderId)
                         putBundle(ARG_FOLDER_DETAILS, folderDetails)
                         putString(ARG_FOLDER_PATH, folderPath)
                         putString(ARG_FOLDER_NAME, folderName)

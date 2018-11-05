@@ -153,7 +153,7 @@ class AudioService : MediaBrowserServiceCompat() {
             val result = if (Build.VERSION.SDK_INT >= 26) {
                 audioRequest = AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN)
                         .setOnAudioFocusChangeListener(focusCallback).build()
-                am.requestAudioFocus(audioRequest)
+                am.requestAudioFocus(audioRequest!!)
             } else {
                 @Suppress("DEPRECATION")
                 am.requestAudioFocus(focusCallback, AudioManager.STREAM_MUSIC, AudioManager.AUDIOFOCUS_GAIN)

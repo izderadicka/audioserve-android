@@ -251,7 +251,7 @@ class FileCache(val cacheDir: File,
         }
 
     fun pathFromUri(uri: Uri): String {
-        val p = uri.path
+        val p = uri.path?:""
         if (p.startsWith(baseUrlPath)) {
             return p.substring(baseUrlPath.length)
         } else {
@@ -352,7 +352,7 @@ class FileCache(val cacheDir: File,
             if (firstItem == null || firstItem.state != CacheItem.State.Complete) {
                 true
             } else {
-                !(loader?.currentPath in keepLoading.slice(1..keepLoading.size))
+                !(loader?.currentPath in keepLoading.slice(1 until keepLoading.size))
             }
         } else {
             true

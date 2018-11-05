@@ -34,7 +34,7 @@ class DetailsActivity : AppCompatActivity() {
         folderPath = pathFromFolderId(folderId)
         val details = intent.getBundleExtra(ARG_FOLDER_DETAILS)
         val t = supportFragmentManager.beginTransaction()
-        t.add(R.id.detailsFragment, DetailsFragment.newInstance(folderPath,folderName,details))
+        t.add(R.id.detailsFragment, DetailsFragment.newInstance(folderId, folderPath,folderName,details))
         t.commit()
 
 
