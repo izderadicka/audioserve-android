@@ -17,10 +17,12 @@
             style="@style/Base.TextAppearance.AppCompat.Title.Inverse"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
             android:background="@color/colorPrimaryDark"
             android:gravity="center"
-            android:paddingBottom="4dp"
             android:paddingTop="4dp"
+            android:paddingBottom="4dp"
+            app:layout_constraintTop_toTopOf="parent"
             tools:text="My Test Folder" />
 
         <TextView
