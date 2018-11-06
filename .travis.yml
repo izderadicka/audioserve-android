@@ -14,6 +14,8 @@ android:
   - android-24
   - extra-google-google_play_services
   - sys-img-armeabi-v7a-android-24
+before_install:
+  - yes | sdkmanager "platforms;android-28"
 before_cache:
 - rm -f  $HOME/.gradle/caches/modules-2/modules-2.lock
 - rm -fr $HOME/.gradle/caches/*/plugin-resolution/
