@@ -32,6 +32,7 @@ const val FOLDER_VIEW_STATE_KEY = "eu.zderadicka.audiserve.folderViewKey"
 const val ITEM_TYPE_FOLDER = 0
 const val ITEM_TYPE_FILE = 1
 const val ITEM_TYPE_BOOKMARK = 2
+const val ITEM_TYPE_SEARCH_FOLDER = 3
 
 private const val MIN_BORDER_DISTANCE: Float = 0.07f
 
@@ -62,6 +63,8 @@ class FolderItemViewHolder(itemView: View, viewType: Int, val clickCB: (Int, Ite
     private set
     var isBookmark = false
     private set
+    var isSearch = false
+    private set
 
     private val clickDetector: GestureDetector
 
@@ -90,6 +93,11 @@ class FolderItemViewHolder(itemView: View, viewType: Int, val clickCB: (Int, Ite
             folderPathView = itemView.findViewById(R.id.folderPathView)
             isBookmark = true
             contentView = itemView
+        } else if (viewType == ITEM_TYPE_SEARCH_FOLDER) {
+            folderPathView = itemView.findViewById(R.id.folderPathView)
+            contentView = itemView
+            isSearch = true
+
         } else {
             contentView = itemView
         }
@@ -113,18 +121,17 @@ class FolderItemViewHolder(itemView: View, viewType: Int, val clickCB: (Int, Ite
 
             }
         })
-        contentView?.setOnTouchListener({
-            view, event ->
+        contentView?.setOnTouchListener{
+            _, event ->
             clickDetector.onTouchEvent(event)
             true
-
-        })
+        }
 
     }
 }
 
 
-class FolderAdapter(val context: Context,
+class FolderAdapter(val context: Context, val isSearch:Boolean,
                     private val itemCb: (MediaItem, ItemAction) -> Unit)
     : RecyclerView.Adapter<FolderItemViewHolder>() {
 
@@ -140,6 +147,8 @@ class FolderAdapter(val context: Context,
             viewId = R.layout.file_item
         } else if (viewType == ITEM_TYPE_BOOKMARK) {
             viewId = R.layout.bookmark_item
+        } else if (viewType == ITEM_TYPE_SEARCH_FOLDER) {
+            viewId = R.layout.search_folder_item
         }
         val view = inflater.inflate(viewId, parent, false)
         return FolderItemViewHolder(view, viewType, this::onItemClicked)
@@ -167,6 +176,8 @@ class FolderAdapter(val context: Context,
         return if ( item.isPlayable ) {
             if (item.description.extras?.getBoolean(METADATA_KEY_IS_BOOKMARK) == true) ITEM_TYPE_BOOKMARK
                 else ITEM_TYPE_FILE
+        } else if (isSearch) {
+            ITEM_TYPE_SEARCH_FOLDER
         } else {
             ITEM_TYPE_FOLDER
         }
@@ -220,6 +231,10 @@ class FolderAdapter(val context: Context,
 
             holder.folderPathView?.text = item.description.subtitle
 
+        }
+
+        if (holder.isSearch) {
+            holder.folderPathView?.text = pathFromFolderId(item.mediaId!!)
         }
     }
 
@@ -386,8 +401,8 @@ class FolderFragment : MediaFragment() {
         val view = inflater.inflate(R.layout.fragment_folder, container, false)
         folderView = view.findViewById(R.id.folderView)
         folderView.layoutManager = LinearLayoutManager(context)
-
-        adapter = FolderAdapter(context!!) {item, action ->
+        val isSearch = folderId.startsWith(AudioService.SEARCH_PREFIX   )
+        adapter = FolderAdapter(context!!, isSearch) {item, action ->
             mediaActivity?.onItemClicked(item, action)
         }
         folderView.adapter = adapter
