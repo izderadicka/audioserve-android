@@ -4,6 +4,7 @@ import android.content.Context
 import android.os.ConditionVariable
 import android.preference.PreferenceManager
 import android.support.test.InstrumentationRegistry
+import android.support.test.filters.Suppress
 import android.support.test.runner.AndroidJUnit4
 import android.util.Log
 import eu.zderadicka.audioserve.net.ApiClient
@@ -55,6 +56,7 @@ fun checkConnection(uri: String): Boolean {
 
 
 @RunWith(AndroidJUnit4::class)
+@Suppress
 class CacheLoadTest: BaseCacheAndroidTest() {
     val cond: ConditionVariable = ConditionVariable()
 
