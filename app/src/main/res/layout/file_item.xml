@@ -11,7 +11,7 @@
     <FrameLayout
         android:layout_width="wrap_content"
         android:layout_height="wrap_content">
-        <include layout="@layout/item_buttons"/>
+        <include layout="@layout/item_buttons2"/>
     </FrameLayout>
 
     <FrameLayout

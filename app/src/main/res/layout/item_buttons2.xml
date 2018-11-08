@@ -21,4 +21,15 @@
 
         android:scaleType="fitCenter"
         app:srcCompat="@drawable/ic_download" />
+
+    <ImageButton
+        android:id="@+id/bookmarkButton"
+        android:layout_width="48dp"
+        android:layout_height="48dp"
+        android:layout_weight="1"
+        android:backgroundTint="@color/colorAccent"
+        android:padding="4dp"
+
+        android:scaleType="fitCenter"
+        app:srcCompat="@drawable/ic_bookmark" />
 </LinearLayout>
