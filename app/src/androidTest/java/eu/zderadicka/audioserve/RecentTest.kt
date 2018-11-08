@@ -23,7 +23,7 @@ class RecentTest {
 
     @Test
     fun testRegistration() {
-        val cls = RecentProvider::class.java.name
+        val cls = BookmarksProvider::class.java.name
         val component = ComponentName(ctx, cls)
         try {
             val providerInfo = ctx.packageManager?.getProviderInfo(component,0)
@@ -118,7 +118,7 @@ class RecentTest {
     @After
     fun delete_db() {
         //ctx.deleteDatabase(RECENT_DATABASE_NAME)
-        val db = RecentDbHelper(ctx).writableDatabase
+        val db = BookmarksDbHelper(ctx).writableDatabase
         db.delete(RecentContract.RecentEntry.TABLE_NAME, "1",null)
     }
 }

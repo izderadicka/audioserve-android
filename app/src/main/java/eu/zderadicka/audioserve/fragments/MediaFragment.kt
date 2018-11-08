@@ -5,7 +5,7 @@ import android.support.v4.media.session.MediaControllerCompat
 import android.util.Log
 
 private const val LOG_TAG = "MediaFragment"
-abstract class MediaFragment: Fragment() {
+abstract class MediaFragment: Fragment(){
 
 
     internal var controllerRegistered = false

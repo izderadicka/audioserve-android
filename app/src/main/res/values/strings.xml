@@ -93,4 +93,6 @@
     <string name="pref_delayed_fg_stop_title">Keep running in foreground</string>
     <string name="pref_delayed_fg_stop_summary_off">After pause player service is not running in foreground. This can save some batteries, but system can recycle it soon. You can set number of hours service will be kept in foreground after pause.</string>
     <string name="pref_delayed_fg_stop_summary_on">After pause player service will remain in foreground for %1$s hours. This will assure quicker continuation, but can consume some very small amount of power. By setting to 0 you can turn this off.</string>
+    <string name="action_bookmarks">Bookmarks</string>
+    <string name="folder_bookmarks">Bookmarks</string>
 </resources>

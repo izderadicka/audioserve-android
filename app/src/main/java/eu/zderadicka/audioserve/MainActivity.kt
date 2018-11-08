@@ -54,8 +54,8 @@ class MainActivity : AppCompatActivity(),
         TopActivity,
         ControllerHolder {
 
-    private val folderFragment: FolderFragment?
-        get() = supportFragmentManager.findFragmentById(R.id.folderContainer) as FolderFragment?
+    private val folderFragment: BaseFolderFragment?
+        get() = supportFragmentManager.findFragmentById(R.id.folderContainer) as BaseFolderFragment?
 
     private lateinit var mBrowser: MediaBrowserCompat
     private lateinit var controllerFragment: ControllerFragment

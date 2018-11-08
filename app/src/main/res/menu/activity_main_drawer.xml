@@ -14,8 +14,12 @@
             android:title="@string/action_browse" />
         <item
             android:id="@+id/nav_recent"
-            android:icon="@drawable/ic_bookmark"
+            android:icon="@drawable/ic_history"
             android:title="@string/action_recently_listened" />
+        <item
+            android:id="@+id/nav_bookmarks"
+            android:icon="@drawable/ic_bookmark"
+            android:title="@string/action_bookmarks" />
 
     </group>
 

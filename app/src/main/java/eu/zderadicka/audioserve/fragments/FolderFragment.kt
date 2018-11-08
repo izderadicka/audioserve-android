@@ -291,11 +291,11 @@ interface TopActivity {
 
 
 
-class FolderFragment : MediaFragment() {
-    lateinit var folderId: String
+class FolderFragment : MediaFragment(), BaseFolderFragment {
+    override lateinit var folderId: String
     private set
 
-    lateinit var folderName: String
+    override lateinit var folderName: String
     private set
 
     private var willPrepare = false
@@ -349,7 +349,7 @@ class FolderFragment : MediaFragment() {
 
     }
 
-    fun scrollToNowPlaying() {
+    override fun scrollToNowPlaying() {
         if (adapter.nowPlaying >= 0)
             folderView.scrollToPosition(adapter.nowPlaying)
     }
@@ -510,7 +510,7 @@ class FolderFragment : MediaFragment() {
     }
 
 
-    fun reload() {
+    override fun reload() {
         mediaActivity?.mediaBrowser?.unsubscribe(folderId, subscribeCallback)
         startLoading(forceReload = true)
     }
