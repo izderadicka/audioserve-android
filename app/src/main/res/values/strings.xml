@@ -95,4 +95,5 @@
     <string name="pref_delayed_fg_stop_summary_on">After pause player service will remain in foreground for %1$s hours. This will assure quicker continuation, but can consume some very small amount of power. By setting to 0 you can turn this off.</string>
     <string name="action_bookmarks">Bookmarks</string>
     <string name="folder_bookmarks">Bookmarks</string>
+    <string name="default_bookmark_category">TO_LISTEN</string>
 </resources>

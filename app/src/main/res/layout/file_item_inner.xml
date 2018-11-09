@@ -41,7 +41,7 @@
         tools:text="0:00:00" />
 
     <TextView
-        android:id="@+id/lastListenedView"
+        android:id="@+id/bookmarkedAtView"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginStart="16dp"
@@ -55,8 +55,8 @@
         android:layout_height="wrap_content"
         android:layout_marginStart="2dp"
         android:text="kbps"
-        app:layout_constraintStart_toEndOf="@+id/lastListenedView"
-        app:layout_constraintTop_toTopOf="@+id/lastListenedView" />
+        app:layout_constraintStart_toEndOf="@+id/bookmarkedAtView"
+        app:layout_constraintTop_toTopOf="@+id/bookmarkedAtView" />
 
     <TextView
         android:id="@+id/extesionView"

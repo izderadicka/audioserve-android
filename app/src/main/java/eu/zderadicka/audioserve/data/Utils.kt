@@ -133,6 +133,7 @@ fun parseFolderfromJson(data: String, name: String, path: String) :AudioFolder{
 
 private val AUDIO_START_RE = Regex("""^(\d+)?/?audio/(.+)""")
 private val FOLDER_START_RE = Regex("""^(\d+)?/?folder/(.+)""")
+private val ITEM_START_RE = Regex("""^(\d+)?/?(folder|audio)/(.+)""")
 
 fun folderIdFromFileId(fileId: String): String {
     val re = AUDIO_START_RE.matchEntire(fileId)
@@ -177,6 +178,17 @@ fun pathFromFolderId(folderId:String): String {
         }
     }
     return ""
+}
+
+fun typeAndFolderPathFromMediaId(mediaId: String): Pair<String,String>? {
+    if (mediaId.startsWith(AudioService.COLLECTION_PREFIX)) return null
+
+    val m = ITEM_START_RE.matchEntire(mediaId)
+    return m?.let {match ->
+        val folderPath = File(match.groups.get(3)!!.value).parent?:""
+        Pair(match.groups.get(2)!!.value, folderPath)
+    }
+
 }
 
 

@@ -9,12 +9,19 @@ import android.database.sqlite.SQLiteDatabase
 import android.database.sqlite.SQLiteException
 import android.database.sqlite.SQLiteOpenHelper
 import android.net.Uri
+import android.os.AsyncTask
 import android.os.Bundle
 import android.provider.BaseColumns
 import android.support.v4.media.MediaBrowserCompat
 import android.support.v4.media.MediaDescriptionCompat
+import android.util.Log
+import android.widget.Toast
+import eu.zderadicka.audioserve.R
 import eu.zderadicka.audioserve.data.RecentContract.RecentEntry
 import java.io.File
+
+
+private const val LOG_TAG = "Bookmarks"
 
 object RecentContract {
     const val PATH = "recent"
@@ -73,7 +80,6 @@ private object UriType {
     private val matcher = UriMatcher(UriMatcher.NO_MATCH)
 
     init {
-        println("INITIALIZING MATCHER")
         matcher.addURI(a, RecentContract.PATH, Recents)
         matcher.addURI(a, "${RecentContract.PATH}/latest", RecentsLast)
         matcher.addURI(a, BookmarkContract.PATH, Bookmarks)
@@ -112,7 +118,7 @@ class BookmarksDbHelper(context: Context) : SQLiteOpenHelper(context, RECENT_DAT
             ${BookmarkContract.BookmarkEntry.COLUMN_NAME} TEXT NOT NULL,
             ${BookmarkContract.BookmarkEntry.COLUMN_DESCRIPTION} TEXT,
             ${BookmarkContract.BookmarkEntry.COLUMN_POSITION} INTEGER,
-            ${BookmarkContract.BookmarkEntry.COLUMN_CATEGORY} TEXT
+            ${BookmarkContract.BookmarkEntry.COLUMN_CATEGORY} TEXT NOT NULL
             )
         """
         db.execSQL(query2)
@@ -287,6 +293,24 @@ fun saveRecent(item: MediaBrowserCompat.MediaItem, context: Context) {
     context.contentResolver.insert(RecentEntry.CONTENT_URI, v)
 }
 
+fun saveBookmark(item: MediaBrowserCompat.MediaItem, context: Context) {
+    val t = typeAndFolderPathFromMediaId(item.mediaId!!)
+    if (t == null) {
+        Log.w(LOG_TAG, "Unsupported item for bookmarks")
+        return
+    }
+    val v = ContentValues()
+    v.put(BookmarkContract.BookmarkEntry.COLUMN_TIMESTAMP, System.currentTimeMillis())
+    v.put(BookmarkContract.BookmarkEntry.COLUMN_MEDIA_ID, item.mediaId)
+    v.put(BookmarkContract.BookmarkEntry.COLUMN_FOLDER_PATH, t.second)
+    v.put(BookmarkContract.BookmarkEntry.COLUMN_NAME, item.description.title.toString())
+    v.put(BookmarkContract.BookmarkEntry.COLUMN_DESCRIPTION, item.description.subtitle.toString())
+    v.put(BookmarkContract.BookmarkEntry.COLUMN_POSITION, item.description.extras?.getLong(METADATA_KEY_LAST_POSITION))
+    v.put(BookmarkContract.BookmarkEntry.COLUMN_CATEGORY, t.first)
+
+    context.contentResolver.insert(BookmarkContract.BookmarkEntry.CONTENT_URI, v)
+}
+
 fun getRecents(context: Context, exceptPath: String? = null, onlyLatest: Boolean = false): List<MediaBrowserCompat.MediaItem> {
     var selection: String? = null
     var selectionArgs: Array<String?>? = null
@@ -321,4 +345,16 @@ fun getRecents(context: Context, exceptPath: String? = null, onlyLatest: Boolean
     }
 
     return l
+}
+
+class BookMarkInsertTast(val ctx: Context):  AsyncTask<MediaBrowserCompat.MediaItem, Unit, Unit>() {
+    override fun onPostExecute(result: Unit?) {
+        super.onPostExecute(result)
+        Toast.makeText(ctx, "Bookmark added", Toast.LENGTH_SHORT).show()
+    }
+
+    override fun doInBackground(vararg params: MediaBrowserCompat.MediaItem?) {
+        saveBookmark(params[0]!!, ctx)
+    }
+
 }

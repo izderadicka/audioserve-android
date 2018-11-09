@@ -1,9 +1,6 @@
 package eu.zderadicka.audioserve
 
-import eu.zderadicka.audioserve.data.collectionFromFolderId
-import eu.zderadicka.audioserve.data.collectionFromSearchId
-import eu.zderadicka.audioserve.data.folderIdFromFileId
-import eu.zderadicka.audioserve.data.pathFromFolderId
+import eu.zderadicka.audioserve.data.*
 import eu.zderadicka.audioserve.net.parseContentRange
 import eu.zderadicka.audioserve.utils.splitExtension
 import org.junit.Assert.*
@@ -36,6 +33,20 @@ class UtilsTest {
         assertNull(collectionFromFolderId(fileId))
         assertNull(collectionFromFolderId(fileId2))
         assertEquals(3, collectionFromFolderId("__COLLECTION_3"))
+    }
+
+    @Test
+    fun testConvMediaId2() {
+        val fileId = "1/audio/Arbes Jakub/Svaty Xaverius (Jakub Arbes)/001 of 3.opus"
+        val folderId = "Arbes Jakub/Svaty Xaverius (Jakub Arbes)"
+        val folderId2 = "folder/Doyle, Arthur Conan/The Adventures of Sherlock Holmes"
+        val folderId3 = "Doyle, Arthur Conan"
+        val folderId4 = "folder/Doyle, Arthur Conan/"
+
+        assertEquals(Pair("audio", folderId), typeAndFolderPathFromMediaId(fileId))
+        assertEquals(Pair("folder", folderId3), typeAndFolderPathFromMediaId(folderId2))
+        assertEquals(Pair("folder", ""), typeAndFolderPathFromMediaId(folderId4))
+
     }
 
     @Test

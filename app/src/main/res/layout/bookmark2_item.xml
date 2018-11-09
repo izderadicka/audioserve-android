@@ -31,27 +31,19 @@
         android:id="@+id/positionView"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginStart="16dp"
         android:layout_marginTop="2dp"
-        app:layout_constraintStart_toStartOf="parent"
+        android:layout_marginEnd="8dp"
+        app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/folderPathView"
-        tools:text="0:00:00" />
-
-    <TextView
-        android:id="@+id/durationView"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        app:layout_constraintStart_toEndOf="@+id/textView"
-        app:layout_constraintTop_toTopOf="@+id/positionView"
         tools:text="0:00:00" />
 
     <TextView
         android:id="@+id/bookmarkedAtView"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginStart="16dp"
-        app:layout_constraintStart_toEndOf="@+id/durationView"
-        app:layout_constraintTop_toTopOf="@+id/durationView"
+        android:layout_marginStart="8dp"
+        app:layout_constraintStart_toStartOf="@+id/folderPathView"
+        app:layout_constraintTop_toBottomOf="@+id/folderPathView"
         tools:text="5 minutes ago" />
 
     <TextView
@@ -66,13 +58,5 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/folderItemName"
         tools:text="author first last/audiobook" />
-
-    <TextView
-        android:id="@+id/textView"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="/"
-        app:layout_constraintStart_toEndOf="@+id/positionView"
-        app:layout_constraintTop_toTopOf="@+id/positionView" />
 
 </android.support.constraint.ConstraintLayout>

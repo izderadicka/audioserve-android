@@ -1,8 +1,6 @@
 package eu.zderadicka.audioserve
 
 import android.annotation.SuppressLint
-import android.content.ComponentName
-import android.content.Intent
 import android.os.Bundle
 import android.os.Handler
 import android.support.design.widget.Snackbar
@@ -27,9 +25,9 @@ import eu.zderadicka.audioserve.utils.ifStoppedOrDead
 import kotlinx.android.synthetic.main.content_main.*
 import java.io.File
 import android.app.SearchManager
-import android.content.Context
-import android.content.ServiceConnection
+import android.content.*
 import android.content.pm.PackageManager
+import android.os.AsyncTask
 import android.os.IBinder
 import android.preference.PreferenceManager
 import android.support.v7.widget.SearchView
@@ -46,6 +44,7 @@ const val ACTION_NAVIGATE_TO_ITEM = "eu.zderadicka.audioserve.navigate_to_item"
 const val ACTION_NAVIGATE_TO_FOLDER = "eu.zderadicka.audioserve.navigate_to_folder"
 private const val ROOT_RECENT = 0
 private const val ROOT_BROWSE = 1
+private const val ROOT_BOOKMARKS = 2
 
 
 class MainActivity : AppCompatActivity(),
@@ -147,6 +146,11 @@ class MainActivity : AppCompatActivity(),
                         ctl.playFromMediaId(item.mediaId, null)
                     }
                 }
+            }
+
+            ItemAction.Bookmark -> {
+                val task = BookMarkInsertTast(this)
+                task.execute(item)
             }
         }
     }
@@ -296,6 +300,24 @@ class MainActivity : AppCompatActivity(),
         stopPlayback()
         openInitialFolder(AudioService.RECENTLY_LISTENED_TAG, getString(R.string.recently_listened))
         rootFolder = ROOT_RECENT
+    }
+
+    private fun openBookmarksFolder() {
+        stopPlayback()
+        for (i in 0..supportFragmentManager.backStackEntryCount) {
+            supportFragmentManager.popBackStack()
+        }
+
+        val transaction = supportFragmentManager.beginTransaction()
+        val fragment = BookmarksFragment()
+        if (folderFragment != null) {
+            transaction.replace(R.id.folderContainer, fragment, fragment.folderId)
+        } else {
+            transaction.add(R.id.folderContainer, fragment, fragment.folderId)
+        }
+
+        transaction.commit()
+        rootFolder = ROOT_BOOKMARKS
     }
 
 
@@ -483,7 +505,9 @@ class MainActivity : AppCompatActivity(),
             R.id.nav_recent -> {
                 openRecentFolder()
             }
-
+            R.id.nav_bookmarks -> {
+                openBookmarksFolder()
+            }
             R.id.nav_sleep -> {
                 val d = SleepDialogFragment()
                 d.show(supportFragmentManager,"Sleep dialog")

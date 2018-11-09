@@ -15,7 +15,6 @@ import android.util.Log
 import eu.zderadicka.audioserve.utils.ifStoppedOrDead
 import android.os.Parcelable
 import android.support.v4.content.ContextCompat
-import android.support.v7.view.menu.MenuView
 import android.view.*
 import android.widget.*
 import eu.zderadicka.audioserve.*
@@ -40,7 +39,7 @@ private const val MIN_BORDER_DISTANCE: Float = 0.07f
 enum class ItemAction {
     Open,
     Download,
-    BookMark
+    Bookmark
 }
 
 private const val LOG_TAG = "FolderFragment"
@@ -74,7 +73,7 @@ class FolderItemViewHolder(itemView: View, viewType: Int, val clickCB: (Int, Ite
     init {
         fun setButton(btnId: Int, action: ItemAction): ImageButton {
             val btn: ImageButton = itemView.findViewById(btnId)
-            btn?.setOnClickListener {
+            btn.setOnClickListener {
                 //val animator = ObjectAnimator.ofInt(itemContainer, "left", 0)
                 //animator.start()
                 (itemView as SwipeRevealLayout).close(true)
@@ -88,9 +87,9 @@ class FolderItemViewHolder(itemView: View, viewType: Int, val clickCB: (Int, Ite
                 contentView = itemView.findViewById(R.id.contentView)
                 itemContainer = itemView.findViewById(R.id.itemContainer)
                 downloadButton = setButton(R.id.downloadButton, ItemAction.Download)
-                bookmarkButton = setButton(R.id.bookmarkButton, ItemAction.BookMark)
+                bookmarkButton = setButton(R.id.bookmarkButton, ItemAction.Bookmark)
                 durationView = itemView.findViewById(R.id.durationView)
-                bitRateView = itemView.findViewById(R.id.lastListenedView)
+                bitRateView = itemView.findViewById(R.id.bookmarkedAtView)
                 transcodedIcon = itemView.findViewById(R.id.transcodedIcon)
                 cachedIcon = itemView.findViewById(R.id.cachedIcon)
                 extensionView = itemView.findViewById(R.id.extesionView)
@@ -99,7 +98,7 @@ class FolderItemViewHolder(itemView: View, viewType: Int, val clickCB: (Int, Ite
             ITEM_TYPE_BOOKMARK -> {
                 durationView = itemView.findViewById(R.id.durationView)
                 positionView = itemView.findViewById(R.id.positionView)
-                lastListenedView = itemView.findViewById(R.id.lastListenedView)
+                lastListenedView = itemView.findViewById(R.id.bookmarkedAtView)
                 folderPathView = itemView.findViewById(R.id.folderPathView)
                 isBookmark = true
                 contentView = itemView
@@ -112,7 +111,7 @@ class FolderItemViewHolder(itemView: View, viewType: Int, val clickCB: (Int, Ite
             }
             ITEM_TYPE_FOLDER -> {
                 contentView = itemView.findViewById(R.id.contentView)
-                bookmarkButton = setButton(R.id.bookmarkButton, ItemAction.BookMark)
+                bookmarkButton = setButton(R.id.bookmarkButton, ItemAction.Bookmark)
             }
 
             else -> {
