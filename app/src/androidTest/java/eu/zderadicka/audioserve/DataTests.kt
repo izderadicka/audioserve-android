@@ -1,8 +1,7 @@
 package eu.zderadicka.audioserve
 
-import android.support.test.InstrumentationRegistry
-import android.support.test.runner.AndroidJUnit4
-import eu.zderadicka.audioserve.data.readAsString
+import androidx.test.InstrumentationRegistry
+import androidx.test.runner.AndroidJUnit4
 import eu.zderadicka.audioserve.data.readCollectionsFromJson
 import eu.zderadicka.audioserve.data.readFolderFromJson
 

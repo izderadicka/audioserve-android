@@ -214,6 +214,7 @@ class MainActivity : AppCompatActivity(),
             when (rootFolder) {
                 ROOT_RECENT -> openRecentFolder()
                 ROOT_BROWSE -> openRootFolder()
+                ROOT_BOOKMARKS -> openBookmarksFolder()
                 else -> openRecentFolder()
             }
         }

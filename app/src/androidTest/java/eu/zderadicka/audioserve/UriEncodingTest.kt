@@ -1,10 +1,13 @@
 package eu.zderadicka.audioserve
 
 import android.os.Build
+import androidx.test.runner.AndroidJUnit4
 import eu.zderadicka.audioserve.utils.encodeUri
 import org.junit.Test
 import org.junit.Assert.*
+import org.junit.runner.RunWith
 
+@RunWith(AndroidJUnit4::class)
 class UriEncodingTest {
     @Test
     fun testEncoding() {

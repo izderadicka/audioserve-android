@@ -196,7 +196,7 @@ class BookmarksProvider : ContentProvider() {
                 id = c.getLong(0)
                 db.update(BookmarkContract.BookmarkEntry.TABLE_NAME,
                         values,
-                        "${BookmarkContract.BookmarkEntry.COLUMN_MEDIA_ID}=?",
+                        "${BookmarkContract.BookmarkEntry._ID}=?",
                         arrayOf(id.toString()))
 
             } else {
@@ -311,6 +311,12 @@ fun saveBookmark(item: MediaBrowserCompat.MediaItem, context: Context) {
     context.contentResolver.insert(BookmarkContract.BookmarkEntry.CONTENT_URI, v)
 }
 
+fun deleteBookmark(id: Long, context: Context): Int {
+    val uri = BookmarkContract.BookmarkEntry.CONTENT_URI.buildUpon().appendPath(id.toString()).build()
+    return context.contentResolver.delete(uri, null, null)
+
+}
+
 fun getRecents(context: Context, exceptPath: String? = null, onlyLatest: Boolean = false): List<MediaBrowserCompat.MediaItem> {
     var selection: String? = null
     var selectionArgs: Array<String?>? = null
@@ -325,7 +331,7 @@ fun getRecents(context: Context, exceptPath: String? = null, onlyLatest: Boolean
             null
     )
     c.use {
-        while (c.moveToNext()) {
+        while (c?.moveToNext() == true) {
             val extras = Bundle()
             val descBuilder = MediaDescriptionCompat.Builder()
                     .setMediaId(c.getString(c.getColumnIndex(RecentEntry.COLUMN_MEDIA_ID)))
@@ -355,6 +361,24 @@ class BookMarkInsertTast(val ctx: Context):  AsyncTask<MediaBrowserCompat.MediaI
 
     override fun doInBackground(vararg params: MediaBrowserCompat.MediaItem?) {
         saveBookmark(params[0]!!, ctx)
+    }
+
+}
+
+class BookmarkDeleteTask(val ctx:Context, val cb: (Boolean)-> Unit) : AsyncTask<Long, Unit, Int>() {
+    override fun doInBackground(vararg params: Long?):Int =
+            deleteBookmark(params[0]!!, ctx)
+
+    override fun onPostExecute(result: Int?) {
+        result?.let {
+            val res = if (it == 0) {
+                Log.w(LOG_TAG, "Delete of bookmark failed")
+                false
+            } else true
+
+            cb(res)
+
+        }
     }
 
 }

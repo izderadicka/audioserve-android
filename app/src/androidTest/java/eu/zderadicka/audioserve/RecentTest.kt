@@ -5,21 +5,31 @@ import android.content.ContentValues
 import android.content.Context
 import android.content.pm.PackageManager
 import android.os.Bundle
-import android.support.test.InstrumentationRegistry
-import android.support.test.runner.AndroidJUnit4
 import android.support.v4.media.MediaBrowserCompat
 import android.support.v4.media.MediaDescriptionCompat
+import android.test.ProviderTestCase2
+import androidx.test.core.app.ApplicationProvider
+import androidx.test.runner.AndroidJUnit4
 import eu.zderadicka.audioserve.data.*
 import org.junit.After
-import org.junit.runner.RunWith
-import org.junit.Assert.*
+import org.junit.Before
 import org.junit.Test
+import org.junit.runner.RunWith
 
 
 @RunWith(AndroidJUnit4::class)
-class RecentTest {
+class RecentTest: ProviderTestCase2<BookmarksProvider>(BookmarksProvider::class.java,
+        RecentContract.CONTENT_AUTHORITY) {
 
-    val ctx: Context = InstrumentationRegistry.getTargetContext()
+   lateinit var ctx: Context
+
+
+    @Before
+    public override fun setUp() {
+        super.setUp()
+        ctx = ApplicationProvider.getApplicationContext<Context>()
+
+    }
 
     @Test
     fun testRegistration() {
@@ -116,7 +126,8 @@ class RecentTest {
     }
 
     @After
-    fun delete_db() {
+    public override fun tearDown() {
+        super.tearDown()
         //ctx.deleteDatabase(RECENT_DATABASE_NAME)
         val db = BookmarksDbHelper(ctx).writableDatabase
         db.delete(RecentContract.RecentEntry.TABLE_NAME, "1",null)

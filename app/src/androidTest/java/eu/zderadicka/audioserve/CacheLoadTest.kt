@@ -3,10 +3,12 @@ package eu.zderadicka.audioserve
 import android.content.Context
 import android.os.ConditionVariable
 import android.preference.PreferenceManager
-import android.support.test.InstrumentationRegistry
-import android.support.test.filters.Suppress
-import android.support.test.runner.AndroidJUnit4
+
+import android.test.AndroidTestCase
 import android.util.Log
+import androidx.test.InstrumentationRegistry
+import androidx.test.filters.Suppress
+import androidx.test.runner.AndroidJUnit4
 import eu.zderadicka.audioserve.net.ApiClient
 import eu.zderadicka.audioserve.net.FileCache
 import org.junit.After
@@ -22,13 +24,15 @@ import java.net.URL
 
 private const val LOG_TAG = "CacheLoadTest"
 
-open class BaseCacheAndroidTest {
+open class BaseCacheAndroidTest:AndroidTestCase() {
     lateinit var tmpDir:File
     lateinit var ctx: Context
 
 
     @Before
-    fun prepare() {
+    public override fun setUp() {
+        super.setUp()
+
         ctx = InstrumentationRegistry.getTargetContext()
         tmpDir = File(ctx.cacheDir, "test-tmp-cache")
         tmpDir.mkdir()
@@ -37,7 +41,8 @@ open class BaseCacheAndroidTest {
     }
 
     @After
-    fun cleanUp() {
+    public override fun tearDown() {
+        super.tearDown()
         tmpDir.deleteRecursively()
 
     }

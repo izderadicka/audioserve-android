@@ -1,6 +1,6 @@
 package eu.zderadicka.audioserve
 
-import android.support.test.runner.AndroidJUnit4
+import androidx.test.runner.AndroidJUnit4
 import eu.zderadicka.audioserve.net.tokenValidityDays
 import eu.zderadicka.audioserve.net.tokenValidityEpoch
 import org.junit.Assert.*
