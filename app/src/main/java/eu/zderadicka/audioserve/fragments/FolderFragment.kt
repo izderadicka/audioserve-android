@@ -150,7 +150,7 @@ class FolderItemViewHolder(itemView: View, viewType: Int, val clickCB: (Int, Ite
 
 
 class FolderAdapter(val context: Context, val isSearch:Boolean,
-                    private val itemCb: (MediaItem, ItemAction) -> Unit)
+                    private val itemCb: (MediaItem, ItemAction, Boolean) -> Unit)
     : RecyclerView.Adapter<FolderItemViewHolder>() {
 
     private var items: List<MediaItem>? = null
@@ -177,7 +177,8 @@ class FolderAdapter(val context: Context, val isSearch:Boolean,
 
         val item = items?.get(index)
         if (item != null) {
-            itemCb(item, action)
+            val currentlyPlaying = index == nowPlaying
+            itemCb(item, action, currentlyPlaying)
         }
 
     }
@@ -298,7 +299,7 @@ class FolderAdapter(val context: Context, val isSearch:Boolean,
 
 
 interface MediaActivity {
-    fun onItemClicked(item: MediaItem, action: ItemAction)
+    fun onItemClicked(item: MediaItem, action: ItemAction, currentlyPlaying: Boolean)
     fun onFolderLoaded(folderId: String, folderDetails: Bundle?, error: Boolean, empty: Boolean)
     val mediaBrowser: MediaBrowserCompat
 }
@@ -420,8 +421,8 @@ class FolderFragment : MediaFragment(), BaseFolderFragment {
         folderView = view.findViewById(R.id.folderView)
         folderView.layoutManager = LinearLayoutManager(context)
         val isSearch = folderId.startsWith(AudioService.SEARCH_PREFIX   )
-        adapter = FolderAdapter(context!!, isSearch) {item, action ->
-            mediaActivity?.onItemClicked(item, action)
+        adapter = FolderAdapter(context!!, isSearch) {item, action, currentlyPlaying ->
+            mediaActivity?.onItemClicked(item, action, currentlyPlaying)
         }
         folderView.adapter = adapter
 

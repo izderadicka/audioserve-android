@@ -112,22 +112,37 @@ class BookmarksAdapter(val ctx: Context,
     }
 
     override fun onBindViewHolder(viewHolder: BookmarkViewHolder, pos: Int) {
-        cursor?.let {cursor ->
-            if (cursor.moveToPosition(pos)) {
-                val name = cursor.getString(cursor.getColumnIndex(BookmarkContract.BookmarkEntry.COLUMN_NAME))
-                val path = cursor.getString(cursor.getColumnIndex(BookmarkContract.BookmarkEntry.COLUMN_FOLDER_PATH))
-                val ts = cursor.getLong(cursor.getColumnIndex(BookmarkContract.BookmarkEntry.COLUMN_TIMESTAMP))
-                val position = cursor.getLong(cursor.getColumnIndex(BookmarkContract.BookmarkEntry.COLUMN_POSITION))
+        cursor?.apply {
+            if (moveToPosition(pos)) {
+                
+                val name = getString(getColumnIndex(BookmarkContract.BookmarkEntry.COLUMN_NAME))
+                val path = getString(getColumnIndex(BookmarkContract.BookmarkEntry.COLUMN_FOLDER_PATH))
+                val ts = getLong(getColumnIndex(BookmarkContract.BookmarkEntry.COLUMN_TIMESTAMP))
+                val position = getLong(getColumnIndex(BookmarkContract.BookmarkEntry.COLUMN_POSITION))
+                val cat = getString(getColumnIndex(BookmarkContract.BookmarkEntry.COLUMN_CATEGORY))
 
                 viewHolder.itemNameView.text = name
-                viewHolder.folderPathView.text = path
-                viewHolder.positionView.text = DateUtils.formatElapsedTime(
-                        position / 1000L)
+
+               
                 viewHolder.bookmarkedAtView.text =  DateUtils.getRelativeTimeSpanString(
                         ts,
                         System.currentTimeMillis(),
                         0
                 )
+                if (path.isNullOrBlank()){
+                    viewHolder.folderPathView.visibility = View.GONE
+                } else {
+                    viewHolder.folderPathView.text = path
+                    viewHolder.folderPathView.visibility = View.VISIBLE
+                }
+
+                if (cat == "audio") {
+                    viewHolder.positionView.text = DateUtils.formatElapsedTime(
+                            position / 1000L)
+                    viewHolder.positionView.visibility = View.VISIBLE
+                } else {
+                    viewHolder.positionView.visibility = View.INVISIBLE
+                }
 
             }
 
@@ -178,7 +193,7 @@ class BookmarksFragment: Fragment(), BaseFolderFragment, LoaderManager.LoaderCal
         folderView.layoutManager = LinearLayoutManager(context)
 
         adapter = BookmarksAdapter(activity!!.application, {item ->
-            mediaActivity.onItemClicked(item, ItemAction.Open)
+            mediaActivity.onItemClicked(item, ItemAction.Open, false)
             },
                 {
                    loaderManager.restartLoader(0,null, this)

@@ -353,7 +353,7 @@ fun getRecents(context: Context, exceptPath: String? = null, onlyLatest: Boolean
     return l
 }
 
-class BookMarkInsertTast(val ctx: Context):  AsyncTask<MediaBrowserCompat.MediaItem, Unit, Unit>() {
+class BookMarkInsertTask(val ctx: Context):  AsyncTask<MediaBrowserCompat.MediaItem, Unit, Unit>() {
     override fun onPostExecute(result: Unit?) {
         super.onPostExecute(result)
         Toast.makeText(ctx, "Bookmark added", Toast.LENGTH_SHORT).show()

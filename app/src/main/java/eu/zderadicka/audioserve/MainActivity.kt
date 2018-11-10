@@ -27,7 +27,6 @@ import java.io.File
 import android.app.SearchManager
 import android.content.*
 import android.content.pm.PackageManager
-import android.os.AsyncTask
 import android.os.IBinder
 import android.preference.PreferenceManager
 import android.support.v7.widget.SearchView
@@ -106,7 +105,7 @@ class MainActivity : AppCompatActivity(),
                 .commit()
     }
 
-    override fun onItemClicked(item: MediaBrowserCompat.MediaItem, action: ItemAction) {
+    override fun onItemClicked(item: MediaBrowserCompat.MediaItem, action: ItemAction, currentlyPlaying:Boolean) {
         val ctl = MediaControllerCompat.getMediaController(this).transportControls
         when (action) {
             ItemAction.Download -> {
@@ -149,7 +148,12 @@ class MainActivity : AppCompatActivity(),
             }
 
             ItemAction.Bookmark -> {
-                val task = BookMarkInsertTast(this)
+                val task = BookMarkInsertTask(this)
+                if (item.isPlayable &&currentlyPlaying) {
+                    item.description.extras?.putLong(METADATA_KEY_LAST_POSITION, controllerFragment.currentPlayTime)
+                } else {
+                    item.description.extras?.remove(METADATA_KEY_LAST_POSITION)
+                }
                 task.execute(item)
             }
         }

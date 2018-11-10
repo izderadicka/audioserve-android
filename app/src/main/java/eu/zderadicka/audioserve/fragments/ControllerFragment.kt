@@ -234,5 +234,11 @@ class ControllerFragment : MediaFragment() {
     }
 
 
+    val currentPlayTime: Long
+    get() {
+        return seekBar.progress.toLong()
+    }
+
+
 
 }
