@@ -11,6 +11,7 @@ import android.util.Log
 import com.google.android.exoplayer2.C
 import com.google.android.exoplayer2.upstream.DataSource
 import com.google.android.exoplayer2.upstream.DataSpec
+import com.google.android.exoplayer2.upstream.TransferListener
 import eu.zderadicka.audioserve.data.METADATA_KEY_BITRATE
 import java.io.EOFException
 import java.io.File
@@ -56,8 +57,6 @@ class CachedFileDataSourceFactory(val cache: FileCache) : DataSource.Factory {
 }
 
 class CachedFileDataSource(val cache: FileCache) : DataSource, CacheItem.Listener {
-
-
     private var item: CacheItem? = null
     private var uri: Uri? = null
     private var bytesRemaining: Long = 0
@@ -156,6 +155,12 @@ class CachedFileDataSource(val cache: FileCache) : DataSource, CacheItem.Listene
         } finally {
             item = null
         }
+    }
+
+    override fun addTransferListener(transferListener: TransferListener?) {
+        Log.w(LOG_TAG, "Somebody wants to add transfer listener")
+        //TODO - implement listeners
+        //does nothing
     }
 
 }

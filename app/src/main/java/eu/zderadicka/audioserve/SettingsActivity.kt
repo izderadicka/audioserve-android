@@ -12,6 +12,7 @@ import android.widget.Toast
 import eu.zderadicka.audioserve.net.ApiClient
 import eu.zderadicka.audioserve.net.CacheManager
 import eu.zderadicka.audioserve.net.MEDIA_CACHE_DIR
+import eu.zderadicka.audioserve.utils.SeekBarPreference
 import java.io.File
 import java.util.*
 
@@ -236,6 +237,18 @@ class SettingsFragment: PreferenceFragment(), SharedPreferences.OnSharedPreferen
 
             }
 
+            "pref_skip_silence" -> {
+                if (pref !is CheckBoxPreference) return
+                val checked = sps.getBoolean("pref_skip_silence", false)
+                if (checked) {
+                    pref.summary=getString(R.string.pref_skip_silence_selected_summary)
+
+                } else {
+                    pref.summary=getString(R.string.pref_skip_silence_unselected_summary)
+                }
+
+            }
+
             "pref_web_search_prefix" -> {
                 if (pref !is EditTextPreference) return
                 val prefix = sps.getString("pref_web_search_prefix", null)
@@ -255,6 +268,11 @@ class SettingsFragment: PreferenceFragment(), SharedPreferences.OnSharedPreferen
                 } else {
                     pref.summary = getString(R.string.pref_delayed_fg_stop_summary_on, delay)
                 }
+            }
+
+            "pref_playback_speed" -> {
+                //if (pref !is SeekBarPreference) return
+                //TODO
             }
 
 

@@ -24,6 +24,7 @@ import android.text.format.DateUtils.*
 import android.util.Log
 import com.google.android.exoplayer2.ExoPlayer
 import com.google.android.exoplayer2.ExoPlayerFactory
+import com.google.android.exoplayer2.PlaybackParameters
 import com.google.android.exoplayer2.Player
 import com.google.android.exoplayer2.ext.mediasession.DefaultPlaybackController
 import com.google.android.exoplayer2.ext.mediasession.MediaSessionConnector
@@ -301,6 +302,7 @@ class AudioService : MediaBrowserServiceCompat() {
                     val duration = mi.description.extras?.getLong(METADATA_KEY_DURATION)?:0L
                     val pos = player.currentPosition
                     if (duration -pos > 5000) {
+                        player.playWhenReady=false
                         playQueue.add(queuePos+1, mi)
                         currentSourcesList!!.addMediaSource(playerPos+1,
                                 sourceFactory!!.createMediaSource(apiClient.uriFromMediaId(mi.mediaId!!)))
@@ -353,11 +355,14 @@ class AudioService : MediaBrowserServiceCompat() {
             Log.d(LOG_TAG,"Cache change on $path to ${status.name}")
             if (status == FileCache.Status.FullyCached) {
                 send_event(true)
-                preparer.duplicateInQueue(path){ idx, pos ->
-                    Log.d(LOG_TAG, "Duplicted $idx,$pos, current player pos ${player.currentPosition}")
-                    player.seekTo(idx+1, pos) //TODO find best way for gapless seek +200 looked like better when emulated
-                    deletePreviousQueueItem = idx
+                scheduler.post {
+                    preparer.duplicateInQueue(path) { idx, pos ->
+                        Log.d(LOG_TAG, "Duplicted $idx,$pos, current player pos ${player.currentPosition}")
+                        player.seekTo(idx + 1, pos) //TODO find best way for gapless seek +200 looked like better when emulated
+                        player.playWhenReady=true
+                        deletePreviousQueueItem = idx
 
+                    }
                 }
 
 
@@ -449,7 +454,7 @@ class AudioService : MediaBrowserServiceCompat() {
     }
 
     inner class QueueManager(session: MediaSessionCompat) : TimelineQueueNavigator(session) {
-        override fun getMediaDescription(windowIndex: Int): MediaDescriptionCompat? {
+        override fun getMediaDescription(player: Player?, windowIndex: Int): MediaDescriptionCompat? {
             if (windowIndex >= 0 && windowIndex < playQueue.size) {
                 return playQueue.get(windowIndex).description
             } else {
@@ -493,6 +498,9 @@ class AudioService : MediaBrowserServiceCompat() {
             "pref_delayed_fg_stop" -> {
                 delayedFgStop = PreferenceManager.getDefaultSharedPreferences(this).getString("pref_delayed_fg_stop", "0").toInt()
             }
+            "pref_skip_silence" -> {
+                setPlaybackParams()
+            }
         }
     }
 
@@ -516,13 +524,14 @@ class AudioService : MediaBrowserServiceCompat() {
 
     override fun onCreate() {
         super.onCreate()
-        preloadFiles = PreferenceManager.getDefaultSharedPreferences(this).getString("pref_preload","2").toInt()
+        preloadFiles = PreferenceManager.getDefaultSharedPreferences(this).getString("pref_preload","2")!!.toInt()
         isOffline = PreferenceManager.getDefaultSharedPreferences(this).getBoolean("pref_offline",false)
         enableAutoRewind = PreferenceManager.getDefaultSharedPreferences(this).getBoolean("pref_autorewind", true)
-        delayedFgStop = PreferenceManager.getDefaultSharedPreferences(this).getString("pref_delayed_fg_stop", "0").toInt()
+        delayedFgStop = PreferenceManager.getDefaultSharedPreferences(this).getString("pref_delayed_fg_stop", "0")!!.toInt()
         session = MediaSessionCompat(this, LOG_TAG)
         session.controller.registerCallback(sessionCallback)
         player = ExoPlayerFactory.newSimpleInstance(this, DefaultTrackSelector())
+        setPlaybackParams()
 
         queueManager = QueueManager(session)
 
@@ -556,6 +565,12 @@ mediaSessionConnector.setErrorMessageProvider(messageProvider);
 
         Log.d(LOG_TAG, "Audioservice created")
 
+    }
+
+    private fun setPlaybackParams() {
+        val skipSilence = PreferenceManager.getDefaultSharedPreferences(this)
+                .getBoolean("pref_skip_silence", false)
+        player.playbackParameters = PlaybackParameters(1.0F, 1.0F, skipSilence)
     }
 
 
