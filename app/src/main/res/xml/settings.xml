@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
+<androidx.preference.PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
     <PreferenceCategory
         android:key="prefs_server"
         android:title="@string/prefs_server_title">
@@ -8,7 +8,9 @@
             android:key="pref_server_url"
             android:selectAllOnFocus="true"
             android:singleLine="true"
-            android:title="@string/pref_server_url_title" />
+            android:title="@string/pref_server_url_title"
+            />
+
         <EditTextPreference
             android:key="pref_shared_secret"
             android:password="true"
@@ -94,16 +96,13 @@
             android:title="@string/pref_skip_silence_title"
             android:defaultValue="true"
             />
-<!--
-        <eu.zderadicka.audioserve.utils.SeekBarPreference
+        <SeekBarPreference
             android:key="pref_playback_speed"
             android:title="@string/pref_playback_speed"
             android:defaultValue="75"
             android:max="150"
 
             />
- -->
-
 
     </PreferenceCategory>
 
@@ -123,4 +122,4 @@
 
 
 
-</PreferenceScreen>
+</androidx.preference.PreferenceScreen>

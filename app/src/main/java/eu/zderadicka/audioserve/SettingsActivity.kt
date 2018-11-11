@@ -6,32 +6,35 @@ import android.net.Uri
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.os.Environment
-import android.preference.*
+import androidx.preference.*
 import android.util.Log
 import android.widget.Toast
+import androidx.preference.SeekBarPreference
 import eu.zderadicka.audioserve.net.ApiClient
 import eu.zderadicka.audioserve.net.CacheManager
 import eu.zderadicka.audioserve.net.MEDIA_CACHE_DIR
-import eu.zderadicka.audioserve.utils.SeekBarPreference
 import java.io.File
 import java.util.*
 
 private const val LOG_TAG = "Settings"
 
-class SettingsFragment: PreferenceFragment(), SharedPreferences.OnSharedPreferenceChangeListener {
+class SettingsFragment: PreferenceFragmentCompat(), SharedPreferences.OnSharedPreferenceChangeListener {
 
+    override fun onCreatePreferences(savedInstanceState: Bundle?, rootKey: String?) {
 
-    @SuppressLint("ApplySharedPref")
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
         addPreferencesFromResource(R.xml.settings)
+
+        val bar:SeekBarPreference = findPreference("pref_playback_speed")!! as SeekBarPreference
+
+        bar.min = 50
+        bar.seekBarIncrement= 10
 
         val transcodingPref: ListPreference = findPreference("pref_transcoding") as ListPreference
         transcodingPref.entries = arrayOf(
-                activity.getString(R.string.transcoding_low) + " ${ApiClient.transcodingBitrates.low} kbps",
-                activity.getString(R.string.transcoding_medium) + " ${ApiClient.transcodingBitrates.medium} kbps",
-                activity.getString(R.string.transcoding_high) + " ${ApiClient.transcodingBitrates.high} kbps",
-                activity.getString(R.string.transcoding_no)
+                activity!!.getString(R.string.transcoding_low) + " ${ApiClient.transcodingBitrates.low} kbps",
+                activity!!.getString(R.string.transcoding_medium) + " ${ApiClient.transcodingBitrates.medium} kbps",
+                activity!!.getString(R.string.transcoding_high) + " ${ApiClient.transcodingBitrates.high} kbps",
+                activity!!.getString(R.string.transcoding_no)
                 )
 
         val cacheLocationPref: ListPreference = findPreference("pref_cache_location") as ListPreference
@@ -44,7 +47,7 @@ class SettingsFragment: PreferenceFragment(), SharedPreferences.OnSharedPreferen
         }
         cacheLocationPref.entries = entriesNames
         cacheLocationPref.entryValues = entriesValues
-        cacheLocationPref.setDefaultValue(activity.cacheDir.absolutePath)
+        cacheLocationPref.setDefaultValue(activity!!.cacheDir.absolutePath)
 
         for (i in 0 until preferenceScreen.preferenceCount) {
             val pref = preferenceScreen.getPreference(i)
@@ -74,7 +77,7 @@ class SettingsFragment: PreferenceFragment(), SharedPreferences.OnSharedPreferen
         }
 
         findPreference("pref_test_connection").setOnPreferenceClickListener {
-            ApiClient.getInstance(activity).loadPreferences() { err ->
+            ApiClient.getInstance(activity!!).loadPreferences() { err ->
                 if (err == null) {
 
                         Toast.makeText(activity, getString(R.string.connection_working), Toast.LENGTH_LONG).show()
@@ -110,9 +113,9 @@ class SettingsFragment: PreferenceFragment(), SharedPreferences.OnSharedPreferen
         findPreference("pref_clear_cache").setOnPreferenceClickListener {
 
             Thread({
-                ApiClient.clearCache(activity)
+                ApiClient.clearCache(activity!!)
                 CacheManager.clearCache()
-                activity.runOnUiThread({
+                activity!!.runOnUiThread({
                     Toast.makeText(activity, "Cache cleared", Toast.LENGTH_LONG).show()
                 })
             }).run()
@@ -145,13 +148,13 @@ class SettingsFragment: PreferenceFragment(), SharedPreferences.OnSharedPreferen
 
         val l = ArrayList<Pair<String,String>>()
         val cname = getString(R.string.storage_internal_cache)
-        val cfile = activity.cacheDir
+        val cfile = activity!!.cacheDir
         l.add(Pair(cname + " (${freeSize(cfile.freeSpace)})",cfile.absolutePath))
         val sname = R.string.storage_internal
-        val sfile = activity.filesDir
+        val sfile = activity!!.filesDir
         l.add(Pair(getString(sname) + " (${freeSize(sfile.freeSpace)})",sfile.absolutePath))
 
-       activity.externalMediaDirs.forEachIndexed { index, file ->
+       activity!!.externalMediaDirs.forEachIndexed { index, file ->
 
            if (file != null && Environment.getExternalStorageState(file) == Environment.MEDIA_MOUNTED) {
                val name = getString(R.string.storage_external, index.toString())
@@ -271,7 +274,7 @@ class SettingsFragment: PreferenceFragment(), SharedPreferences.OnSharedPreferen
             }
 
             "pref_playback_speed" -> {
-                //if (pref !is SeekBarPreference) return
+                if (pref !is SeekBarPreference) return
                 //TODO
             }
 
