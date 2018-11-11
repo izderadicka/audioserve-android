@@ -5,8 +5,8 @@ import android.app.Dialog
 import android.content.Intent
 import android.os.Bundle
 import android.preference.PreferenceManager
-import android.support.v4.app.DialogFragment
-import android.support.v7.app.AlertDialog
+import androidx.fragment.app.DialogFragment
+import androidx.appcompat.app.AlertDialog
 import android.widget.NumberPicker
 import android.widget.Switch
 import eu.zderadicka.audioserve.R
@@ -27,7 +27,7 @@ private fun calcSteps (max:Int): Array<String> {
 private fun valToMins(v:Int) = 5*v
 private fun minsToVal(m:Int):Int = m/5
 
-class SleepDialogFragment : DialogFragment() {
+class SleepDialogFragment : androidx.fragment.app.DialogFragment() {
     @SuppressLint("ApplySharedPref")
     override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
 

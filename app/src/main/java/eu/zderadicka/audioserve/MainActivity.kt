@@ -3,12 +3,12 @@ package eu.zderadicka.audioserve
 import android.annotation.SuppressLint
 import android.os.Bundle
 import android.os.Handler
-import android.support.design.widget.Snackbar
-import android.support.design.widget.NavigationView
+import com.google.android.material.snackbar.Snackbar
+import com.google.android.material.navigation.NavigationView
 import android.support.v4.media.MediaBrowserCompat
-import android.support.v4.view.GravityCompat
-import android.support.v7.app.ActionBarDrawerToggle
-import android.support.v7.app.AppCompatActivity
+import androidx.core.view.GravityCompat
+import androidx.appcompat.app.ActionBarDrawerToggle
+import androidx.appcompat.app.AppCompatActivity
 import android.util.Log
 import android.view.Menu
 import android.view.MenuItem
@@ -29,8 +29,8 @@ import android.content.*
 import android.content.pm.PackageManager
 import android.os.IBinder
 import android.preference.PreferenceManager
-import android.support.v7.widget.SearchView
-import android.support.v7.widget.SwitchCompat
+import androidx.appcompat.widget.SearchView
+import androidx.appcompat.widget.SwitchCompat
 import eu.zderadicka.audioserve.data.*
 import eu.zderadicka.audioserve.net.DOWNLOAD_ACTION
 import eu.zderadicka.audioserve.net.DownloadService
@@ -47,7 +47,7 @@ private const val ROOT_BOOKMARKS = 2
 
 
 class MainActivity : AppCompatActivity(),
-        NavigationView.OnNavigationItemSelectedListener,
+        com.google.android.material.navigation.NavigationView.OnNavigationItemSelectedListener,
         MediaActivity,
         TopActivity,
         ControllerHolder {
@@ -204,7 +204,7 @@ class MainActivity : AppCompatActivity(),
         Log.d(LOG_TAG, "Created main activity with action ${intent.action}")
 
         fab.setOnClickListener { view ->
-            Snackbar.make(view, "Replace with your own action", Snackbar.LENGTH_LONG)
+            com.google.android.material.snackbar.Snackbar.make(view, "Replace with your own action", com.google.android.material.snackbar.Snackbar.LENGTH_LONG)
                     .setAction("Action", null).show()
         }
 

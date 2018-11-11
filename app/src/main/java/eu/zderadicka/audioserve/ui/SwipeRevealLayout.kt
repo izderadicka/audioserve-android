@@ -5,9 +5,9 @@ import android.content.Context
 import android.graphics.Rect
 import android.os.Bundle
 import android.os.Parcelable
-import android.support.v4.view.GestureDetectorCompat
-import android.support.v4.view.ViewCompat
-import android.support.v4.widget.ViewDragHelper
+import androidx.core.view.GestureDetectorCompat
+import androidx.core.view.ViewCompat
+import androidx.customview.widget.ViewDragHelper
 import android.util.AttributeSet
 import android.util.DisplayMetrics
 import android.view.GestureDetector
@@ -71,7 +71,7 @@ class SwipeRevealLayout : ViewGroup {
     private var mDragDist = 0f
     private var mPrevX = -1f
 
-    private var mDragHelper: ViewDragHelper? = null
+    private var mDragHelper: androidx.customview.widget.ViewDragHelper? = null
     private var mGestureDetector: GestureDetectorCompat? = null
 
     private val mainOpenLeft: Int
@@ -174,7 +174,7 @@ class SwipeRevealLayout : ViewGroup {
             mRectMainClose.right - mSecondaryView!!.width / 2
         }
 
-    private val mDragHelperCallback = object : ViewDragHelper.Callback() {
+    private val mDragHelperCallback = object : androidx.customview.widget.ViewDragHelper.Callback() {
         override fun tryCaptureView(child: View, pointerId: Int): Boolean {
 
             if (isDragLocked)
@@ -240,9 +240,9 @@ class SwipeRevealLayout : ViewGroup {
                 return
             }
 
-            val edgeStartLeft = mDragEdge == DRAG_EDGE_RIGHT && edgeFlags == ViewDragHelper.EDGE_LEFT
+            val edgeStartLeft = mDragEdge == DRAG_EDGE_RIGHT && edgeFlags == androidx.customview.widget.ViewDragHelper.EDGE_LEFT
 
-            val edgeStartRight = mDragEdge == DRAG_EDGE_LEFT && edgeFlags == ViewDragHelper.EDGE_RIGHT
+            val edgeStartRight = mDragEdge == DRAG_EDGE_LEFT && edgeFlags == androidx.customview.widget.ViewDragHelper.EDGE_RIGHT
 
             if (edgeStartLeft || edgeStartRight) {
                 mDragHelper!!.captureChildView(mMainView!!, pointerId)
@@ -301,8 +301,8 @@ class SwipeRevealLayout : ViewGroup {
         accumulateDragDist(ev)
 
         val couldBecomeClick = couldBecomeClick(ev)
-        val settling = mDragHelper!!.viewDragState == ViewDragHelper.STATE_SETTLING
-        val idleAfterScrolled = mDragHelper!!.viewDragState == ViewDragHelper.STATE_IDLE && mIsScrolling
+        val settling = mDragHelper!!.viewDragState == androidx.customview.widget.ViewDragHelper.STATE_SETTLING
+        val idleAfterScrolled = mDragHelper!!.viewDragState == androidx.customview.widget.ViewDragHelper.STATE_IDLE && mIsScrolling
 
         // must be placed as the last statement
         mPrevX = ev.x
@@ -630,8 +630,8 @@ class SwipeRevealLayout : ViewGroup {
             mMinDistRequestDisallowParent = DEFAULT_MIN_DIST_REQUEST_DISALLOW_PARENT
         }
 
-        mDragHelper = ViewDragHelper.create(this, 1.0f, mDragHelperCallback)
-        mDragHelper!!.setEdgeTrackingEnabled(ViewDragHelper.EDGE_ALL)
+        mDragHelper = androidx.customview.widget.ViewDragHelper.create(this, 1.0f, mDragHelperCallback)
+        mDragHelper!!.setEdgeTrackingEnabled(androidx.customview.widget.ViewDragHelper.EDGE_ALL)
 
         mGestureDetector = GestureDetectorCompat(context, mGestureListener)
     }

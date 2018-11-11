@@ -3,7 +3,7 @@ package eu.zderadicka.audioserve.fragments
 
 import android.content.Intent
 import android.os.Bundle
-import android.support.v4.app.Fragment
+import androidx.fragment.app.Fragment
 import android.text.format.DateUtils
 import android.util.Log
 import android.view.LayoutInflater
@@ -26,7 +26,7 @@ const val ARG_FOLDER_FULL_ID = "folder_full_id"
 private const val LOG_TAG = "DetailsFragment"
 
 
-class DetailsFragment : Fragment() {
+class DetailsFragment : androidx.fragment.app.Fragment() {
     private lateinit var folderDetails: Bundle
     private lateinit var folderPath: String
     private lateinit var folderName: String

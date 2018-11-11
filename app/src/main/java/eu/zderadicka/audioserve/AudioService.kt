@@ -10,10 +10,10 @@ import android.media.AudioManager
 import android.net.Uri
 import android.os.*
 import android.preference.PreferenceManager
-import android.support.v4.content.ContextCompat
+import androidx.core.content.ContextCompat
 import android.support.v4.media.MediaBrowserCompat
 import android.support.v4.media.MediaBrowserCompat.MediaItem
-import android.support.v4.media.MediaBrowserServiceCompat
+import androidx.media.MediaBrowserServiceCompat
 import android.support.v4.media.MediaDescriptionCompat
 import android.support.v4.media.MediaMetadataCompat
 import android.support.v4.media.session.MediaControllerCompat
@@ -58,7 +58,7 @@ private const val PAUSE_DELAYED_TASK_SAVE_POSITION = "pause_task_save_position"
 private const val PAUSE_DELAYED_TASK_STOP_FOREGROUND = "pause_task_stop_fg"
 
 
-private class ResultWrapper(val result: MediaBrowserServiceCompat.Result<List<MediaBrowserCompat.MediaItem>>) {
+private class ResultWrapper(val result: androidx.media.MediaBrowserServiceCompat.Result<List<MediaBrowserCompat.MediaItem>>) {
     private var resultSent = false
 
     fun detach() {
@@ -82,7 +82,7 @@ private class ResultWrapper(val result: MediaBrowserServiceCompat.Result<List<Me
 }
 
 
-class AudioService : MediaBrowserServiceCompat() {
+class AudioService : androidx.media.MediaBrowserServiceCompat() {
     lateinit var session: MediaSessionCompat
     private lateinit var connector: MediaSessionConnector
     lateinit var player: ExoPlayer
@@ -871,7 +871,7 @@ mediaSessionConnector.setErrorMessageProvider(messageProvider);
     }
 
 
-    override fun onGetRoot(clientPackageName: String, clientUid: Int, rootHints: Bundle?): MediaBrowserServiceCompat.BrowserRoot? {
+    override fun onGetRoot(clientPackageName: String, clientUid: Int, rootHints: Bundle?): androidx.media.MediaBrowserServiceCompat.BrowserRoot? {
         Log.d(LOG_TAG, "Requesting root mediaId")
         // TODO For now allow browser access from same application - latter consider Package manager from Universal player
         return if (Process.SYSTEM_UID == clientUid || Process.myUid() == clientUid) {

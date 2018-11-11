@@ -7,11 +7,11 @@ import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.os.Build
-import android.support.annotation.RequiresApi
-import android.support.v4.app.NotificationCompat
-import android.support.v4.content.ContextCompat
+import androidx.annotation.RequiresApi
+import androidx.core.app.NotificationCompat
+import androidx.core.content.ContextCompat
 import android.support.v4.media.MediaDescriptionCompat
-import android.support.v4.media.session.MediaButtonReceiver
+import androidx.media.session.MediaButtonReceiver
 import android.support.v4.media.session.MediaSessionCompat
 import android.support.v4.media.session.PlaybackStateCompat
 import android.util.Log
@@ -26,37 +26,37 @@ class NotificationsManager(private val mService: AudioService) {
     private val playAction= NotificationCompat.Action(
             R.drawable.ic_play_white,
             mService.getString(R.string.label_play),
-            MediaButtonReceiver.buildMediaButtonPendingIntent(
+            androidx.media.session.MediaButtonReceiver.buildMediaButtonPendingIntent(
                     mService,
                     PlaybackStateCompat.ACTION_PLAY))
     private val pauseAction = NotificationCompat.Action(
             R.drawable.ic_pause_white,
             mService.getString(R.string.label_pause),
-            MediaButtonReceiver.buildMediaButtonPendingIntent(
+            androidx.media.session.MediaButtonReceiver.buildMediaButtonPendingIntent(
                     mService,
                     PlaybackStateCompat.ACTION_PAUSE))
     private val nextAction = NotificationCompat.Action(
             R.drawable.ic_next_white,
             mService.getString(R.string.label_next),
-            MediaButtonReceiver.buildMediaButtonPendingIntent(
+            androidx.media.session.MediaButtonReceiver.buildMediaButtonPendingIntent(
                     mService,
                     PlaybackStateCompat.ACTION_SKIP_TO_NEXT))
     private val prevAction = NotificationCompat.Action(
             R.drawable.ic_previous_white,
             mService.getString(R.string.label_previous),
-            MediaButtonReceiver.buildMediaButtonPendingIntent(
+            androidx.media.session.MediaButtonReceiver.buildMediaButtonPendingIntent(
                     mService,
                     PlaybackStateCompat.ACTION_SKIP_TO_PREVIOUS))
     private val rewindAction= NotificationCompat.Action(
             R.drawable.ic_rewind_white,
             mService.getString(R.string.label_rewind),
-            MediaButtonReceiver.buildMediaButtonPendingIntent(
+            androidx.media.session.MediaButtonReceiver.buildMediaButtonPendingIntent(
                     mService,
                     PlaybackStateCompat.ACTION_REWIND))
     private val forwardAction= NotificationCompat.Action(
             R.drawable.ic_forward_white,
             mService.getString(R.string.label_forward),
-            MediaButtonReceiver.buildMediaButtonPendingIntent(
+            androidx.media.session.MediaButtonReceiver.buildMediaButtonPendingIntent(
                     mService,
                     PlaybackStateCompat.ACTION_FAST_FORWARD))
 
@@ -129,13 +129,13 @@ class NotificationsManager(private val mService: AudioService) {
         }
 
         builder.setStyle(
-                android.support.v4.media.app.NotificationCompat.MediaStyle()
+                androidx.media.app.NotificationCompat.MediaStyle()
                         .setMediaSession(token)
                         .setShowActionsInCompactView(playIndex)
                         // For backwards compatibility with Android L and earlier.
                         .setShowCancelButton(true)
                         .setCancelButtonIntent(
-                                MediaButtonReceiver.buildMediaButtonPendingIntent(
+                                androidx.media.session.MediaButtonReceiver.buildMediaButtonPendingIntent(
                                         mService,
                                         PlaybackStateCompat.ACTION_STOP)))
                 .setColor(ContextCompat.getColor(mService, R.color.colorAccent))
@@ -149,7 +149,7 @@ class NotificationsManager(private val mService: AudioService) {
                 //.setLargeIcon(MusicLibrary.getAlbumBitmap(mService, description.mediaId))
                 // When notification is deleted (when playback is paused and notification can be
                 // deleted) fire MediaButtonPendingIntent with ACTION_STOP.
-                .setDeleteIntent(MediaButtonReceiver.buildMediaButtonPendingIntent(
+                .setDeleteIntent(androidx.media.session.MediaButtonReceiver.buildMediaButtonPendingIntent(
                         mService, PlaybackStateCompat.ACTION_STOP))
                 // Show controls on lock screen even when user hides sensitive content.
                 .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
