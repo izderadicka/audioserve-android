@@ -94,15 +94,12 @@
             android:title="@string/pref_skip_silence_title"
             android:defaultValue="true"
             />
-<!--
+
         <eu.zderadicka.audioserve.utils.SeekBarPreference
             android:key="pref_playback_speed"
             android:title="@string/pref_playback_speed"
-            android:defaultValue="75"
-            android:max="150"
-
             />
- -->
+
 
 
     </PreferenceCategory>

@@ -498,7 +498,7 @@ class AudioService : MediaBrowserServiceCompat() {
             "pref_delayed_fg_stop" -> {
                 delayedFgStop = PreferenceManager.getDefaultSharedPreferences(this).getString("pref_delayed_fg_stop", "0").toInt()
             }
-            "pref_skip_silence" -> {
+            "pref_skip_silence", "pref_playback_speed" -> {
                 setPlaybackParams()
             }
         }
@@ -570,7 +570,9 @@ mediaSessionConnector.setErrorMessageProvider(messageProvider);
     private fun setPlaybackParams() {
         val skipSilence = PreferenceManager.getDefaultSharedPreferences(this)
                 .getBoolean("pref_skip_silence", false)
-        player.playbackParameters = PlaybackParameters(1.0F, 1.0F, skipSilence)
+        val speed = PreferenceManager.getDefaultSharedPreferences(this)
+                .getFloat("pref_playback_speed", 1.0F)
+        player.playbackParameters = PlaybackParameters(speed, 1.0F, skipSilence)
     }
 
 
