@@ -87,10 +87,10 @@ class AudioService : MediaBrowserServiceCompat() {
     private lateinit var connector: MediaSessionConnector
     lateinit var player: ExoPlayer
     lateinit var notifManager: NotificationsManager
-    private var currentFolder : List<MediaItem> = ArrayList<MediaItem>()
+    private var currentFolder: List<MediaItem> = ArrayList<MediaItem>()
     private var currentMediaItem: MediaItem? = null
-    private var lastKnownPosition = 0L
     private var lastPositionUpdateTime = 0L
+    lateinit var recents: RecentAdapter
     private var previousPositionUpdateTime = 0L
     private var playQueue: MutableList<MediaItem> = ArrayList<MediaItem>()
     private lateinit var apiClient: ApiClient
@@ -140,7 +140,7 @@ class AudioService : MediaBrowserServiceCompat() {
         override fun onPlay(player: Player) {
             Log.d(LOG_TAG, "Playback started")
             val autoRewind = calcAutoRewind()
-            if (autoRewind>100) {
+            if (autoRewind > 100) {
                 super.onSeekTo(player, player.currentPosition - autoRewind)
             }
             if (requestAudioFocus()) {
@@ -170,6 +170,10 @@ class AudioService : MediaBrowserServiceCompat() {
 
         override fun onStop(player: Player) {
             Log.d(LOG_TAG, "Stoping play")
+            // TODO: For some reasons does not send session notification in time, so saving recent here, but do not know how
+//            this@AudioService.currentMediaItem?.let {
+//                this@AudioService.session.state
+//            }
             deletePreviousQueueItem = -1
             seekAfterPrepare = null
             needResume = false
@@ -185,17 +189,17 @@ class AudioService : MediaBrowserServiceCompat() {
         }
     }
 
-    private fun calcAutoRewind():Int {
+    private fun calcAutoRewind(): Int {
         if (!enableAutoRewind) return 0
-        val prevPos = if (previousPositionUpdateTime >0) previousPositionUpdateTime else lastPositionUpdateTime
+        val prevPos = if (previousPositionUpdateTime > 0) previousPositionUpdateTime else lastPositionUpdateTime
         previousPositionUpdateTime = 0
         val updatedBefore = System.currentTimeMillis() - prevPos
-        Log.d(LOG_TAG,"Determine autorewind for item ${currentMediaItem}, updated before${updatedBefore}")
-        return if  (updatedBefore < 10_000) 0
-            else if  (updatedBefore < 5* MINUTE_IN_MILLIS) 2000
-            else if (updatedBefore < 30 * MINUTE_IN_MILLIS) 15_000
-            else if (updatedBefore < YEAR_IN_MILLIS) 30_000
-            else 0
+        Log.d(LOG_TAG, "Determine autorewind for item ${currentMediaItem}, updated before${updatedBefore}")
+        return if (updatedBefore < 10_000) 0
+        else if (updatedBefore < 5 * MINUTE_IN_MILLIS) 2000
+        else if (updatedBefore < 30 * MINUTE_IN_MILLIS) 15_000
+        else if (updatedBefore < YEAR_IN_MILLIS) 30_000
+        else 0
     }
 
     private fun findIndexInFolder(mediaId: String): Int {
@@ -206,7 +210,6 @@ class AudioService : MediaBrowserServiceCompat() {
         if (mediaId == null) return -1
         return playQueue.indexOfFirst { it.mediaId == mediaId }
     }
-
 
 
     private val preparer = object : MediaSessionConnector.PlaybackPreparer {
@@ -230,7 +233,7 @@ class AudioService : MediaBrowserServiceCompat() {
         var currentSourcesList: DynamicConcatenatingMediaSource? = null
 
         fun initSourceFactory(cm: CacheManager, token: String? = null) {
-            if (sourceFactory!= null) return
+            if (sourceFactory != null) return
 
             if (!isOffline && token == null) {
                 Log.e(LOG_TAG, "Invalid state - Api client is not initialized")
@@ -254,20 +257,20 @@ class AudioService : MediaBrowserServiceCompat() {
 
 
             deletePreviousQueueItem = -1
-            if (folderPosition >= 0 && sourceFactory!=null) {
-                val factory = sourceFactory?: throw IllegalStateException("Session not ready")
+            if (folderPosition >= 0 && sourceFactory != null) {
+                val factory = sourceFactory ?: throw IllegalStateException("Session not ready")
 
                 playQueue = currentFolder.slice(folderPosition until currentFolder.size).toMutableList()
-                cacheManager.resetLoading(* playQueue.slice(0 until min(preloadFiles+1, playQueue.size))
-                        .map{it.mediaId!!}.toTypedArray())
+                cacheManager.resetLoading(* playQueue.slice(0 until min(preloadFiles + 1, playQueue.size))
+                        .map { it.mediaId!! }.toTypedArray())
                 cacheManager.ensureCaching(currentFolder[folderPosition])
                 val ms = playQueue.map {
                     val transcode = cacheManager.shouldTranscode(it)
                     factory.createMediaSource(apiClient.uriFromMediaId(it.mediaId!!, transcode))
                 }
-                val source  = DynamicConcatenatingMediaSource()
+                val source = DynamicConcatenatingMediaSource()
                 source.addMediaSources(ms)
-                currentSourcesList =source
+                currentSourcesList = source
 
                 player.prepare(source)
                 if (player.playWhenReady) {
@@ -278,7 +281,7 @@ class AudioService : MediaBrowserServiceCompat() {
                     seekAfterPrepare = seekTo
                 }
 
-                previousPositionUpdateTime = extras?.getLong(METADATA_KEY_LAST_LISTENED_TIMESTAMP)?:0
+                previousPositionUpdateTime = extras?.getLong(METADATA_KEY_LAST_LISTENED_TIMESTAMP) ?: 0
 
 
             } else {
@@ -293,20 +296,20 @@ class AudioService : MediaBrowserServiceCompat() {
 
         }
 
-        fun duplicateInQueue(mediaId: String, cb: (queueIndex:Int, playerPosition:Long) -> Unit){
+        fun duplicateInQueue(mediaId: String, cb: (queueIndex: Int, playerPosition: Long) -> Unit) {
             if (currentSourcesList != null && currentMediaItem != null && currentMediaItem?.mediaId == mediaId) {
                 val mi = currentMediaItem!!
                 val playerPos = player.currentWindowIndex
                 val queuePos = findIndexInQueue(mi.mediaId!!)
                 if (playerPos == queuePos) {
-                    val duration = mi.description.extras?.getLong(METADATA_KEY_DURATION)?:0L
+                    val duration = mi.description.extras?.getLong(METADATA_KEY_DURATION) ?: 0L
                     val pos = player.currentPosition
-                    if (duration -pos > 5000) {
-                        player.playWhenReady=false
-                        playQueue.add(queuePos+1, mi)
-                        currentSourcesList!!.addMediaSource(playerPos+1,
+                    if (duration - pos > 5000) {
+                        player.playWhenReady = false
+                        playQueue.add(queuePos + 1, mi)
+                        currentSourcesList!!.addMediaSource(playerPos + 1,
                                 sourceFactory!!.createMediaSource(apiClient.uriFromMediaId(mi.mediaId!!)))
-                        {cb(queuePos, pos)}
+                        { cb(queuePos, pos) }
                     }
                 }
             }
@@ -317,10 +320,10 @@ class AudioService : MediaBrowserServiceCompat() {
         fun deleteInQueue() {
             val pos = deletePreviousQueueItem
             deletePreviousQueueItem = -1
-            if (currentSourcesList != null && pos >=0 && pos == player.currentWindowIndex-1 && pos < playQueue.size -1) {
+            if (currentSourcesList != null && pos >= 0 && pos == player.currentWindowIndex - 1 && pos < playQueue.size - 1) {
                 //Double check that we have same mediaIs on both positions
                 val prev = playQueue[pos]
-                val curr = playQueue[pos+1]
+                val curr = playQueue[pos + 1]
                 if (curr.mediaId == prev.mediaId) {
                     Log.d(LOG_TAG, "Deleting previous item in queue at $pos")
                     playQueue.removeAt(pos)
@@ -340,26 +343,26 @@ class AudioService : MediaBrowserServiceCompat() {
 
     }
 
-    private val cacheListener: FileCache.Listener = object: FileCache.Listener {
+    private val cacheListener: FileCache.Listener = object : FileCache.Listener {
         override fun onCacheChange(path: String, status: FileCache.Status) {
 
             fun send_event(cached: Boolean) {
-                val b =Bundle()
+                val b = Bundle()
                 b.putString(METADATA_KEY_MEDIA_ID, path)
                 session.sendSessionEvent(if (cached) MEDIA_FULLY_CACHED else MEDIA_CACHE_DELETED, b)
                 val folderPosition = findIndexInFolder(path)
-                if (folderPosition>=0) {
+                if (folderPosition >= 0) {
                     currentFolder[folderPosition].description.extras?.putBoolean(METADATA_KEY_CACHED, cached)
                 }
             }
-            Log.d(LOG_TAG,"Cache change on $path to ${status.name}")
+            Log.d(LOG_TAG, "Cache change on $path to ${status.name}")
             if (status == FileCache.Status.FullyCached) {
                 send_event(true)
                 scheduler.post {
                     preparer.duplicateInQueue(path) { idx, pos ->
                         Log.d(LOG_TAG, "Duplicted $idx,$pos, current player pos ${player.currentPosition}")
                         player.seekTo(idx + 1, pos) //TODO find best way for gapless seek +200 looked like better when emulated
-                        player.playWhenReady=true
+                        player.playWhenReady = true
                         deletePreviousQueueItem = idx
 
                     }
@@ -386,27 +389,26 @@ class AudioService : MediaBrowserServiceCompat() {
                 }
             }
             if (seekAfterPrepare == null) {
-                lastKnownPosition = state.position
                 lastPositionUpdateTime = System.currentTimeMillis() //state.lastPositionUpdateTime
-                if (currentMediaItem!= null && session.controller?.metadata?.description?.mediaId == currentMediaItem?.mediaId) {
-                    updateCurrentMediaItemTime()
+                if (currentMediaItem != null && session.controller?.metadata?.description?.mediaId == currentMediaItem?.mediaId) {
+                    currentMediaItem?.let { recents.updateRecent(it, state.position) }
                 }
             }
 
             if ((state.state == PlaybackStateCompat.STATE_PAUSED || state.state == PlaybackStateCompat.STATE_PLAYING)
-                    && seekAfterPrepare!=null) {
+                    && seekAfterPrepare != null) {
                 val seekTo = seekAfterPrepare!!
                 seekAfterPrepare = null
                 Log.d(LOG_TAG, "Seeking to previous position $seekTo")
                 session.controller.transportControls.seekTo(seekTo)
 
             } else if ((state.state == PlaybackStateCompat.STATE_ERROR)
-                    && seekAfterPrepare!=null) {
-                seekAfterPrepare= null
+                    && seekAfterPrepare != null) {
+                seekAfterPrepare = null
             }
 
             if ((state.state == PlaybackStateCompat.STATE_PAUSED || state.state == PlaybackStateCompat.STATE_PLAYING)
-                    && deletePreviousQueueItem>=0 && player.currentWindowIndex == deletePreviousQueueItem+1) {
+                    && deletePreviousQueueItem >= 0 && player.currentWindowIndex == deletePreviousQueueItem + 1) {
                 preparer.deleteInQueue()
             }
 
@@ -421,13 +423,14 @@ class AudioService : MediaBrowserServiceCompat() {
 
         override fun onMetadataChanged(metadata: MediaMetadataCompat?) {
             super.onMetadataChanged(metadata)
-            if (metadata == null || metadata.description ==null || metadata.description.mediaId ==null) return
+            if (metadata == null || metadata.description == null || metadata.description.mediaId == null) return
             val idx = findIndexInQueue(metadata.description.mediaId!!)
-            if (idx>=0) {
+            if (idx >= 0) {
 
                 //initiate preload of next x items
-                for (i in idx until min(idx+preloadFiles+1, playQueue.size)) {
-                    if (! (playQueue[i].description.extras?.getBoolean(METADATA_KEY_CACHED)?:false)) {
+                for (i in idx until min(idx + preloadFiles + 1, playQueue.size)) {
+                    if (!(playQueue[i].description.extras?.getBoolean(METADATA_KEY_CACHED)
+                                    ?: false)) {
                         cacheManager.ensureCaching(playQueue[i])
                     }
                 }
@@ -439,7 +442,7 @@ class AudioService : MediaBrowserServiceCompat() {
                     currentMediaItem = item
 
 
-                    if (oldItem!= null) {
+                    if (oldItem != null) {
                         val oldPath = File(oldItem.mediaId).parent
                         val newPath = File(item.mediaId).path
 
@@ -468,8 +471,8 @@ class AudioService : MediaBrowserServiceCompat() {
 
         override fun onSkipToNext(player: Player?) {
             val idx = findIndexInQueue(currentMediaItem?.mediaId)
-            if (idx>=0 && idx+1< playQueue.size) {
-                val nextItem = playQueue[idx+1]
+            if (idx >= 0 && idx + 1 < playQueue.size) {
+                val nextItem = playQueue[idx + 1]
                 if (!cacheManager.isCached(nextItem.mediaId!!)) {
                     cacheManager.resetLoading(nextItem.mediaId!!)
                 }
@@ -478,12 +481,11 @@ class AudioService : MediaBrowserServiceCompat() {
         }
     }
 
-    private val prefsListener = SharedPreferences.OnSharedPreferenceChangeListener {
-        sharedPreferences, key ->
+    private val prefsListener = SharedPreferences.OnSharedPreferenceChangeListener { sharedPreferences, key ->
         when (key) {
             "pref_server_url", "pref_shared_secret" -> apiClient.loadPreferences()
             "pref_preload" -> {
-                preloadFiles = sharedPreferences.getString("pref_preload","2").toInt()
+                preloadFiles = sharedPreferences.getString("pref_preload", "2").toInt()
             }
             "pref_cache_location" -> {
                 preparer.sourceFactory = null
@@ -504,7 +506,7 @@ class AudioService : MediaBrowserServiceCompat() {
         }
     }
 
-    private val loginListener = object:ApiClient.LoginListener {
+    private val loginListener = object : ApiClient.LoginListener {
         override fun loginSuccess(token: String) {
             cacheManager.updateToken(token)
         }
@@ -524,8 +526,8 @@ class AudioService : MediaBrowserServiceCompat() {
 
     override fun onCreate() {
         super.onCreate()
-        preloadFiles = PreferenceManager.getDefaultSharedPreferences(this).getString("pref_preload","2")!!.toInt()
-        isOffline = PreferenceManager.getDefaultSharedPreferences(this).getBoolean("pref_offline",false)
+        preloadFiles = PreferenceManager.getDefaultSharedPreferences(this).getString("pref_preload", "2")!!.toInt()
+        isOffline = PreferenceManager.getDefaultSharedPreferences(this).getBoolean("pref_offline", false)
         enableAutoRewind = PreferenceManager.getDefaultSharedPreferences(this).getBoolean("pref_autorewind", true)
         delayedFgStop = PreferenceManager.getDefaultSharedPreferences(this).getString("pref_delayed_fg_stop", "0")!!.toInt()
         session = MediaSessionCompat(this, LOG_TAG)
@@ -543,6 +545,8 @@ class AudioService : MediaBrowserServiceCompat() {
 
         connector.setPlayer(player, preparer)
         connector.setQueueNavigator(queueManager)
+
+        recents = RecentAdapter(application)
 
         //TODO - implement error messages as per
         /*
@@ -593,7 +597,6 @@ mediaSessionConnector.setErrorMessageProvider(messageProvider);
 
     fun stopMe() {
         cancelSleepTimer(this)
-        saveCurrentlyListened()
         if (isStartedInForeground) {
             stopForeground(true)
         } else {
@@ -602,6 +605,7 @@ mediaSessionConnector.setErrorMessageProvider(messageProvider);
         isStartedInForeground = false
         stopSelf()
         isStarted = false
+        recents.flush()
 
     }
 
@@ -614,22 +618,21 @@ mediaSessionConnector.setErrorMessageProvider(messageProvider);
     fun pauseMe() {
         cancelSleepTimer(this)
         scheduler.postAtTime({
-            saveCurrentlyListened()
+            recents.flush()
         },
                 PAUSE_DELAYED_TASK_SAVE_POSITION,
-                SystemClock.uptimeMillis()+ 10_000)
+                SystemClock.uptimeMillis() + 10_000)
         Log.d(LOG_TAG, "Pausing service")
         if (delayedFgStop == 0) {
             stopFg()
         } else {
             scheduler.postAtTime(
-                    {stopFg()},
+                    { stopFg() },
                     PAUSE_DELAYED_TASK_STOP_FOREGROUND,
-                    SystemClock.uptimeMillis()+ HOUR_IN_MILLIS * delayedFgStop
+                    SystemClock.uptimeMillis() + HOUR_IN_MILLIS * delayedFgStop
             )
         }
     }
-
 
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -653,21 +656,11 @@ mediaSessionConnector.setErrorMessageProvider(messageProvider);
         return Service.START_NOT_STICKY
     }
 
-    private fun saveCurrentlyListened() {
-        if (currentMediaItem != null && lastPositionUpdateTime>0) {
-            //update it with last known possition
-            currentMediaItem?.description?.extras?.putLong(METADATA_KEY_LAST_POSITION, lastKnownPosition)
-            currentMediaItem?.description?.extras?.putLong(METADATA_KEY_LAST_LISTENED_TIMESTAMP, lastPositionUpdateTime)
-            saveRecent(currentMediaItem!!, applicationContext)
-            Log.d(LOG_TAG, "Save lastly listened item ${currentMediaItem?.mediaId} pos ${lastKnownPosition} time ${lastPositionUpdateTime}")
-        }
-    }
-
     override fun onDestroy() {
         super.onDestroy()
         PreferenceManager.getDefaultSharedPreferences(this).unregisterOnSharedPreferenceChangeListener(prefsListener)
         try {
-            saveCurrentlyListened()
+            recents.flush()
             session.isActive = false
             session.release()
             player.release()
@@ -681,14 +674,6 @@ mediaSessionConnector.setErrorMessageProvider(messageProvider);
         Log.d(LOG_TAG, "Audioservice destroyed")
     }
 
-    private fun updateCurrentMediaItemTime(){
-        if (currentMediaItem!=null) {
-            val mi = currentMediaItem!!
-            mi.description.extras?.putLong(METADATA_KEY_LAST_POSITION, lastKnownPosition)
-            mi.description.extras?.putLong(METADATA_KEY_LAST_LISTENED_TIMESTAMP, lastPositionUpdateTime)
-        }
-    }
-
     private val SEARCH_RE = Regex("""^(\d+)_(.*)""")
 
     override fun onLoadChildren(parentId: String, result: Result<List<MediaItem>>) {
@@ -696,33 +681,12 @@ mediaSessionConnector.setErrorMessageProvider(messageProvider);
         onLoadChildren(parentId, result, options)
     }
 
-    override fun onLoadChildren(parentId: String, result:Result<List<MediaItem>>, options: Bundle) {
+    override fun onLoadChildren(parentId: String, result: Result<List<MediaItem>>, options: Bundle) {
         if (parentId == RECENTLY_LISTENED_TAG) {
             result.detach()
-            Log.d(LOG_TAG, "Requesting list of recently listened items")
-
-            val list = ArrayList<MediaItem>()
-            if (currentMediaItem != null) {
-                val mi = currentMediaItem!!
-                mi.description.extras?.putBoolean(METADATA_KEY_IS_BOOKMARK, true)
-                updateCurrentMediaItemTime()
-                list.add(mi)
+            recents.list {
+                result.sendResult(it)
             }
-
-            Thread({
-
-                var path: String? = null
-                if (currentMediaItem != null) {
-                    path = File(currentMediaItem!!.mediaId).parent
-                }
-                    list.addAll(getRecents(applicationContext,path ))
-                    result.sendResult(list)
-                }).start()
-
-
-
-
-
 
         } else {
             if (isOffline) {
@@ -743,8 +707,8 @@ mediaSessionConnector.setErrorMessageProvider(messageProvider);
             else -> {
                 result.detach()
                 val t = Thread({
-                    val res =  cacheManager.cacheBrowser.listFolder(parentId, options.getBoolean(AUDIOSERVICE_FORCE_RELOAD))
-                    currentFolder = res.filter{it.isPlayable}
+                    val res = cacheManager.cacheBrowser.listFolder(parentId, options.getBoolean(AUDIOSERVICE_FORCE_RELOAD))
+                    currentFolder = res.filter { it.isPlayable }
                     result.sendResult(res)
                     prepareLatestItem(folderIdFromOfflinePath(parentId), options)
                 }, "Retrieve folder")
@@ -752,7 +716,6 @@ mediaSessionConnector.setErrorMessageProvider(messageProvider);
             }
         }
     }
-
 
 
     private fun onLoadChildrenOnline(parentId: String, result: Result<List<MediaItem>>, options: Bundle) {
@@ -793,19 +756,19 @@ mediaSessionConnector.setErrorMessageProvider(messageProvider);
 
             }
 
-        }  else if (parentId.startsWith(SEARCH_PREFIX)) {
+        } else if (parentId.startsWith(SEARCH_PREFIX)) {
             val s = parentId.substring(SEARCH_PREFIX.length)
             val m = SEARCH_RE.matchEntire(s)
             if (m == null) {
                 result.sendResult(ArrayList())
                 Log.e(LOG_TAG, "Invalid search tag $s")
             } else {
-                val collection = m.groups.get(1)?.value?.toInt()?:0
-                val query = m.groups.get(2)?.value?:""
+                val collection = m.groups.get(1)?.value?.toInt() ?: 0
+                val query = m.groups.get(2)?.value ?: ""
 
                 result.detach()
                 apiClient.loadSearch(query, collection, options.getBoolean(AUDIOSERVICE_FORCE_RELOAD))
-                {it, err->
+                { it, err ->
                     if (it != null) {
                         result.sendResult(it.getMediaItems(cacheManager))
                         currentFolder = ArrayList()//it.getPlayableItems(cacheManager)
@@ -848,25 +811,19 @@ mediaSessionConnector.setErrorMessageProvider(messageProvider);
                 (session.controller.playbackState.state == STATE_NONE ||
                         session.controller.playbackState.state == STATE_STOPPED)) {
             // If player is stopped we can prepare latest bookmark
-
-            val lastItems = getRecents(this, onlyLatest = true)
-            if (lastItems.size > 0) {
-                val lastItem = lastItems[0]
-                val lastFolderId = folderIdFromFileId(lastItem.mediaId!!)
-                 if (lastFolderId == parentId) {
-                    val idx = findIndexInFolder(lastItem.mediaId!!)
-                    if (idx >= 0) {
-                        Log.d(LOG_TAG, "This folder can resume last played item ${lastItem.mediaId}")
-                        player.playWhenReady = false
-                        val extras = Bundle()
-                        extras.putLong(METADATA_KEY_LAST_POSITION,
-                                lastItem.description.extras?.getLong(METADATA_KEY_LAST_POSITION)
-                                        ?: 0L)
-                        extras.putLong(METADATA_KEY_LAST_LISTENED_TIMESTAMP,
-                                lastItem.description.extras?.getLong(METADATA_KEY_LAST_LISTENED_TIMESTAMP)
-                                        ?: 0L)
-                        preparer.onPrepareFromMediaId(lastItem.mediaId!!, extras)
-                    }
+            recents.lastForFolder(parentId) { lastItem ->
+                val idx = findIndexInFolder(lastItem.mediaId!!)
+                if (idx >= 0) {
+                    Log.d(LOG_TAG, "This folder can resume last played item ${lastItem.mediaId}")
+                    player.playWhenReady = false
+                    val extras = Bundle()
+                    extras.putLong(METADATA_KEY_LAST_POSITION,
+                            lastItem.description.extras?.getLong(METADATA_KEY_LAST_POSITION)
+                                    ?: 0L)
+                    extras.putLong(METADATA_KEY_LAST_LISTENED_TIMESTAMP,
+                            lastItem.description.extras?.getLong(METADATA_KEY_LAST_LISTENED_TIMESTAMP)
+                                    ?: 0L)
+                    preparer.onPrepareFromMediaId(lastItem.mediaId!!, extras)
                 }
             }
         }

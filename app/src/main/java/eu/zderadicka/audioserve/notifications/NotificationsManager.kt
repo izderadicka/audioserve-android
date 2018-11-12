@@ -87,7 +87,9 @@ class NotificationsManager(private val mService: AudioService) {
     }
 
     private fun getNotification(): Notification {
-        val description = mService.session.controller.metadata.description
+        val description = mService.session.controller.metadata?.description?: {
+            MediaDescriptionCompat.Builder().setDescription("Unknown").build()
+        }()
         val state = mService.session.controller.playbackState
         val token = mService.sessionToken!!
         val builder = buildNotification(state, token, description)
