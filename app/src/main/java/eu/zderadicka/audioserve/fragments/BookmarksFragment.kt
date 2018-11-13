@@ -24,6 +24,9 @@ import eu.zderadicka.audioserve.data.BookmarkDeleteTask
 import eu.zderadicka.audioserve.data.METADATA_KEY_IS_BOOKMARK
 import eu.zderadicka.audioserve.data.METADATA_KEY_LAST_POSITION
 
+
+const val LOADER_ID = 0
+
 class BookmarkViewHolder(itemView: View, clickCallback: (Int) -> Unit): RecyclerView.ViewHolder(itemView) {
     var itemNameView: TextView = itemView.findViewById(R.id.folderItemName)
     var positionView: TextView = itemView.findViewById(R.id.positionView)
@@ -215,7 +218,7 @@ class BookmarksFragment: Fragment(), BaseFolderFragment, LoaderManager.LoaderCal
 
     override fun onActivityCreated(savedInstanceState: Bundle?) {
         super.onActivityCreated(savedInstanceState)
-        loaderManager.initLoader(0, null, this)
+        loaderManager.initLoader(LOADER_ID, null, this)
     }
 
     override fun onMediaServiceConnected() {
@@ -230,7 +233,7 @@ class BookmarksFragment: Fragment(), BaseFolderFragment, LoaderManager.LoaderCal
     }
 
     override fun reload() {
-        loaderManager.restartLoader(0, null, this)
+        loaderManager.restartLoader(LOADER_ID, null, this)
     }
 
     override fun onCreateLoader(p0: Int, p1: Bundle?): Loader<Cursor> =
@@ -243,10 +246,21 @@ class BookmarksFragment: Fragment(), BaseFolderFragment, LoaderManager.LoaderCal
 
 
     override fun onLoadFinished(loader: Loader<Cursor>, cursor: Cursor?) {
-        adapter.swapCursor(cursor)
+        if (loader.id == LOADER_ID ) {
+            if (cursor?.isClosed == true)
+                loaderManager.restartLoader(LOADER_ID, null, this)
+            else
+                adapter.swapCursor(cursor)
+        }
     }
 
     override fun onLoaderReset(p0: Loader<Cursor>) {
+        adapter.swapCursor(null)
+    }
+
+    override fun onStop() {
+        super.onStop()
+        //invalidate cursor
         adapter.swapCursor(null)
     }
 }

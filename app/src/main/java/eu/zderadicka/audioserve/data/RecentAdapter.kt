@@ -23,7 +23,8 @@ class RecentAdapter(private val ctx: Context) {
     private var itemPosition: Long? = null
 
 
-    fun updateRecent(item: MediaItem, position: Long) {
+    fun updateRecent(item: MediaItem?, position: Long) {
+        if (item == null)  return
         Log.d(LOG_TAG, "Updating ")
         if (position == 0L) Log.d(LOG_TAG,"Updating ${item.mediaId} with zero position!")
         else  Log.d(LOG_TAG, "Updating ${item.mediaId} to position $position")

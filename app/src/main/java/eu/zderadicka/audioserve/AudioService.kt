@@ -170,10 +170,8 @@ class AudioService : MediaBrowserServiceCompat() {
 
         override fun onStop(player: Player) {
             Log.d(LOG_TAG, "Stoping play")
-            // TODO: For some reasons does not send session notification in time, so saving recent here, but do not know how
-//            this@AudioService.currentMediaItem?.let {
-//                this@AudioService.session.state
-//            }
+            recents.updateRecent(currentMediaItem,
+                session.controller.playbackState.position)
             deletePreviousQueueItem = -1
             seekAfterPrepare = null
             needResume = false
