@@ -101,11 +101,13 @@ class FolderItemViewHolder(itemView: View, viewType: Int, val clickCB: (Int, Ite
                 lastListenedView = itemView.findViewById(R.id.bookmarkedAtView)
                 folderPathView = itemView.findViewById(R.id.folderPathView)
                 isBookmark = true
-                contentView = itemView
+                bookmarkButton = setButton(R.id.bookmarkButton, ItemAction.Bookmark)
+                contentView = itemView.findViewById(R.id.contentView)
             }
             ITEM_TYPE_SEARCH_FOLDER -> {
                 folderPathView = itemView.findViewById(R.id.folderPathView)
-                contentView = itemView
+                bookmarkButton = setButton(R.id.bookmarkButton, ItemAction.Bookmark)
+                contentView = itemView.findViewById(R.id.contentView)
                 isSearch = true
 
             }

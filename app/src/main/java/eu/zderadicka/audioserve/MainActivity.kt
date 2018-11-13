@@ -149,10 +149,12 @@ class MainActivity : AppCompatActivity(),
 
             ItemAction.Bookmark -> {
                 val task = BookMarkInsertTask(this)
-                if (item.isPlayable &&currentlyPlaying) {
-                    item.description.extras?.putLong(METADATA_KEY_LAST_POSITION, controllerFragment.currentPlayTime)
-                } else {
-                    item.description.extras?.remove(METADATA_KEY_LAST_POSITION)
+                if (item.description.extras?.getBoolean(METADATA_KEY_IS_BOOKMARK, false) ==false) {
+                    if (item.isPlayable && currentlyPlaying) {
+                        item.description.extras?.putLong(METADATA_KEY_LAST_POSITION, controllerFragment.currentPlayTime)
+                    } else {
+                        item.description.extras?.remove(METADATA_KEY_LAST_POSITION)
+                    }
                 }
                 task.execute(item)
             }
