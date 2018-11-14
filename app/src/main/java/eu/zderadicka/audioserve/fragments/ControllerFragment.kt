@@ -154,7 +154,7 @@ class ControllerFragment : MediaFragment() {
                               savedInstanceState: Bundle?): View? {
         // Inflate the layout for this fragment
         val view =  inflater.inflate(R.layout.fragment_controller, container, false)
-        mainView = view.findViewById(R.id.mainControlView)
+        mainView = view
         playPauseButton = view.findViewById(R.id.playPauseButton)
         seekBar = view.findViewById(R.id.seekBar)
         currentTimeView = view.findViewById(R.id.currentTimeView)
@@ -163,6 +163,7 @@ class ControllerFragment : MediaFragment() {
         skipPreviousButton = view.findViewById(R.id.skipPreviousButton)
         rewindButton = view.findViewById(R.id.rewindButton)
         fastForwardButton = view.findViewById(R.id.fastForwardButton)
+
 
         //mainView.layoutParams.height = resources.getDimension(R.dimen.control_view_height_min).toInt()
 
