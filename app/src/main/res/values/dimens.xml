@@ -7,4 +7,7 @@
     <dimen name="fab_margin">16dp</dimen>
     <dimen name="media_button_size">40dp</dimen>
     <dimen name="loading_progress_size">160dp</dimen>
+    <dimen name="control_view_height_min">80dp</dimen>
+    <dimen name="control_view_height_max">80dp</dimen>
+
 </resources>

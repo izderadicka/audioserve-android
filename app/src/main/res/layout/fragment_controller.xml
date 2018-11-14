@@ -3,62 +3,62 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
-    android:layout_height="match_parent"
+    android:layout_height="200dp"
     android:background="@color/colorPrimaryDark"
-    android:maxHeight="80dp">
+    android:maxHeight="200dp"
+    android:paddingBottom="16dp"
+    android:id="@+id/mainControlView">
 
     <ImageView
         android:id="@+id/playPauseButton"
         android:layout_width="48dp"
         android:layout_height="48dp"
-        android:layout_marginBottom="4dp"
-        app:layout_constraintBottom_toTopOf="@+id/seekBar"
+        android:layout_marginTop="4dp"
+        android:tint="@color/colorAccent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:srcCompat="@drawable/ic_play_white"
-        android:tint="@color/colorAccent"/>
+        app:layout_constraintTop_toTopOf="parent"
+        app:srcCompat="@drawable/ic_play_white" />
 
     <ImageView
         android:id="@+id/skipPreviousButton"
         android:layout_width="@dimen/media_button_size"
         android:layout_height="@dimen/media_button_size"
-        android:layout_marginBottom="8dp"
         android:layout_marginStart="8dp"
+        android:layout_marginTop="8dp"
         android:visibility="visible"
-        app:layout_constraintBottom_toTopOf="@+id/seekBar"
         app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
         app:srcCompat="@drawable/ic_previous_white" />
 
     <SeekBar
         android:id="@+id/seekBar"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:layout_marginBottom="8dp"
-        android:layout_marginEnd="8dp"
         android:layout_marginStart="8dp"
-        app:layout_constraintBottom_toBottomOf="parent"
+        android:layout_marginEnd="8dp"
         app:layout_constraintEnd_toStartOf="@+id/trackTimeView"
-        app:layout_constraintStart_toEndOf="@+id/currentTimeView" />
+        app:layout_constraintStart_toEndOf="@+id/currentTimeView"
+        app:layout_constraintTop_toBottomOf="@+id/playPauseButton" />
 
     <ImageView
         android:id="@+id/skipNextButton"
         android:layout_width="@dimen/media_button_size"
         android:layout_height="@dimen/media_button_size"
-        android:layout_marginBottom="8dp"
+        android:layout_marginTop="8dp"
         android:layout_marginEnd="8dp"
         android:visibility="visible"
-        app:layout_constraintBottom_toTopOf="@+id/seekBar"
         app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
         app:srcCompat="@drawable/ic_next_white" />
 
     <TextView
         android:id="@+id/currentTimeView"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginBottom="8dp"
         android:layout_marginStart="8dp"
         android:textColor="@android:color/background_light"
-        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintBottom_toBottomOf="@+id/seekBar"
         app:layout_constraintStart_toStartOf="parent"
         tools:text="1:00:00" />
 
@@ -66,10 +66,9 @@
         android:id="@+id/trackTimeView"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginBottom="8dp"
         android:layout_marginEnd="8dp"
         android:textColor="?attr/colorBackgroundFloating"
-        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintBottom_toBottomOf="@+id/seekBar"
         app:layout_constraintEnd_toEndOf="parent"
         tools:text="10:00:00" />
 
@@ -77,19 +76,83 @@
         android:id="@+id/rewindButton"
         android:layout_width="@dimen/media_button_size"
         android:layout_height="@dimen/media_button_size"
-        android:layout_marginBottom="8dp"
-        app:layout_constraintBottom_toTopOf="@+id/seekBar"
+        android:layout_marginTop="8dp"
         app:layout_constraintEnd_toStartOf="@+id/playPauseButton"
         app:layout_constraintStart_toEndOf="@+id/skipPreviousButton"
+        app:layout_constraintTop_toTopOf="parent"
         app:srcCompat="@drawable/ic_rewind_white" />
 
     <ImageView
         android:id="@+id/fastForwardButton"
         android:layout_width="@dimen/media_button_size"
         android:layout_height="@dimen/media_button_size"
-        android:layout_marginBottom="8dp"
-        app:layout_constraintBottom_toTopOf="@+id/seekBar"
+        android:layout_marginTop="8dp"
         app:layout_constraintEnd_toStartOf="@+id/skipNextButton"
         app:layout_constraintStart_toEndOf="@+id/playPauseButton"
+        app:layout_constraintTop_toTopOf="parent"
         app:srcCompat="@drawable/ic_forward_white" />
+
+    <TextView
+        android:id="@+id/prefsHeaderView"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="8dp"
+        android:layout_marginTop="8dp"
+        android:layout_marginEnd="8dp"
+        android:text="Playback Preferences"
+        android:textColor="@android:color/white"
+        android:textStyle="bold"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/seekBar" />
+
+    <Switch
+        android:id="@+id/silenceSwitch"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="8dp"
+        android:layout_marginTop="8dp"
+        android:text="Skip Silence: "
+        android:textColor="@android:color/white"
+        android:textStyle="bold"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/prefsHeaderView" />
+
+    <TextView
+        android:id="@+id/textView3"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="8dp"
+        android:layout_marginTop="8dp"
+        android:text="Speed:"
+        android:textColor="@android:color/white"
+        android:textStyle="bold"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/silenceSwitch" />
+
+    <SeekBar
+        android:id="@+id/speedBar"
+        style="@style/Widget.AppCompat.SeekBar.Discrete"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="8dp"
+        android:layout_marginEnd="8dp"
+        android:max="10"
+        android:progress="3"
+        app:layout_constraintBottom_toBottomOf="@+id/textView3"
+        app:layout_constraintEnd_toStartOf="@+id/speedView"
+        app:layout_constraintStart_toEndOf="@+id/textView3" />
+
+    <TextView
+        android:id="@+id/speedView"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginEnd="8dp"
+        android:textColor="@android:color/white"
+        android:textSize="24sp"
+        android:textStyle="bold"
+        app:layout_constraintBottom_toBottomOf="@+id/speedBar"
+        app:layout_constraintEnd_toEndOf="parent"
+        tools:text="1.0" />
+
 </android.support.constraint.ConstraintLayout>

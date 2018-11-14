@@ -144,6 +144,7 @@ class ControllerFragment : MediaFragment() {
     lateinit var skipNextButton: ImageView
     lateinit var fastForwardButton: ImageView
     lateinit var rewindButton: ImageView
+    lateinit var mainView: View
 
     var progressAnimator: ValueAnimator? = null
 
@@ -153,6 +154,7 @@ class ControllerFragment : MediaFragment() {
                               savedInstanceState: Bundle?): View? {
         // Inflate the layout for this fragment
         val view =  inflater.inflate(R.layout.fragment_controller, container, false)
+        mainView = view.findViewById(R.id.mainControlView)
         playPauseButton = view.findViewById(R.id.playPauseButton)
         seekBar = view.findViewById(R.id.seekBar)
         currentTimeView = view.findViewById(R.id.currentTimeView)
@@ -161,6 +163,8 @@ class ControllerFragment : MediaFragment() {
         skipPreviousButton = view.findViewById(R.id.skipPreviousButton)
         rewindButton = view.findViewById(R.id.rewindButton)
         fastForwardButton = view.findViewById(R.id.fastForwardButton)
+
+        //mainView.layoutParams.height = resources.getDimension(R.dimen.control_view_height_min).toInt()
 
         seekBar.setOnSeekBarChangeListener(object: SeekBar.OnSeekBarChangeListener {
             override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
