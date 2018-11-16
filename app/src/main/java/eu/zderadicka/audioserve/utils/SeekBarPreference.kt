@@ -16,8 +16,8 @@ import eu.zderadicka.audioserve.R
 import kotlin.math.roundToInt
 
 private const val MAX: Int = 10
-private const val LEFT: Float = 0.5F
-private const val RIGHT:Float = 1.5F
+private const val LEFT: Float = 0.75F
+private const val RIGHT:Float = 1.25F
 
 class SeekBarPreference//    public SeekBarPreference(
 //            Context context, AttributeSet attrs, int defStyleAttr, int defStyleRes) {
@@ -63,7 +63,7 @@ class SeekBarPreference//    public SeekBarPreference(
         return res
     }
 
-    lateinit var valueView: TextView
+    var valueView: TextView? = null
 
     override fun onBindView(view: View) {
         super.onBindView(view)
@@ -75,7 +75,7 @@ class SeekBarPreference//    public SeekBarPreference(
         seekBar.isEnabled = isEnabled
 
         valueView = view.findViewById(R.id.position)
-        valueView.text = "%.2f".format(progressToValue(progress))
+        valueView?.text = "%.2f".format(progressToValue(progress))
     }
 
     override fun onSetInitialValue(restoreValue: Boolean, defaultValue: Any?) {
@@ -125,7 +125,6 @@ class SeekBarPreference//    public SeekBarPreference(
      */
     internal fun syncProgress(seekBar: SeekBar) {
         val progress = seekBar.progress
-        valueView.text = "%.2f".format(progressToValue(progress))
         if (progress != mProgress) {
             if (callChangeListener(progress)) {
                 setProgress(progress, false)
@@ -137,6 +136,7 @@ class SeekBarPreference//    public SeekBarPreference(
 
     override fun onProgressChanged(
             seekBar: SeekBar, progress: Int, fromUser: Boolean) {
+        valueView?.text = "%.2f".format(progressToValue(progress))
         if (fromUser && !mTrackingTouch) {
             syncProgress(seekBar)
         }

@@ -6,4 +6,8 @@
             <flag name="right" value="2" />
         </attr>
     </declare-styleable>
+    <declare-styleable name="ExpandableFrameLayout">
+        <attr name="minExpandableHeight" format="dimension"/>
+        <attr name="maxExpandableHeight" format="dimension"/>
+    </declare-styleable>
 </resources>

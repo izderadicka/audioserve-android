@@ -7,7 +7,8 @@
     app:layout_behavior="@string/appbar_scrolling_view_behavior"
     tools:context=".MainActivity"
     tools:showIn="@layout/app_bar_main"
-    android:orientation="vertical">
+    android:orientation="vertical"
+    android:id="@+id/mainContentContainer">
 
     <FrameLayout
         android:id="@+id/folderContainer"
@@ -15,20 +16,22 @@
         android:layout_height="0dp"
         android:layout_weight="1" />
 
-    <FrameLayout
+    <eu.zderadicka.audioserve.ui.ExpandableFrameLayout
         android:id="@+id/playerControlsContainer"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
+        android:layout_height="@dimen/control_view_height_min"
+        app:maxExpandableHeight="@dimen/control_view_height_max"
+        app:minExpandableHeight="@dimen/control_view_height_min"
         android:visibility="gone">
     <fragment
         android:id="@+id/playerControls"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
+        android:layout_height="match_parent"
 
         android:name="eu.zderadicka.audioserve.fragments.ControllerFragment"
 
         />
-    </FrameLayout>
+    </eu.zderadicka.audioserve.ui.ExpandableFrameLayout>
 
 
 

@@ -24,6 +24,7 @@
 
 
     <SeekBar
+        style="@style/Widget.AppCompat.SeekBar.Discrete"
         android:id="@+id/seekbar"
         android:layout_width="0dp"
         android:layout_height="wrap_content"

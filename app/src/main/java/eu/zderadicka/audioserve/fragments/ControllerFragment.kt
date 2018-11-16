@@ -10,6 +10,7 @@ import android.support.v4.media.session.PlaybackStateCompat
 import android.text.format.DateUtils
 import android.util.Log
 import android.view.LayoutInflater
+import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
 import android.view.animation.LinearInterpolator
@@ -165,8 +166,6 @@ class ControllerFragment : MediaFragment() {
         fastForwardButton = view.findViewById(R.id.fastForwardButton)
 
 
-        //mainView.layoutParams.height = resources.getDimension(R.dimen.control_view_height_min).toInt()
-
         seekBar.setOnSeekBarChangeListener(object: SeekBar.OnSeekBarChangeListener {
             override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
                 currentTimeView.text = DateUtils.formatElapsedTime(progress.toLong()/ 1000)
@@ -225,8 +224,6 @@ class ControllerFragment : MediaFragment() {
         }
 
         return view
-
-
     }
 
 

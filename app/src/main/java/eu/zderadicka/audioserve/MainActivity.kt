@@ -31,11 +31,13 @@ import android.os.IBinder
 import android.preference.PreferenceManager
 import android.support.v7.widget.SearchView
 import android.support.v7.widget.SwitchCompat
+import android.view.MotionEvent
 import eu.zderadicka.audioserve.data.*
 import eu.zderadicka.audioserve.net.DOWNLOAD_ACTION
 import eu.zderadicka.audioserve.net.DownloadService
 import eu.zderadicka.audioserve.utils.SleepService
 import eu.zderadicka.audioserve.utils.cancelSleepTimer
+import kotlinx.android.synthetic.main.fragment_controller.*
 
 
 private const val LOG_TAG = "Main"
@@ -93,6 +95,7 @@ class MainActivity : AppCompatActivity(),
                     },
                     {
                         playerControlsContainer.visibility = View.VISIBLE
+                        //playerControlsContainer.layoutParams.height = resources.getDimension(R.dimen.control_view_height_max).toInt();
                     })
 
         }
