@@ -12,7 +12,6 @@ import android.widget.Toast
 import eu.zderadicka.audioserve.net.ApiClient
 import eu.zderadicka.audioserve.net.CacheManager
 import eu.zderadicka.audioserve.net.MEDIA_CACHE_DIR
-import eu.zderadicka.audioserve.utils.SeekBarPreference
 import java.io.File
 import java.util.*
 
@@ -271,8 +270,6 @@ class SettingsFragment: PreferenceFragment(), SharedPreferences.OnSharedPreferen
             }
 
             "pref_playback_speed" -> {
-                //if (pref !is SeekBarPreference) return
-                //TODO
             }
 
 

@@ -22,10 +22,7 @@ import android.support.v4.media.session.PlaybackStateCompat
 import android.support.v4.media.session.PlaybackStateCompat.*
 import android.text.format.DateUtils.*
 import android.util.Log
-import com.google.android.exoplayer2.ExoPlayer
-import com.google.android.exoplayer2.ExoPlayerFactory
-import com.google.android.exoplayer2.PlaybackParameters
-import com.google.android.exoplayer2.Player
+import com.google.android.exoplayer2.*
 import com.google.android.exoplayer2.ext.mediasession.DefaultPlaybackController
 import com.google.android.exoplayer2.ext.mediasession.MediaSessionConnector
 import com.google.android.exoplayer2.ext.mediasession.TimelineQueueNavigator
@@ -575,6 +572,8 @@ mediaSessionConnector.setErrorMessageProvider(messageProvider);
         val speed = PreferenceManager.getDefaultSharedPreferences(this)
                 .getFloat("pref_playback_speed", 1.0F)
         player.playbackParameters = PlaybackParameters(speed, 1.0F, skipSilence)
+
+
     }
 
 

@@ -1,4 +1,4 @@
-package eu.zderadicka.audioserve.utils
+package eu.zderadicka.audioserve.ui
 
 import android.content.Context
 import android.content.res.TypedArray
@@ -13,11 +13,8 @@ import android.widget.SeekBar.OnSeekBarChangeListener
 import android.widget.TextView
 
 import eu.zderadicka.audioserve.R
+import eu.zderadicka.audioserve.utils.SpeedHelper
 import kotlin.math.roundToInt
-
-private const val MAX: Int = 10
-private const val LEFT: Float = 0.75F
-private const val RIGHT:Float = 1.25F
 
 class SeekBarPreference//    public SeekBarPreference(
 //            Context context, AttributeSet attrs, int defStyleAttr, int defStyleRes) {
@@ -41,7 +38,6 @@ class SeekBarPreference//    public SeekBarPreference(
 
 @JvmOverloads constructor(context: Context, attrs: AttributeSet? = null) : Preference(context, attrs), OnSeekBarChangeListener {
     private var mProgress: Int = 0
-    private var mValue: Float = 1.0F
 
     private var mTrackingTouch: Boolean = false
 
@@ -53,16 +49,6 @@ class SeekBarPreference//    public SeekBarPreference(
             layoutResource = R.layout.preference_seekbar;
         }
 
-    fun valueToProgress(v: Float): Int {
-        val res = (v-LEFT) * (MAX/(RIGHT-LEFT))
-        return res.roundToInt()
-    }
-
-    fun progressToValue(p: Int): Float {
-        val res = LEFT + (p.toFloat() / MAX) * (RIGHT-LEFT)
-        return res
-    }
-
     var valueView: TextView? = null
 
     override fun onBindView(view: View) {
@@ -70,16 +56,16 @@ class SeekBarPreference//    public SeekBarPreference(
         val seekBar = view.findViewById<View>(
                 R.id.seekbar) as SeekBar
         seekBar.setOnSeekBarChangeListener(this)
-        seekBar.max = MAX
+        seekBar.max = SpeedHelper.max
         seekBar.progress = mProgress
         seekBar.isEnabled = isEnabled
 
         valueView = view.findViewById(R.id.position)
-        valueView?.text = "%.2f".format(progressToValue(progress))
+        SpeedHelper.updateText(valueView, progress)
     }
 
     override fun onSetInitialValue(restoreValue: Boolean, defaultValue: Any?) {
-        progress = valueToProgress(if (restoreValue)
+        progress = SpeedHelper.valueToProgress(if (restoreValue)
             getPersistedFloat(  1.0F)
         else
         defaultValue?.toString()?.toFloat() ?: 1.0F)
@@ -104,15 +90,15 @@ class SeekBarPreference//    public SeekBarPreference(
 
     private fun setProgress(progress: Int, notifyChanged: Boolean) {
         var progress = progress
-        if (progress > MAX) {
-            progress = MAX
+        if (progress > SpeedHelper.max) {
+            progress = SpeedHelper.max
         }
         if (progress < 0) {
             progress = 0
         }
         if (progress != mProgress) {
             mProgress = progress
-            persistFloat(progressToValue(progress))
+            persistFloat(SpeedHelper.progressToValue(progress))
             if (notifyChanged) {
                 notifyChanged()
             }
@@ -136,7 +122,7 @@ class SeekBarPreference//    public SeekBarPreference(
 
     override fun onProgressChanged(
             seekBar: SeekBar, progress: Int, fromUser: Boolean) {
-        valueView?.text = "%.2f".format(progressToValue(progress))
+        SpeedHelper.updateText(valueView, progress)
         if (fromUser && !mTrackingTouch) {
             syncProgress(seekBar)
         }

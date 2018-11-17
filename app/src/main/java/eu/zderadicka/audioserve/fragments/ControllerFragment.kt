@@ -2,7 +2,9 @@ package eu.zderadicka.audioserve.fragments
 
 
 import android.animation.ValueAnimator
+import android.content.SharedPreferences
 import android.os.Bundle
+import android.preference.PreferenceManager
 import android.support.v4.content.ContextCompat
 import android.support.v4.media.MediaMetadataCompat
 import android.support.v4.media.session.MediaControllerCompat
@@ -10,12 +12,12 @@ import android.support.v4.media.session.PlaybackStateCompat
 import android.text.format.DateUtils
 import android.util.Log
 import android.view.LayoutInflater
-import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
 import android.view.animation.LinearInterpolator
 import android.widget.*
 import eu.zderadicka.audioserve.R
+import eu.zderadicka.audioserve.utils.SpeedHelper
 
 //import kotlinx.android.synthetic.main.fragment_controller.*
 
@@ -25,7 +27,8 @@ private const val LOG_TAG = "ControllerFragment"
 interface ControllerHolder {
     fun onControllerClick()
 }
-class ControllerFragment : MediaFragment() {
+class ControllerFragment : MediaFragment(), SharedPreferences.OnSharedPreferenceChangeListener {
+
     var canPlay = false
 
     // Receive callbacks from the MediaController. Here we update our state such as which queue
@@ -104,11 +107,7 @@ class ControllerFragment : MediaFragment() {
             }
 
             //enable seekbar only if can seek
-            if (state.actions and PlaybackStateCompat.ACTION_SEEK_TO > 0) {
-                seekBar.isEnabled = true
-            } else {
-                seekBar.isEnabled = false
-            }
+            seekBar.isEnabled = state.actions and PlaybackStateCompat.ACTION_SEEK_TO > 0
         }
 
         override fun onMetadataChanged(metadata: MediaMetadataCompat?) {
@@ -146,6 +145,9 @@ class ControllerFragment : MediaFragment() {
     lateinit var fastForwardButton: ImageView
     lateinit var rewindButton: ImageView
     lateinit var mainView: View
+    lateinit var speedBar: SeekBar
+    lateinit var speedView: TextView
+    lateinit var silenceSwitch: Switch
 
     var progressAnimator: ValueAnimator? = null
 
@@ -164,6 +166,9 @@ class ControllerFragment : MediaFragment() {
         skipPreviousButton = view.findViewById(R.id.skipPreviousButton)
         rewindButton = view.findViewById(R.id.rewindButton)
         fastForwardButton = view.findViewById(R.id.fastForwardButton)
+        speedBar = view.findViewById(R.id.speedBar)
+        silenceSwitch =  view.findViewById(R.id.silenceSwitch)
+        speedView = view.findViewById(R.id.speedView)
 
 
         seekBar.setOnSeekBarChangeListener(object: SeekBar.OnSeekBarChangeListener {
@@ -223,7 +228,70 @@ class ControllerFragment : MediaFragment() {
             holder.onControllerClick()
         }
 
+        speedBar.max = SpeedHelper.max
+
+        speedBar.setOnSeekBarChangeListener(object: SeekBar.OnSeekBarChangeListener {
+
+            var startingProggres: Int? = null
+            override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
+                SpeedHelper.updateText(speedView, progress)
+            }
+
+            override fun onStartTrackingTouch(seekBar: SeekBar) {
+                startingProggres = seekBar.progress
+            }
+
+            override fun onStopTrackingTouch(seekBar: SeekBar) {
+                if (startingProggres == seekBar.progress) return
+                PreferenceManager.getDefaultSharedPreferences(context).edit()
+                        .putFloat("pref_playback_speed", SpeedHelper.progressToValue(seekBar.progress))
+                        .apply()
+            }
+
+        })
+
+
+        silenceSwitch.setOnCheckedChangeListener { buttonView, isChecked ->
+            PreferenceManager.getDefaultSharedPreferences(context).edit()
+                    .putBoolean("pref_skip_silence", isChecked)
+                    .apply()
+        }
+
         return view
+    }
+
+    override fun onResume() {
+        super.onResume()
+        PreferenceManager.getDefaultSharedPreferences(context).registerOnSharedPreferenceChangeListener(this)
+        // and synch
+        val currentSpeed = PreferenceManager.getDefaultSharedPreferences(context)
+                .getFloat("pref_playback_speed", 1.0f)
+        val currentSilence = PreferenceManager.getDefaultSharedPreferences(context)
+                .getBoolean("pref_skip_silence", false)
+
+        speedBar.progress = SpeedHelper.valueToProgress(currentSpeed)
+        SpeedHelper.updateText(speedView, speedBar.progress)
+
+        silenceSwitch.isChecked = currentSilence
+    }
+
+    override  fun onPause() {
+        super.onPause()
+        PreferenceManager.getDefaultSharedPreferences(context).unregisterOnSharedPreferenceChangeListener(this)
+    }
+
+    override fun onSharedPreferenceChanged(sp: SharedPreferences, key: String?) {
+       when (key) {
+           "pref_playback_speed" -> {
+               val v = sp.getFloat(key, 1.0f)
+               speedBar.progress = SpeedHelper.valueToProgress(v)
+               SpeedHelper.updateText(speedView, speedBar.progress)
+           }
+
+           "pref_skip_silence" -> {
+               silenceSwitch.isChecked = sp.getBoolean(key, false)
+           }
+       }
     }
 
 
