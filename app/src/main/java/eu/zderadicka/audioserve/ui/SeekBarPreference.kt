@@ -68,14 +68,14 @@ class SeekBarPreference//    public SeekBarPreference(
         progress = SpeedHelper.valueToProgress(if (restoreValue)
             getPersistedFloat(  1.0F)
         else
-        defaultValue?.toString()?.toFloat() ?: 1.0F)
+        1.0F)
 
 
 
     }
 
     override fun onGetDefaultValue(a: TypedArray, index: Int): Any {
-        return a.getInt(index, 0)
+        return 1.0F
     }
 
     fun onKey(v: View, keyCode: Int, event: KeyEvent): Boolean {
