@@ -16,7 +16,7 @@ android {
     compileSdkVersion 28
     defaultConfig {
         applicationId "eu.zderadicka.audioserve"
-        minSdkVersion 24
+        minSdkVersion 21
         targetSdkVersion 28
         versionCode 20
         versionName "0.7.0"
