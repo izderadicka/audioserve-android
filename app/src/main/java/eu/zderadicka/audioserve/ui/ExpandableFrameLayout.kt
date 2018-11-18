@@ -46,18 +46,18 @@ class ExpandableFrameLayout @JvmOverloads constructor(context: Context, attrs: A
             return true
         }
 
-        override fun onFling(e1: MotionEvent?, e2: MotionEvent?, velocityX: Float, velocityY: Float): Boolean {
-            Log.d(LOG_TAG, "Fling with velocity $velocityY")
-            isDragging = true
-            if (velocityY < 0 && height < maxHeight) {
-                animate(maxHeight)
-
-            } else if (velocityY > 0 && height > minHeight) {
-                animate(minHeight)
-            }
-
-            return true
-        }
+//        override fun onFling(e1: MotionEvent?, e2: MotionEvent?, velocityX: Float, velocityY: Float): Boolean {
+//            Log.d(LOG_TAG, "Fling with velocity $velocityY")
+//            isDragging = true
+//            if (velocityY < 0 && height < maxHeight) {
+//                animate(maxHeight)
+//
+//            } else if (velocityY > 0 && height > minHeight) {
+//                animate(minHeight)
+//            }
+//
+//            return true
+//        }
 
         override fun onScroll(e1: MotionEvent, e2: MotionEvent, distanceX: Float, distanceY: Float): Boolean {
             val dist = e1.rawY - e2.rawY
@@ -93,13 +93,12 @@ class ExpandableFrameLayout @JvmOverloads constructor(context: Context, attrs: A
         Log.d(LOG_TAG, "Player touch $event")
 
         if (event.actionMasked == MotionEvent.ACTION_UP) {
-            postDelayed({
+
                 if (layoutParams.height >= midHeight && layoutParams.height < maxHeight)
                     animate(maxHeight)
                 else if (layoutParams.height < midHeight && layoutParams.height > minHeight)
                     animate(minHeight)
-            },
-                    400)
+
         }
 
         return gestureDetector.onTouchEvent(event)
