@@ -35,6 +35,7 @@ import android.view.MotionEvent
 import eu.zderadicka.audioserve.data.*
 import eu.zderadicka.audioserve.net.DOWNLOAD_ACTION
 import eu.zderadicka.audioserve.net.DownloadService
+import eu.zderadicka.audioserve.ui.ExpandableFrameLayout
 import eu.zderadicka.audioserve.utils.SleepService
 import eu.zderadicka.audioserve.utils.cancelSleepTimer
 import kotlinx.android.synthetic.main.fragment_controller.*
@@ -567,5 +568,10 @@ class MainActivity : AppCompatActivity(),
             }
         }
 
+    }
+
+    override fun onPause() {
+        super.onPause()
+        if (playerControlsContainer is ExpandableFrameLayout) playerControlsContainer.onPause()
     }
 }
