@@ -97,12 +97,14 @@ class ControllerFragment : MediaFragment(), SharedPreferences.OnSharedPreference
                 var timeToEnd = (seekBar.max - progress) / state.playbackSpeed
                 if (timeToEnd < 0) timeToEnd = 0F
                 Log.d(LOG_TAG, "Setting Animator to ${seekBar.progress} to ${seekBar.max} timeToEnd $timeToEnd")
-                progressAnimator = ValueAnimator.ofInt(seekBar.progress, seekBar.max).setDuration(timeToEnd.toLong())
-                progressAnimator!!.interpolator = LinearInterpolator()
-                progressAnimator!!.addUpdateListener {
-                    seekBar.progress = it.animatedValue as Int
+                progressAnimator = ValueAnimator.ofInt(seekBar.progress, seekBar.max).apply{
+                    setDuration(timeToEnd.toLong())
+                    interpolator = LinearInterpolator()
+                    addUpdateListener {
+                        seekBar.progress = it.animatedValue as Int
+                    }
+                    start()
                 }
-                progressAnimator!!.start()
 
             }
 

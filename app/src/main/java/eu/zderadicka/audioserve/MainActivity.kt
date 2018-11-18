@@ -559,6 +559,7 @@ class MainActivity : AppCompatActivity(),
                 Toast.makeText(this, getString(R.string.search_warning), Toast.LENGTH_LONG).show()
             }
         } else if (intent.action == ACTION_NAVIGATE_TO_FOLDER) {
+            stopPlayback()
             val folderId = intent.getStringExtra(METADATA_KEY_MEDIA_ID)
             if (!folderId.isNullOrBlank()) {
                 val name = File(folderId).name?:"uknown"
