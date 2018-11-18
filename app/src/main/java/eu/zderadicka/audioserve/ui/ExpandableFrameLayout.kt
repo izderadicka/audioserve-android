@@ -119,6 +119,13 @@ class ExpandableFrameLayout @JvmOverloads constructor(context: Context, attrs: A
         return super.onInterceptTouchEvent(event)
     }
 
+    fun onPause() {
+        if (layoutParams.height >= minHeight) {
+            layoutParams?.height = minHeight
+        }
+
+    }
+
 
 }
 
