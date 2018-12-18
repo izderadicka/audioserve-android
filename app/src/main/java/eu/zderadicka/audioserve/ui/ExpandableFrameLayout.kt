@@ -9,6 +9,7 @@ import android.view.MotionEvent
 import android.view.ViewConfiguration
 import android.widget.FrameLayout
 import eu.zderadicka.audioserve.R
+import kotlin.math.abs
 import kotlin.math.max
 import kotlin.math.min
 import kotlin.math.roundToInt
@@ -60,18 +61,22 @@ class ExpandableFrameLayout @JvmOverloads constructor(context: Context, attrs: A
 //        }
 
         override fun onScroll(e1: MotionEvent, e2: MotionEvent, distanceX: Float, distanceY: Float): Boolean {
-            val dist = e1.rawY - e2.rawY
-            Log.d(LOG_TAG, "Scroll in Y $dist")
+            val distY = e1.rawY - e2.rawY
+            val distX = e1.rawX - e2.rawX
+            Log.d(LOG_TAG, "Scroll in Y $distY")
             isDragging = true
-
-            if (dist > touchSlop && height < maxHeight) {
-                layoutParams.height = min(startHeight + dist.roundToInt(), maxHeight)
-                requestLayout()
-            } else if (dist < -touchSlop && height > minHeight) {
-                layoutParams.height = max(startHeight + dist.roundToInt(), minHeight)
-                requestLayout()
+            if (abs(distY) > abs(distX)) {
+                if (distY > touchSlop && height < maxHeight) {
+                    layoutParams.height = min(startHeight + distY.roundToInt(), maxHeight)
+                    requestLayout()
+                } else if (distY < -touchSlop && height > minHeight) {
+                    layoutParams.height = max(startHeight + distY.roundToInt(), minHeight)
+                    requestLayout()
+                }
+                return true
+            } else {
+                return false
             }
-            return true
         }
 
         fun dragging() = isDragging
