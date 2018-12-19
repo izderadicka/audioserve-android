@@ -6,7 +6,7 @@
             <corners android:radius="@dimen/seek_bar_thickness" />
 
             <stroke
-                android:color="@android:color/darker_gray"
+                android:color="#80081C24"
                 android:width="@dimen/seek_bar_thickness"/>
         </shape>
     </item>
