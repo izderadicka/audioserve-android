@@ -9,6 +9,7 @@
     <dimen name="loading_progress_size">160dp</dimen>
     <dimen name="control_view_height_min">88dp</dimen>
     <dimen name="control_view_height_max">176dp</dimen>
+    <dimen name="control_view_sliding_bar_height">56dp</dimen>
     <dimen name="seek_bar_thickness">4dp</dimen>
     <dimen name="seek_bar_thumb_size">20dp</dimen>
 

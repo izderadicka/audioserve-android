@@ -21,6 +21,7 @@ class ExpandableFrameLayout @JvmOverloads constructor(context: Context, attrs: A
     : FrameLayout(context, attrs, defStyleAttr, defStyleRes) {
     var minHeight: Int = 0
     var maxHeight: Int = 0
+    var slidingBarHeight: Int = 0
     val gestureDetector: GestureDetector
     var animator: ValueAnimator? = null
     private val touchSlop: Int = ViewConfiguration.get(context).scaledTouchSlop
@@ -41,7 +42,8 @@ class ExpandableFrameLayout @JvmOverloads constructor(context: Context, attrs: A
     inner class MyGestureListener: GestureDetector.SimpleOnGestureListener() {
         var isDragging = false
         var startHeight = 0
-        override fun onDown(e: MotionEvent?): Boolean {
+        override fun onDown(e: MotionEvent): Boolean {
+            if (e.y > slidingBarHeight) return false
             startHeight = layoutParams.height
             isDragging = false
             return true
@@ -90,6 +92,7 @@ class ExpandableFrameLayout @JvmOverloads constructor(context: Context, attrs: A
         val customAttrs = context.theme.obtainStyledAttributes(attrs, R.styleable.ExpandableFrameLayout, 0, 0)
         minHeight = customAttrs.getLayoutDimension(R.styleable.ExpandableFrameLayout_minExpandableHeight, 0)
         maxHeight = customAttrs.getLayoutDimension(R.styleable.ExpandableFrameLayout_maxExpandableHeight, 1024)
+        slidingBarHeight = customAttrs.getLayoutDimension(R.styleable.ExpandableFrameLayout_slidingBarHeight, 0)
         midHeight = minHeight+ (maxHeight - minHeight) / 2
         gestureDetector = GestureDetector(context, this.gestureListener)
     }
@@ -112,7 +115,7 @@ class ExpandableFrameLayout @JvmOverloads constructor(context: Context, attrs: A
 
     override fun onInterceptTouchEvent(event: MotionEvent): Boolean {
         //listen also to all child events in upper part
-        if (event.y <= minHeight) {
+        if (event.y <= slidingBarHeight) {
             onTouchEvent(event)
             // need to block up event, which were dragging
             if (event.actionMasked == MotionEvent.ACTION_UP) {

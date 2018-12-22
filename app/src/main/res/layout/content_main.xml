@@ -22,6 +22,7 @@
         android:layout_height="@dimen/control_view_height_min"
         app:maxExpandableHeight="@dimen/control_view_height_max"
         app:minExpandableHeight="@dimen/control_view_height_min"
+        app:slidingBarHeight="@dimen/control_view_sliding_bar_height"
         android:visibility="gone">
     <fragment
         android:id="@+id/playerControls"

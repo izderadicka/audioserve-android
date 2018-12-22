@@ -9,5 +9,6 @@
     <declare-styleable name="ExpandableFrameLayout">
         <attr name="minExpandableHeight" format="dimension"/>
         <attr name="maxExpandableHeight" format="dimension"/>
+        <attr name="slidingBarHeight" format="dimension"/>
     </declare-styleable>
 </resources>
