@@ -150,6 +150,7 @@ class ControllerFragment : MediaFragment(), SharedPreferences.OnSharedPreference
     lateinit var speedBar: SeekBar
     lateinit var speedView: TextView
     lateinit var silenceSwitch: Switch
+    lateinit var volumeBoostSwitch: Switch
 
     var progressAnimator: ValueAnimator? = null
 
@@ -170,6 +171,7 @@ class ControllerFragment : MediaFragment(), SharedPreferences.OnSharedPreference
         fastForwardButton = view.findViewById(R.id.fastForwardButton)
         speedBar = view.findViewById(R.id.speedBar)
         silenceSwitch =  view.findViewById(R.id.silenceSwitch)
+        volumeBoostSwitch = view.findViewById(R.id.volumeBoostSwitch)
         speedView = view.findViewById(R.id.speedView)
 
 
@@ -259,6 +261,12 @@ class ControllerFragment : MediaFragment(), SharedPreferences.OnSharedPreference
                     .apply()
         }
 
+        volumeBoostSwitch.setOnCheckedChangeListener { buttonView, isChecked ->
+            PreferenceManager.getDefaultSharedPreferences(context).edit()
+                    .putBoolean("pref_volume_boost", isChecked)
+                    .apply()
+        }
+
         return view
     }
 
@@ -271,10 +279,14 @@ class ControllerFragment : MediaFragment(), SharedPreferences.OnSharedPreference
         val currentSilence = PreferenceManager.getDefaultSharedPreferences(context)
                 .getBoolean("pref_skip_silence", false)
 
+        val currentVolumeBoost = PreferenceManager.getDefaultSharedPreferences(context)
+                .getBoolean("pref_volume_boost", false)
+
         speedBar.progress = SpeedHelper.valueToProgress(currentSpeed)
         SpeedHelper.updateText(speedView, speedBar.progress)
 
         silenceSwitch.isChecked = currentSilence
+        volumeBoostSwitch.isChecked = currentVolumeBoost
     }
 
     override  fun onPause() {
@@ -292,6 +304,10 @@ class ControllerFragment : MediaFragment(), SharedPreferences.OnSharedPreference
 
            "pref_skip_silence" -> {
                silenceSwitch.isChecked = sp.getBoolean(key, false)
+           }
+
+           "pref_volume_boost" -> {
+               volumeBoostSwitch.isChecked = sp.getBoolean(key, false)
            }
        }
     }

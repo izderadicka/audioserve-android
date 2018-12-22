@@ -7,6 +7,7 @@ import android.content.Intent
 import android.content.SharedPreferences
 import android.media.AudioFocusRequest
 import android.media.AudioManager
+import android.media.audiofx.LoudnessEnhancer
 import android.net.Uri
 import android.os.*
 import android.preference.PreferenceManager
@@ -23,6 +24,9 @@ import android.support.v4.media.session.PlaybackStateCompat.*
 import android.text.format.DateUtils.*
 import android.util.Log
 import com.google.android.exoplayer2.*
+import com.google.android.exoplayer2.audio.AudioListener
+import com.google.android.exoplayer2.audio.AudioRendererEventListener
+import com.google.android.exoplayer2.decoder.DecoderCounters
 import com.google.android.exoplayer2.ext.mediasession.DefaultPlaybackController
 import com.google.android.exoplayer2.ext.mediasession.MediaSessionConnector
 import com.google.android.exoplayer2.ext.mediasession.TimelineQueueNavigator
@@ -78,6 +82,30 @@ private class ResultWrapper(val result: MediaBrowserServiceCompat.Result<List<Me
         }
 }
 
+private class VolumeBooster(enabled: Boolean): AudioListener {
+    var enabled: Boolean = false
+        set(value) {
+            field = value
+            this.booster?.apply {
+                enabled = value
+            }
+        }
+    private var booster: LoudnessEnhancer? = null
+    init {
+        this.enabled = enabled
+    }
+    override fun onAudioSessionId(audioSessionId: Int) {
+        Log.d(LOG_TAG, "Audio session id is ${audioSessionId}, supported gain ${LoudnessEnhancer.PARAM_TARGET_GAIN_MB}")
+        booster?.release()
+        val booster = LoudnessEnhancer(audioSessionId)
+        booster.enabled = enabled
+        booster.setTargetGain(3000)
+
+
+    }
+
+}
+
 
 class AudioService : MediaBrowserServiceCompat() {
     lateinit var session: MediaSessionCompat
@@ -98,6 +126,7 @@ class AudioService : MediaBrowserServiceCompat() {
     private val scheduler = Handler()
     private var enableAutoRewind = false
     private var delayedFgStop = 0
+    private lateinit var volumeBooster:VolumeBooster
 
     private val playerController = object : DefaultPlaybackController(REWIND_MS, FF_MS, MediaSessionConnector.DEFAULT_REPEAT_TOGGLE_MODES) {
 
@@ -498,6 +527,10 @@ class AudioService : MediaBrowserServiceCompat() {
             "pref_skip_silence", "pref_playback_speed" -> {
                 setPlaybackParams()
             }
+
+            "pref_volume_boost" -> {
+                volumeBooster.enabled = sharedPreferences.getBoolean("pref_volume_boost", false)
+            }
         }
     }
 
@@ -528,6 +561,10 @@ class AudioService : MediaBrowserServiceCompat() {
         session = MediaSessionCompat(this, LOG_TAG)
         session.controller.registerCallback(sessionCallback)
         player = ExoPlayerFactory.newSimpleInstance(this, DefaultTrackSelector())
+        val boostEnabled = PreferenceManager.getDefaultSharedPreferences(this).getBoolean("pref_volume_boost", false)
+        volumeBooster = VolumeBooster(boostEnabled)
+        player.audioComponent?.addAudioListener(volumeBooster)
+
         setPlaybackParams()
 
         queueManager = QueueManager(session)
