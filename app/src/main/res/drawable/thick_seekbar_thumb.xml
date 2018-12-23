@@ -1,9 +1,23 @@
 <?xml version="1.0" encoding="utf-8"?>
-<shape xmlns:android="http://schemas.android.com/apk/res/android"
-    android:shape="oval">
-    <size
-        android:height="@dimen/seek_bar_thumb_size"
-        android:width="@dimen/seek_bar_thumb_size"
-        />
-    <solid android:color="@color/colorAccent"/>
-</shape>
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:state_enabled="true">
+        <shape
+            android:shape="oval">
+            <size
+                android:height="@dimen/seek_bar_thumb_size"
+                android:width="@dimen/seek_bar_thumb_size"
+                />
+            <solid android:color="@color/colorAccent"/>
+        </shape>
+    </item>
+    <item>
+        <shape
+            android:shape="oval">
+            <size
+                android:height="@dimen/seek_bar_thumb_size"
+                android:width="@dimen/seek_bar_thumb_size"
+                />
+            <solid android:color="#BAC5D8"/>
+        </shape>
+    </item>
+</selector>
