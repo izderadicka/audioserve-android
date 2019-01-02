@@ -97,10 +97,11 @@ private class VolumeBooster(enabled: Boolean): AudioListener {
     override fun onAudioSessionId(audioSessionId: Int) {
         Log.d(LOG_TAG, "Audio session id is ${audioSessionId}, supported gain ${LoudnessEnhancer.PARAM_TARGET_GAIN_MB}")
         booster?.release()
-        val booster = LoudnessEnhancer(audioSessionId)
-        booster.enabled = enabled
-        booster.setTargetGain(3000)
-
+        booster = LoudnessEnhancer(audioSessionId)
+        booster?.apply {
+            enabled = enabled
+            setTargetGain(3000)
+        }
 
     }
 
