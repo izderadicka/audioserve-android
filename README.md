@@ -58,6 +58,13 @@ As caching is mandatory, it has small side effect on the seeking within current 
 available only after the file is fully cached - this can be theoretically improved in the future,
 but it's not priority now.
 
+**d)** It's designed to work with audiobooks split to files by chapters, so typical chapter/files has
+duration between 10 - 90 minutes. Anything else will be suboptimal - too short files will not assure
+appropriate cache ahead ( as caching is done by files). Too big files (like m4b file containing whole
+audiobook) will be hard to navigate (as internal chapters are not supported), slow to transcode,
+plus there is hard limit of 250MB per file (for security reasons).
+
+
 
 How to install
 --------------

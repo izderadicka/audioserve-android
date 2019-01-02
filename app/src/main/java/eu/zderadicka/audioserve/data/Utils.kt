@@ -70,7 +70,7 @@ fun parseFolderfromJson(data: String, name: String, path: String) :AudioFolder{
             val path = o.getString("path")!!
             val mime = o.getString("mime")!!
 
-            val metaObject = o.getJSONObject("meta")
+            val metaObject = if (o.isNull("meta")) null else o.getJSONObject("meta")
             val meta = if (metaObject != null) {
                 val duration = metaObject.getInt("duration")
                 val bitrate = metaObject.getInt("bitrate")

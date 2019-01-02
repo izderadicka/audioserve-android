@@ -386,7 +386,11 @@ class AudioService : MediaBrowserServiceCompat() {
                 scheduler.post {
                     preparer.duplicateInQueue(path) { idx, pos ->
                         Log.d(LOG_TAG, "Duplicted $idx,$pos, current player pos ${player.currentPosition}")
-                        player.seekTo(idx + 1, pos) //TODO find best way for gapless seek +200 looked like better when emulated
+                        try {
+                            player.seekTo(idx + 1, pos) //TODO find best way for gapless seek +200 looked like better when emulated
+                        } catch (e:IllegalSeekPositionException) {
+                            Log.e(LOG_TAG, "Error seeking in duplicated item")
+                        }
                         player.playWhenReady = true
                         deletePreviousQueueItem = idx
 

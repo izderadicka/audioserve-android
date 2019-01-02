@@ -540,7 +540,7 @@ class FileLoader(private val queue: BlockingDeque<CacheItem>,
                         if (contentLength > MAX_CACHED_FILE_SIZE) {
                             Log.e(LOG_TAG, "File is bigger then max limit")
                             complete = true
-                            break
+                            continue
                         }
                         val buf = ByteArray(LOADER_BUFFER_SIZE)
                         stream = conn.inputStream
