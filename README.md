@@ -21,13 +21,14 @@ Available features
 * Downloads part of or whole folder to cache (swipe playable item to left to see download button)
 * Offline mode - plays only from cache
 * Remembers up to 100 recently listened positions
-* Bookmarks
+* Bookmarks (on folder or file)
 * Search (for folder names)
 * Folder details - with picture and text (if present in the folder) and summary
 * Intenet search - search author, boook ...  (uses folder name and optional prefix to search on google)
-* Notifications
+* Notifications - Media notification with controls, plus notification for other features (sleep timer, downloads)
 * Supports Android lifecycle - rotations, back, stop activity etc...
 * Supports Android audio focus (pauses when call comes in etc.)
+* Advanced playback features - playback speed, skip silence, boost volume
 
 
 KISS Design Principles

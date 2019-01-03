@@ -95,6 +95,19 @@
             android:defaultValue="false"
             />
 
+        <EditTextPreference
+            android:defaultValue="20"
+            android:key="pref_volume_boost_db"
+            android:selectAllOnFocus="true"
+            android:singleLine="true"
+            android:title="@string/pref_volume_boost_db_title" />
+
+        <CheckBoxPreference
+            android:key="pref_volume_boost"
+            android:title="@string/pref_volume_boost_title"
+            android:defaultValue="false"
+            />
+
         <eu.zderadicka.audioserve.ui.SeekBarPreference
             android:key="pref_playback_speed"
             android:title="@string/pref_playback_speed"

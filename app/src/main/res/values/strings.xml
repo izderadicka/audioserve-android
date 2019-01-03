@@ -84,7 +84,7 @@
     <string name="prefs_category_playback">PLAYBACK</string>
     <string name="pref_autorewind_title">Auto Rewind</string>
     <string name="pref_autorewind_unselected_title">No auto rewind, playback will start exactly where it was paused</string>
-    <string name="pref_autorewind_selected_title">Before continuing playback track\'\'ll be rewound by a small amount (2s-30s), depending how long it was paused</string>
+    <string name="pref_autorewind_selected_title">Before continuing playback track\'\'ll be rewound by a small amount (2s-30s), depending on how long it was paused</string>
     <string name="label_rewind">Rewind</string>
     <string name="label_forward">Forward</string>
     <string name="pref_web_search_prefix_title">Web search prefix</string>
@@ -103,4 +103,9 @@
     <string name="skip_silence">Skip Silence:</string>
     <string name="speed">Speed:</string>
     <string name="boost_volume">Boost Volume:</string>
+    <string name="pref_volume_boost_title">Volume boost</string>
+    <string name="pref_volume_boost_db_title">Volume boost gain</string>
+    <string name="pref_volume_boost_on_summary">Volume is boosted</string>
+    <string name="pref_volume_boost_off_summary">Normal volume limits</string>
+    <string name="pref_volume_boost_db_summary">If Volume boost switch is on volume will be amplified by %1$s dB (valid values are 1 - 30 dB)</string>
 </resources>

@@ -82,7 +82,14 @@ private class ResultWrapper(val result: MediaBrowserServiceCompat.Result<List<Me
         }
 }
 
-private class VolumeBooster(enabled: Boolean): AudioListener {
+private class VolumeBooster(ctx: Context): AudioListener {
+    var gain: Int = 0
+        set(value) {
+            field = value
+            this.booster?.apply {
+                setTargetGain(value)
+            }
+        }
     var enabled: Boolean = false
         set(value) {
             field = value
@@ -92,15 +99,18 @@ private class VolumeBooster(enabled: Boolean): AudioListener {
         }
     private var booster: LoudnessEnhancer? = null
     init {
-        this.enabled = enabled
+        this.enabled = PreferenceManager.getDefaultSharedPreferences(ctx).getBoolean("pref_volume_boost", false)
+        this.gain = PreferenceManager.getDefaultSharedPreferences(ctx)
+                .getString("pref_volume_boost_db", "0").toInt() * 100
+
     }
     override fun onAudioSessionId(audioSessionId: Int) {
-        Log.d(LOG_TAG, "Audio session id is ${audioSessionId}, supported gain ${LoudnessEnhancer.PARAM_TARGET_GAIN_MB}")
+        Log.d(LOG_TAG, "Audio session id is ${audioSessionId}, volume boost is  ${enabled}")
         booster?.release()
         booster = LoudnessEnhancer(audioSessionId)
         booster?.apply {
-            enabled = enabled
-            setTargetGain(3000)
+            enabled = this@VolumeBooster.enabled
+            setTargetGain(this@VolumeBooster.gain)
         }
 
     }
@@ -536,6 +546,9 @@ class AudioService : MediaBrowserServiceCompat() {
             "pref_volume_boost" -> {
                 volumeBooster.enabled = sharedPreferences.getBoolean("pref_volume_boost", false)
             }
+            "pref_volume_boost_db" -> {
+                volumeBooster.gain = sharedPreferences.getString("pref_volume_boost_db", "0").toInt() * 100
+            }
         }
     }
 
@@ -566,8 +579,7 @@ class AudioService : MediaBrowserServiceCompat() {
         session = MediaSessionCompat(this, LOG_TAG)
         session.controller.registerCallback(sessionCallback)
         player = ExoPlayerFactory.newSimpleInstance(this, DefaultTrackSelector())
-        val boostEnabled = PreferenceManager.getDefaultSharedPreferences(this).getBoolean("pref_volume_boost", false)
-        volumeBooster = VolumeBooster(boostEnabled)
+        volumeBooster = VolumeBooster(this)
         player.audioComponent?.addAudioListener(volumeBooster)
 
         setPlaybackParams()

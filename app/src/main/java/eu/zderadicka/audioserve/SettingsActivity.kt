@@ -106,6 +106,15 @@ class SettingsFragment: PreferenceFragment(), SharedPreferences.OnSharedPreferen
             }
         }
 
+        findPreference("pref_volume_boost_db").setOnPreferenceChangeListener{_, newValue ->
+            try {
+                val n = (newValue as String).toInt();
+                n>=1 && n <= 30
+            } catch (e: Exception) {
+                false
+            }
+        }
+
         findPreference("pref_clear_cache").setOnPreferenceClickListener {
 
             Thread {
@@ -270,6 +279,22 @@ class SettingsFragment: PreferenceFragment(), SharedPreferences.OnSharedPreferen
             }
 
             "pref_playback_speed" -> {
+            }
+
+            "pref_volume_boost" -> {
+                if (pref !is CheckBoxPreference) return
+                val checked = sps.getBoolean( "pref_volume_boost", false)
+                if (checked) {
+                    pref.summary=getString(R.string.pref_volume_boost_on_summary)
+
+                } else {
+                    pref.summary=getString(R.string.pref_volume_boost_off_summary)
+                }
+            }
+
+            "pref_volume_boost_db" -> {
+                val v  = sps.getString(pref.key, "1")
+                pref.summary = getString(R.string.pref_volume_boost_db_summary, v)
             }
 
 
