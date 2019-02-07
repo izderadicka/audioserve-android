@@ -48,6 +48,19 @@
         <item name="android:textColor">@color/colorAccent</item>
     </style>
 
+    <style name="PlayerControlLabel">
+        <item name="android:textColor">@android:color/white</item>
+        <item name="android:textStyle">bold</item>
+    </style>
+
+    <style name="PlayerBarValue" parent="PlayerControlLabel">
+        <item name="android:textSize">24dp</item>
+    </style>
+
+    <style name="PlayerDiscreteBar" parent="Widget.AppCompat.SeekBar.Discrete">
+        <item name="android:progressBackgroundTint">@android:color/white</item>
+    </style>
+
 
 
 </resources>

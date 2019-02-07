@@ -108,4 +108,5 @@
     <string name="pref_volume_boost_on_summary">Volume is boosted</string>
     <string name="pref_volume_boost_off_summary">Normal volume limits</string>
     <string name="pref_volume_boost_db_summary">If Volume boost switch is on volume will be amplified by %1$s dB (valid values are 1 - 30 dB)</string>
+    <string name="pitch">Pitch:</string>
 </resources>

@@ -17,6 +17,7 @@ import android.view.ViewGroup
 import android.view.animation.LinearInterpolator
 import android.widget.*
 import eu.zderadicka.audioserve.R
+import eu.zderadicka.audioserve.utils.PitchHelper
 import eu.zderadicka.audioserve.utils.SpeedHelper
 
 //import kotlinx.android.synthetic.main.fragment_controller.*
@@ -148,7 +149,9 @@ class ControllerFragment : MediaFragment(), SharedPreferences.OnSharedPreference
     lateinit var rewindButton: ImageView
     lateinit var mainView: View
     lateinit var speedBar: SeekBar
+    lateinit var pitchBar: SeekBar
     lateinit var speedView: TextView
+    lateinit var pitchView: TextView
     lateinit var silenceSwitch: Switch
     lateinit var volumeBoostSwitch: Switch
 
@@ -163,6 +166,7 @@ class ControllerFragment : MediaFragment(), SharedPreferences.OnSharedPreference
         mainView = view
         playPauseButton = view.findViewById(R.id.playPauseButton)
         seekBar = view.findViewById(R.id.seekBar)
+        pitchBar = view.findViewById(R.id.pitchBar)
         currentTimeView = view.findViewById(R.id.currentTimeView)
         trackTimeView = view.findViewById(R.id.trackTimeView)
         skipNextButton = view.findViewById(R.id.skipNextButton)
@@ -173,6 +177,7 @@ class ControllerFragment : MediaFragment(), SharedPreferences.OnSharedPreference
         silenceSwitch =  view.findViewById(R.id.silenceSwitch)
         volumeBoostSwitch = view.findViewById(R.id.volumeBoostSwitch)
         speedView = view.findViewById(R.id.speedView)
+        pitchView = view.findViewById(R.id.pitchView)
 
 
         seekBar.setOnSeekBarChangeListener(object: SeekBar.OnSeekBarChangeListener {
@@ -254,6 +259,28 @@ class ControllerFragment : MediaFragment(), SharedPreferences.OnSharedPreference
 
         })
 
+        pitchBar.max = PitchHelper.max
+
+        pitchBar.setOnSeekBarChangeListener(object: SeekBar.OnSeekBarChangeListener {
+
+            var startingProggres: Int? = null
+            override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
+                PitchHelper.updateText(pitchView, progress)
+            }
+
+            override fun onStartTrackingTouch(seekBar: SeekBar) {
+                startingProggres = seekBar.progress
+            }
+
+            override fun onStopTrackingTouch(seekBar: SeekBar) {
+                if (startingProggres == seekBar.progress) return
+                PreferenceManager.getDefaultSharedPreferences(context).edit()
+                        .putFloat("pref_playback_pitch", PitchHelper.progressToValue(seekBar.progress))
+                        .apply()
+            }
+
+        })
+
 
         silenceSwitch.setOnCheckedChangeListener { buttonView, isChecked ->
             PreferenceManager.getDefaultSharedPreferences(context).edit()
@@ -276,14 +303,18 @@ class ControllerFragment : MediaFragment(), SharedPreferences.OnSharedPreference
         // and synch
         val currentSpeed = PreferenceManager.getDefaultSharedPreferences(context)
                 .getFloat("pref_playback_speed", 1.0f)
+        val currentPitch = PreferenceManager.getDefaultSharedPreferences(context)
+                .getFloat("pref_playback_pitch", 1.0f)
         val currentSilence = PreferenceManager.getDefaultSharedPreferences(context)
                 .getBoolean("pref_skip_silence", false)
-
         val currentVolumeBoost = PreferenceManager.getDefaultSharedPreferences(context)
                 .getBoolean("pref_volume_boost", false)
 
         speedBar.progress = SpeedHelper.valueToProgress(currentSpeed)
         SpeedHelper.updateText(speedView, speedBar.progress)
+
+        pitchBar.progress = PitchHelper.valueToProgress(currentPitch)
+        PitchHelper.updateText(pitchView, pitchBar.progress)
 
         silenceSwitch.isChecked = currentSilence
         volumeBoostSwitch.isChecked = currentVolumeBoost

@@ -102,8 +102,7 @@
         android:layout_marginStart="8dp"
         android:layout_marginTop="16dp"
         android:text="@string/skip_silence"
-        android:textColor="@android:color/white"
-        android:textStyle="bold"
+        style="@style/PlayerControlLabel"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/seekBar" />
 
@@ -112,37 +111,42 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginStart="8dp"
-        android:layout_marginTop="12dp"
+        android:layout_marginTop="16dp"
         android:text="@string/speed"
-        android:textColor="@android:color/white"
-        android:textStyle="bold"
+        style="@style/PlayerControlLabel"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/silenceSwitch" />
 
     <SeekBar
         android:id="@+id/speedBar"
-        style="@style/Widget.AppCompat.SeekBar.Discrete"
+        style="@style/PlayerDiscreteBar"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:layout_marginStart="8dp"
+        android:layout_marginStart="48dp"
         android:layout_marginEnd="8dp"
         android:max="10"
         android:progress="3"
-        android:progressBackgroundTint="@android:color/white"
         app:layout_constraintBottom_toBottomOf="@+id/textView3"
         app:layout_constraintEnd_toStartOf="@+id/speedView"
-        app:layout_constraintHorizontal_bias="1.0"
-        app:layout_constraintStart_toEndOf="@+id/textView3" />
+        app:layout_constraintStart_toStartOf="parent" />
 
     <TextView
         android:id="@+id/speedView"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginEnd="8dp"
-        android:textColor="@android:color/white"
-        android:textSize="24sp"
-        android:textStyle="bold"
+        style="@style/PlayerBarValue"
         app:layout_constraintBottom_toBottomOf="@+id/speedBar"
+        app:layout_constraintEnd_toEndOf="parent"
+        tools:text="1.0" />
+
+    <TextView
+        android:id="@+id/pitchView"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginEnd="8dp"
+        style="@style/PlayerBarValue"
+        app:layout_constraintBottom_toBottomOf="@+id/pitchBar"
         app:layout_constraintEnd_toEndOf="parent"
         tools:text="1.0" />
 
@@ -153,9 +157,32 @@
         android:layout_marginTop="16dp"
         android:layout_marginEnd="8dp"
         android:text="@string/boost_volume"
-        android:textColor="@android:color/white"
-        android:textStyle="bold"
+        style="@style/PlayerControlLabel"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/seekBar" />
+
+    <TextView
+        android:id="@+id/textView9"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="8dp"
+        android:layout_marginTop="16dp"
+        android:text="@string/pitch"
+        style="@style/PlayerControlLabel"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/textView3" />
+
+    <SeekBar
+        android:id="@+id/pitchBar"
+        style="@style/PlayerDiscreteBar"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="48dp"
+        android:layout_marginEnd="8dp"
+        android:max="10"
+        android:progress="6"
+        app:layout_constraintBottom_toBottomOf="@+id/textView9"
+        app:layout_constraintEnd_toStartOf="@+id/pitchView"
+        app:layout_constraintStart_toStartOf="parent" />
 
 </android.support.constraint.ConstraintLayout>
