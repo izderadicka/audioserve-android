@@ -13,7 +13,6 @@ import android.widget.SeekBar.OnSeekBarChangeListener
 import android.widget.TextView
 
 import eu.zderadicka.audioserve.R
-import eu.zderadicka.audioserve.utils.SpeedHelper
 import kotlin.math.roundToInt
 
 class SeekBarPreference//    public SeekBarPreference(
@@ -40,14 +39,23 @@ class SeekBarPreference//    public SeekBarPreference(
     private var mProgress: Int = 0
 
     private var mTrackingTouch: Boolean = false
+    private var range: SeekBarRange
+    private val helper: DiscreteSeekbarListener
 
     var progress: Int
         get() = mProgress
         set(progress) = setProgress(progress, true)
 
-        init {
-            layoutResource = R.layout.preference_seekbar;
+    init {
+        layoutResource = R.layout.preference_seekbar;
+        range = SPEED_RANGE
+        attrs?.apply {
+            if (getAttributeBooleanValue(null, "pitch", false))
+             range = PITCH_RANGE
         }
+
+        helper = DiscreteSeekbarListener(context, range)
+    }
 
     var valueView: TextView? = null
 
@@ -56,20 +64,19 @@ class SeekBarPreference//    public SeekBarPreference(
         val seekBar = view.findViewById<View>(
                 R.id.seekbar) as SeekBar
         seekBar.setOnSeekBarChangeListener(this)
-        seekBar.max = SpeedHelper.max
+        seekBar.max = range.steps
         seekBar.progress = mProgress
         seekBar.isEnabled = isEnabled
 
         valueView = view.findViewById(R.id.position)
-        SpeedHelper.updateText(valueView, progress)
+        helper.updateText(valueView, progress)
     }
 
     override fun onSetInitialValue(restoreValue: Boolean, defaultValue: Any?) {
-        progress = SpeedHelper.valueToProgress(if (restoreValue)
-            getPersistedFloat(  1.0F)
+        progress = helper.valueToProgress(if (restoreValue)
+            getPersistedFloat(1.0F)
         else
-        1.0F)
-
+            1.0F)
 
 
     }
@@ -87,18 +94,17 @@ class SeekBarPreference//    public SeekBarPreference(
     }
 
 
-
     private fun setProgress(progress: Int, notifyChanged: Boolean) {
         var progress = progress
-        if (progress > SpeedHelper.max) {
-            progress = SpeedHelper.max
+        if (progress > range.steps) {
+            progress = range.steps
         }
         if (progress < 0) {
             progress = 0
         }
         if (progress != mProgress) {
             mProgress = progress
-            persistFloat(SpeedHelper.progressToValue(progress))
+            persistFloat(helper.progressToValue(progress))
             if (notifyChanged) {
                 notifyChanged()
             }
@@ -122,7 +128,7 @@ class SeekBarPreference//    public SeekBarPreference(
 
     override fun onProgressChanged(
             seekBar: SeekBar, progress: Int, fromUser: Boolean) {
-        SpeedHelper.updateText(valueView, progress)
+        helper.updateText(valueView, progress)
         if (fromUser && !mTrackingTouch) {
             syncProgress(seekBar)
         }

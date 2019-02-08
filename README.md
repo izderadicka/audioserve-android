@@ -15,7 +15,7 @@ Available features
 * Browses collections and folders
 * Plays files in folder one after another
 * Progressive playback - starts as soon as possible
-* Advanced playback features - skip silence and playback speed (pull up player bar)
+* Advanced playback features - skip silence and playback speed and pitch (in pull up player bar)
 * Caches ahead next n files (1 - 5 as per preferences)
 * Aggressively caches server responses (use reload to force latest data)
 * Downloads part of or whole folder to cache (swipe playable item to left to see download button)

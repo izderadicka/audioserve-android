@@ -17,8 +17,9 @@ import android.view.ViewGroup
 import android.view.animation.LinearInterpolator
 import android.widget.*
 import eu.zderadicka.audioserve.R
-import eu.zderadicka.audioserve.utils.PitchHelper
-import eu.zderadicka.audioserve.utils.SpeedHelper
+import eu.zderadicka.audioserve.ui.DiscreteSeekbarListener
+import eu.zderadicka.audioserve.ui.PITCH_RANGE
+import eu.zderadicka.audioserve.ui.SPEED_RANGE
 
 //import kotlinx.android.synthetic.main.fragment_controller.*
 
@@ -28,6 +29,7 @@ private const val LOG_TAG = "ControllerFragment"
 interface ControllerHolder {
     fun onControllerClick()
 }
+
 class ControllerFragment : MediaFragment(), SharedPreferences.OnSharedPreferenceChangeListener {
 
     var canPlay = false
@@ -50,9 +52,9 @@ class ControllerFragment : MediaFragment(), SharedPreferences.OnSharedPreference
                 }
                 PlaybackStateCompat.STATE_PAUSED,
                 PlaybackStateCompat.STATE_BUFFERING,
-                PlaybackStateCompat.STATE_STOPPED-> enablePlay = true
+                PlaybackStateCompat.STATE_STOPPED -> enablePlay = true
                 PlaybackStateCompat.STATE_ERROR -> {
-                    val msg = state.errorMessage?:"Playback error"
+                    val msg = state.errorMessage ?: "Playback error"
                     Log.e(LOG_TAG, "error playbackstate:  $msg")
                     Toast.makeText(activity, msg, Toast.LENGTH_LONG).show()
                     enablePlay = true
@@ -86,7 +88,6 @@ class ControllerFragment : MediaFragment(), SharedPreferences.OnSharedPreference
             enableButton(rewindButton, PlaybackStateCompat.ACTION_REWIND or PlaybackStateCompat.ACTION_SEEK_TO)
 
 
-
             // seekBar animation
 
             //reset current
@@ -98,7 +99,7 @@ class ControllerFragment : MediaFragment(), SharedPreferences.OnSharedPreference
                 var timeToEnd = (seekBar.max - progress) / state.playbackSpeed
                 if (timeToEnd < 0) timeToEnd = 0F
                 Log.d(LOG_TAG, "Setting Animator to ${seekBar.progress} to ${seekBar.max} timeToEnd $timeToEnd")
-                progressAnimator = ValueAnimator.ofInt(seekBar.progress, seekBar.max).apply{
+                progressAnimator = ValueAnimator.ofInt(seekBar.progress, seekBar.max).apply {
                     setDuration(timeToEnd.toLong())
                     interpolator = LinearInterpolator()
                     addUpdateListener {
@@ -137,8 +138,9 @@ class ControllerFragment : MediaFragment(), SharedPreferences.OnSharedPreference
 
     override fun onStop() {
         super.onStop()
-        Log.d(LOG_TAG,"ControllerFragment.onStop")
+        Log.d(LOG_TAG, "ControllerFragment.onStop")
     }
+
     lateinit var playPauseButton: ImageView
     lateinit var seekBar: SeekBar
     lateinit var currentTimeView: TextView
@@ -149,7 +151,9 @@ class ControllerFragment : MediaFragment(), SharedPreferences.OnSharedPreference
     lateinit var rewindButton: ImageView
     lateinit var mainView: View
     lateinit var speedBar: SeekBar
+    lateinit var speedBarListener: DiscreteSeekbarListener
     lateinit var pitchBar: SeekBar
+    lateinit var pitchBarListener: DiscreteSeekbarListener
     lateinit var speedView: TextView
     lateinit var pitchView: TextView
     lateinit var silenceSwitch: Switch
@@ -162,7 +166,7 @@ class ControllerFragment : MediaFragment(), SharedPreferences.OnSharedPreference
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?,
                               savedInstanceState: Bundle?): View? {
         // Inflate the layout for this fragment
-        val view =  inflater.inflate(R.layout.fragment_controller, container, false)
+        val view = inflater.inflate(R.layout.fragment_controller, container, false)
         mainView = view
         playPauseButton = view.findViewById(R.id.playPauseButton)
         seekBar = view.findViewById(R.id.seekBar)
@@ -174,15 +178,27 @@ class ControllerFragment : MediaFragment(), SharedPreferences.OnSharedPreference
         rewindButton = view.findViewById(R.id.rewindButton)
         fastForwardButton = view.findViewById(R.id.fastForwardButton)
         speedBar = view.findViewById(R.id.speedBar)
-        silenceSwitch =  view.findViewById(R.id.silenceSwitch)
+        silenceSwitch = view.findViewById(R.id.silenceSwitch)
         volumeBoostSwitch = view.findViewById(R.id.volumeBoostSwitch)
         speedView = view.findViewById(R.id.speedView)
         pitchView = view.findViewById(R.id.pitchView)
+        speedBarListener = DiscreteSeekbarListener(
+                context!!,
+                SPEED_RANGE,
+                "pref_playback_speed",
+                speedView
+        )
+        pitchBarListener = DiscreteSeekbarListener(
+                context!!,
+                PITCH_RANGE,
+                "pref_playback_pitch",
+                pitchView
+        )
 
 
-        seekBar.setOnSeekBarChangeListener(object: SeekBar.OnSeekBarChangeListener {
+        seekBar.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
             override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
-                currentTimeView.text = DateUtils.formatElapsedTime(progress.toLong()/ 1000)
+                currentTimeView.text = DateUtils.formatElapsedTime(progress.toLong() / 1000)
             }
 
             override fun onStartTrackingTouch(seekBar: SeekBar?) {
@@ -197,7 +213,7 @@ class ControllerFragment : MediaFragment(), SharedPreferences.OnSharedPreference
 
         })
 
-        playPauseButton.setOnClickListener{
+        playPauseButton.setOnClickListener {
 
             if (canPlay) {
                 mediaController?.transportControls?.play()
@@ -215,7 +231,7 @@ class ControllerFragment : MediaFragment(), SharedPreferences.OnSharedPreference
             mediaController?.transportControls?.skipToPrevious()
         }
 
-        rewindButton.setOnClickListener{
+        rewindButton.setOnClickListener {
             mediaController?.transportControls?.rewind()
         }
 
@@ -237,50 +253,11 @@ class ControllerFragment : MediaFragment(), SharedPreferences.OnSharedPreference
             holder.onControllerClick()
         }
 
-        speedBar.max = SpeedHelper.max
+        speedBar.max = SPEED_RANGE.steps
+        speedBar.setOnSeekBarChangeListener(speedBarListener)
 
-        speedBar.setOnSeekBarChangeListener(object: SeekBar.OnSeekBarChangeListener {
-
-            var startingProggres: Int? = null
-            override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
-                SpeedHelper.updateText(speedView, progress)
-            }
-
-            override fun onStartTrackingTouch(seekBar: SeekBar) {
-                startingProggres = seekBar.progress
-            }
-
-            override fun onStopTrackingTouch(seekBar: SeekBar) {
-                if (startingProggres == seekBar.progress) return
-                PreferenceManager.getDefaultSharedPreferences(context).edit()
-                        .putFloat("pref_playback_speed", SpeedHelper.progressToValue(seekBar.progress))
-                        .apply()
-            }
-
-        })
-
-        pitchBar.max = PitchHelper.max
-
-        pitchBar.setOnSeekBarChangeListener(object: SeekBar.OnSeekBarChangeListener {
-
-            var startingProggres: Int? = null
-            override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
-                PitchHelper.updateText(pitchView, progress)
-            }
-
-            override fun onStartTrackingTouch(seekBar: SeekBar) {
-                startingProggres = seekBar.progress
-            }
-
-            override fun onStopTrackingTouch(seekBar: SeekBar) {
-                if (startingProggres == seekBar.progress) return
-                PreferenceManager.getDefaultSharedPreferences(context).edit()
-                        .putFloat("pref_playback_pitch", PitchHelper.progressToValue(seekBar.progress))
-                        .apply()
-            }
-
-        })
-
+        pitchBar.max = PITCH_RANGE.steps
+        pitchBar.setOnSeekBarChangeListener(pitchBarListener)
 
         silenceSwitch.setOnCheckedChangeListener { buttonView, isChecked ->
             PreferenceManager.getDefaultSharedPreferences(context).edit()
@@ -310,37 +287,38 @@ class ControllerFragment : MediaFragment(), SharedPreferences.OnSharedPreference
         val currentVolumeBoost = PreferenceManager.getDefaultSharedPreferences(context)
                 .getBoolean("pref_volume_boost", false)
 
-        speedBar.progress = SpeedHelper.valueToProgress(currentSpeed)
-        SpeedHelper.updateText(speedView, speedBar.progress)
-
-        pitchBar.progress = PitchHelper.valueToProgress(currentPitch)
-        PitchHelper.updateText(pitchView, pitchBar.progress)
+        speedBarListener.updateSeekBar(speedBar, currentSpeed)
+        pitchBarListener.updateSeekBar(pitchBar, currentPitch)
 
         silenceSwitch.isChecked = currentSilence
         volumeBoostSwitch.isChecked = currentVolumeBoost
     }
 
-    override  fun onPause() {
+    override fun onPause() {
         super.onPause()
         PreferenceManager.getDefaultSharedPreferences(context).unregisterOnSharedPreferenceChangeListener(this)
     }
 
     override fun onSharedPreferenceChanged(sp: SharedPreferences, key: String?) {
-       when (key) {
-           "pref_playback_speed" -> {
-               val v = sp.getFloat(key, 1.0f)
-               speedBar.progress = SpeedHelper.valueToProgress(v)
-               SpeedHelper.updateText(speedView, speedBar.progress)
-           }
+        when (key) {
+            "pref_playback_speed" -> {
+                val v = sp.getFloat(key, 1.0f)
+                speedBarListener.updateSeekBar(speedBar,v)
+            }
 
-           "pref_skip_silence" -> {
-               silenceSwitch.isChecked = sp.getBoolean(key, false)
-           }
+            "pref_playback_pitch" -> {
+                val v = sp.getFloat(key, 1.0f)
+                pitchBarListener.updateSeekBar(pitchBar,v)
+            }
 
-           "pref_volume_boost" -> {
-               volumeBoostSwitch.isChecked = sp.getBoolean(key, false)
-           }
-       }
+            "pref_skip_silence" -> {
+                silenceSwitch.isChecked = sp.getBoolean(key, false)
+            }
+
+            "pref_volume_boost" -> {
+                volumeBoostSwitch.isChecked = sp.getBoolean(key, false)
+            }
+        }
     }
 
 
@@ -354,10 +332,9 @@ class ControllerFragment : MediaFragment(), SharedPreferences.OnSharedPreference
 
 
     val currentPlayTime: Long
-    get() {
-        return seekBar.progress.toLong()
-    }
-
+        get() {
+            return seekBar.progress.toLong()
+        }
 
 
 }

@@ -278,7 +278,7 @@ class SettingsFragment: PreferenceFragment(), SharedPreferences.OnSharedPreferen
                 }
             }
 
-            "pref_playback_speed" -> {
+            "pref_playback_speed", "pref_playback_pitch" -> {
             }
 
             "pref_volume_boost" -> {
