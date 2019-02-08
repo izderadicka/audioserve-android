@@ -50,7 +50,8 @@ class SeekBarPreference//    public SeekBarPreference(
         layoutResource = R.layout.preference_seekbar;
         range = SPEED_RANGE
         attrs?.apply {
-            if (getAttributeBooleanValue(null, "pitch", false))
+            val customAttrs = context.theme.obtainStyledAttributes(attrs, R.styleable.SeekBarPreference, 0,0)
+            if (customAttrs.getBoolean(R.styleable.SeekBarPreference_pitch, false))
              range = PITCH_RANGE
         }
 
