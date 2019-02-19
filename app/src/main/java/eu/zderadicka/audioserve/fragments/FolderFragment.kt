@@ -255,7 +255,15 @@ class FolderAdapter(val context: Context, val isSearch:Boolean,
         }
 
         if (holder.isSearch) {
-            holder.folderPathView?.text = pathFromFolderId(item.mediaId!!)
+            val path = pathFromFolderId(item.mediaId!!)
+            holder.folderPathView?.apply {
+                text = path
+                if (path.isNullOrBlank()) {
+                    visibility = View.GONE
+                } else {
+                    visibility = View.VISIBLE
+                }
+            }
         }
     }
 
