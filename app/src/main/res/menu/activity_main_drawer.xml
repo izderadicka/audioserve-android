@@ -20,6 +20,11 @@
             android:id="@+id/nav_bookmarks"
             android:icon="@drawable/ic_bookmark"
             android:title="@string/action_bookmarks" />
+        <item
+            android:id="@+id/nav_modified"
+            android:icon="@drawable/ic_menu_modified"
+            android:title="@string/action_modified"
+            android:visible="false"/>
 
     </group>
 

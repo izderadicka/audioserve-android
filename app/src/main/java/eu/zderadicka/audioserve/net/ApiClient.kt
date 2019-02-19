@@ -226,6 +226,22 @@ class ApiClient private constructor(val context: Context) {
 
     }
 
+    fun loadRecent(collection: Int, forceReload: Boolean, callback: (AudioFolder?, ApiError?) -> Unit) {
+        var uri = baseUrl
+        if (collection > 0) {
+            uri += "$collection/"
+        }
+        uri += "recent"
+        sendRequest(uri, forceReload, {
+            val f = parseFolderfromJson(it, "recent", "")
+            if (collection > 0) {
+                f.collectionIndex = collection
+            }
+            f
+        }, callback)
+
+    }
+
     fun loadCollections(callback: (ArrayList<String>?, ApiError?) -> Unit) {
         loadCollections(false, callback)
     }

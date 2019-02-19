@@ -422,7 +422,7 @@ class FolderFragment : MediaFragment(), BaseFolderFragment {
         val view = inflater.inflate(R.layout.fragment_folder, container, false)
         folderView = view.findViewById(R.id.folderView)
         folderView.layoutManager = LinearLayoutManager(context)
-        val isSearch = folderId.startsWith(AudioService.SEARCH_PREFIX   )
+        val isSearch = folderId.startsWith(AudioService.SEARCH_PREFIX) || folderId.startsWith(AudioService.RECENTLY_MODIFIED_PREFIX)
         adapter = FolderAdapter(context!!, isSearch) {item, action, currentlyPlaying ->
             mediaActivity?.onItemClicked(item, action, currentlyPlaying)
         }

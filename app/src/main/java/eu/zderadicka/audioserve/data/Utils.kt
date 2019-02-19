@@ -215,6 +215,16 @@ fun collectionFromSearchId(folderId:String): Int? {
     return null
 }
 
+fun collectionFromModifiedId(folderId:String): Int? {
+    if (folderId.startsWith(AudioService.RECENTLY_MODIFIED_PREFIX)) {
+        val m = BEGIN_NUMBERS_RE.find(folderId.substring(AudioService.RECENTLY_MODIFIED_PREFIX.length))
+        if (m!=null) {
+            return m.value.toInt()
+        }
+    }
+    return null
+}
+
 fun duplicateMediaItemWithExtrasAssured(item: MediaBrowserCompat.MediaItem):MediaBrowserCompat.MediaItem {
     val desc = MediaDescriptionCompat.Builder()
             .setMediaId(item.description.mediaId)

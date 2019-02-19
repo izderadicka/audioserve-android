@@ -567,6 +567,7 @@ class AudioService : MediaBrowserServiceCompat() {
         const val RECENTLY_LISTENED_TAG = "__AUDIOSERVE_RECENT"
         const val COLLECTION_PREFIX = "__COLLECTION_"
         const val SEARCH_PREFIX = "__AUDIOSERVE_SEARCH_"
+        const val RECENTLY_MODIFIED_PREFIX = "__AUDIOSERVE_MODIFIED_"
         const val ITEM_IS_COLLECTION = "is-collection"
     }
 
@@ -806,8 +807,21 @@ mediaSessionConnector.setErrorMessageProvider(messageProvider);
                 }
 
             }
+        } else if (parentId.startsWith(RECENTLY_MODIFIED_PREFIX)) {
+            result.detach()
+            val s = parentId.substring(RECENTLY_MODIFIED_PREFIX.length)
+            val collection = if (s.isNullOrBlank()) 0 else s.toInt()
+            apiClient.loadRecent(collection, options.getBoolean(AUDIOSERVICE_FORCE_RELOAD))
+            { it, err ->
+                if (it != null) {
+                    result.sendResult(it.getMediaItems(cacheManager))
+                    currentFolder = ArrayList()//it.getPlayableItems(cacheManager)
 
-        } else if (parentId.startsWith(SEARCH_PREFIX)) {
+                } else {
+                    Log.e(LOG_TAG, "Recently modified failed with $err")
+                }
+            }
+        }else if (parentId.startsWith(SEARCH_PREFIX)) {
             val s = parentId.substring(SEARCH_PREFIX.length)
             val m = SEARCH_RE.matchEntire(s)
             if (m == null) {

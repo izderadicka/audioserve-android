@@ -62,6 +62,7 @@ class MainActivity : AppCompatActivity(),
     private lateinit var controllerFragment: ControllerFragment
     private var pendingMediaItem: MediaBrowserCompat.MediaItem? = null
     private var searchPrefix: String? = null
+    private var collection: Int? = null
     private var folderDetails: Bundle? = null
 
     private val mediaServiceConnectionCallback = object : MediaBrowserCompat.ConnectionCallback() {
@@ -183,10 +184,17 @@ class MainActivity : AppCompatActivity(),
             ctl.prepareFromMediaId(item.mediaId, extras)
         }
 
-        val collection: Int? = collectionFromFolderId(folderId)?: collectionFromSearchId(folderId)
+        collection = collectionFromFolderId(folderId)?: collectionFromSearchId(folderId)?: collectionFromModifiedId(folderId)
         searchPrefix = if (collection == null || isOffline) null else "${AudioService.SEARCH_PREFIX}${collection}_"
+        Log.d(LOG_TAG, "Loaded folder ${folderId} in collection ${collection}")
         this.folderDetails = folderDetails
         invalidateOptionsMenu()
+        updateDrawerMenu()
+    }
+
+    private fun updateDrawerMenu() {
+        val menu = nav_view.menu
+        menu.findItem(R.id.nav_modified).isVisible = collection != null
     }
 
     private fun stopPlayback() {
@@ -518,6 +526,14 @@ class MainActivity : AppCompatActivity(),
             }
             R.id.nav_bookmarks -> {
                 openBookmarksFolder()
+            }
+            R.id.nav_modified -> {
+                collection?.let {
+                    val folderId = AudioService.RECENTLY_MODIFIED_PREFIX +it
+                    newFolderFragment(folderId, getString(R.string.recently_modified))
+                }
+
+
             }
             R.id.nav_sleep -> {
                 val d = SleepDialogFragment()
