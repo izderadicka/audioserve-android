@@ -22,7 +22,7 @@ private fun subfolderToItem(path:String): MediaBrowserCompat.MediaItem {
             .build()
     return MediaBrowserCompat.MediaItem(desc, MediaBrowserCompat.MediaItem.FLAG_BROWSABLE)
 }
-
+private val CHAPTER_RE = Regex("""\$\$[\d\-]+\$\$""")
 private fun fileToItem(mediaId: String, cacheDir: File): MediaBrowserCompat.MediaItem? {
     val fullFile = File(cacheDir,mediaId)
     if (! fullFile.isFile()) return null
@@ -30,9 +30,10 @@ private fun fileToItem(mediaId: String, cacheDir: File): MediaBrowserCompat.Medi
     val extras = Bundle()
     val f = File(mediaId)
     val (name, ext) = splitExtension(f.name)
+    val normName = CHAPTER_RE.replace(name, "")
     val descBuilder = MediaDescriptionCompat.Builder()
             .setMediaId(mediaId)
-            .setTitle(name)
+            .setTitle(normName)
             .setSubtitle(f.parent)
     if (ext != null) {
         extras.putString(METADATA_KEY_EXTENSION, ext)

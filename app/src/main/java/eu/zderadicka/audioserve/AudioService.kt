@@ -30,6 +30,7 @@ import com.google.android.exoplayer2.decoder.DecoderCounters
 import com.google.android.exoplayer2.ext.mediasession.DefaultPlaybackController
 import com.google.android.exoplayer2.ext.mediasession.MediaSessionConnector
 import com.google.android.exoplayer2.ext.mediasession.TimelineQueueNavigator
+import com.google.android.exoplayer2.extractor.DefaultExtractorsFactory
 import com.google.android.exoplayer2.source.DynamicConcatenatingMediaSource
 import com.google.android.exoplayer2.source.ExtractorMediaSource
 import com.google.android.exoplayer2.trackselection.DefaultTrackSelector
@@ -277,7 +278,10 @@ class AudioService : MediaBrowserServiceCompat() {
             if (token != null) {
                 cm.startCacheLoader(token)
             }
+            val extractorFactory = DefaultExtractorsFactory()
+            extractorFactory.setConstantBitrateSeekingEnabled(true)
             sourceFactory = ExtractorMediaSource.Factory(cm.sourceFactory)
+            sourceFactory?.setExtractorsFactory(extractorFactory)
 
         }
 
