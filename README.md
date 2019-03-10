@@ -81,6 +81,13 @@ Supported Android versions are from 5.0 Lollipop on ( but I'm testing only  on O
 You can also build it yourself with Android Studio - just checkout the project from github and
 open in Android Studio.
 
+### Insecure connection to server
+I added `android:usesCleartextTraffic="true"` into application manifest, so it should be possible
+to use just plain unencrypted http connection to audioserve server (but indeed this is not recommended
+if server is accessible through public Internet). However I have some reports, that it is not working
+on some phones (not sure why as emulated Android 9 works fine), so secure https connection would
+be only option there.
+
 
 
 License
