@@ -9,8 +9,8 @@ import kotlin.math.roundToInt
 
 data class SeekBarRange(val steps:Int, val left: Float, val right: Float)
 
-val SPEED_RANGE = SeekBarRange(10, 0.75F, 1.25F)
-val PITCH_RANGE = SeekBarRange(10, 0.9F, 1.1F)
+val SPEED_RANGE = SeekBarRange(15, 0.5F, 2.0F)
+val PITCH_RANGE = SeekBarRange(10, 0.8F, 1.2F)
 
 class DiscreteSeekbarListener(
         private val context: Context,
