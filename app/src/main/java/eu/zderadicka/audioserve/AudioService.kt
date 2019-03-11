@@ -56,7 +56,7 @@ const val CUSTOM_COMMAND_FAST_PLAY_END = "eu.zderadicka.audioserve.FAST_PLAY_END
 const val CUSTOM_COMMAND_REWIND_PLAY_START = "eu.zderadicka.audioserve.REWIND_PLAY_START"
 const val CUSTOM_COMMAND_REWIND_PLAY_END = "eu.zderadicka.audioserve.REWIND_PLAY_END"
 
-private const val REWIND_PLAY_OFFSET = 3_000L
+private const val REWIND_PLAY_OFFSET = 4_000L
 private const val REWIND_PLAY_REPEAT = 1_000L
 
 
