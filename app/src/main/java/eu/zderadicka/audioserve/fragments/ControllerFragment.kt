@@ -16,10 +16,10 @@ import android.view.View
 import android.view.ViewGroup
 import android.view.animation.LinearInterpolator
 import android.widget.*
+import eu.zderadicka.audioserve.CUSTOM_COMMAND_FAST_PLAY_END
+import eu.zderadicka.audioserve.CUSTOM_COMMAND_FAST_PLAY_START
 import eu.zderadicka.audioserve.R
-import eu.zderadicka.audioserve.ui.DiscreteSeekbarListener
-import eu.zderadicka.audioserve.ui.PITCH_RANGE
-import eu.zderadicka.audioserve.ui.SPEED_RANGE
+import eu.zderadicka.audioserve.ui.*
 
 //import kotlinx.android.synthetic.main.fragment_controller.*
 
@@ -147,7 +147,7 @@ class ControllerFragment : MediaFragment(), SharedPreferences.OnSharedPreference
     lateinit var trackTimeView: TextView
     lateinit var skipPreviousButton: ImageView
     lateinit var skipNextButton: ImageView
-    lateinit var fastForwardButton: ImageView
+    lateinit var fastForwardButton: LongPressButton
     lateinit var rewindButton: ImageView
     lateinit var mainView: View
     lateinit var speedBar: SeekBar
@@ -238,6 +238,17 @@ class ControllerFragment : MediaFragment(), SharedPreferences.OnSharedPreference
         fastForwardButton.setOnClickListener {
             mediaController?.transportControls?.fastForward()
         }
+
+        fastForwardButton.setLongPressListener(object : LongPressListener {
+            override fun onStart() {
+                mediaController?.sendCommand(CUSTOM_COMMAND_FAST_PLAY_START, null, null)
+            }
+
+            override fun onEnd() {
+                mediaController?.sendCommand(CUSTOM_COMMAND_FAST_PLAY_END, null, null)
+            }
+
+        })
 
         if (context is ControllerHolder) {
             holder = context as ControllerHolder

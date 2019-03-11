@@ -25,8 +25,6 @@ import android.text.format.DateUtils.*
 import android.util.Log
 import com.google.android.exoplayer2.*
 import com.google.android.exoplayer2.audio.AudioListener
-import com.google.android.exoplayer2.audio.AudioRendererEventListener
-import com.google.android.exoplayer2.decoder.DecoderCounters
 import com.google.android.exoplayer2.ext.mediasession.DefaultPlaybackController
 import com.google.android.exoplayer2.ext.mediasession.MediaSessionConnector
 import com.google.android.exoplayer2.ext.mediasession.TimelineQueueNavigator
@@ -51,6 +49,9 @@ private const val REWIND_MS = 15 * 1000L
 const val MEDIA_FULLY_CACHED = "eu.zderadicka.audioserve.FULLY_CACHED"
 const val MEDIA_CACHE_DELETED = "eu.zderadicka.audioserve.CACHE_DELETED"
 const val PLAYER_NOT_READY = "eu.zderadicka.audioserve.PLAYER_NOT_READY"
+
+const val CUSTOM_COMMAND_FAST_PLAY_START = "eu.zderadicka.audioserve.FAST_PLAY_START"
+const val CUSTOM_COMMAND_FAST_PLAY_END = "eu.zderadicka.audioserve.FAST_PLAY_END"
 
 const val AUDIOSERVICE_ACTION_PAUSE = "eu.zderadicka.audioserve.ACTION_PAUSE"
 const val AUDIOSERVICE_FORCE_RELOAD = "eu.zderadicka.audioserve.FORCE_RELOAD"
@@ -141,8 +142,7 @@ class AudioService : MediaBrowserServiceCompat() {
     private lateinit var volumeBooster:VolumeBooster
 
     private val playerController = object : DefaultPlaybackController(REWIND_MS, FF_MS, MediaSessionConnector.DEFAULT_REPEAT_TOGGLE_MODES) {
-
-        private val am: AudioManager by lazy {
+                private val am: AudioManager by lazy {
             this@AudioService.getSystemService(Context.AUDIO_SERVICE) as AudioManager
         }
         private var needResume = false
@@ -249,12 +249,30 @@ class AudioService : MediaBrowserServiceCompat() {
 
 
     private val preparer = object : MediaSessionConnector.PlaybackPreparer {
+        private var lastParams: PlaybackParameters? = null
+
         override fun onPrepareFromSearch(query: String?, extras: Bundle?) {
             TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
         }
 
-        override fun onCommand(player: Player?, command: String?, extras: Bundle?, cb: ResultReceiver?) {
-            TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+        override fun onCommand(player: Player, command: String, extras: Bundle?, cb: ResultReceiver?) {
+            Log.d(LOG_TAG, "Custom command ${command}")
+            when (command) {
+                CUSTOM_COMMAND_FAST_PLAY_START -> {
+                    if (player.playWhenReady) {
+                        val p = player.playbackParameters
+                        player.playbackParameters = PlaybackParameters(3.0f, p.pitch, p.skipSilence)
+                        lastParams = p
+                    }
+                }
+
+                CUSTOM_COMMAND_FAST_PLAY_END -> {
+                    lastParams?.let {
+                        player.playbackParameters = lastParams
+                    }
+                    lastParams = null
+                }
+            }
         }
 
         override fun getSupportedPrepareActions(): Long {
@@ -262,7 +280,7 @@ class AudioService : MediaBrowserServiceCompat() {
         }
 
         override fun getCommands(): Array<String>? {
-            return null
+            return arrayOf(CUSTOM_COMMAND_FAST_PLAY_START, CUSTOM_COMMAND_FAST_PLAY_END)
         }
 
         var sourceFactory: ExtractorMediaSource.Factory? = null

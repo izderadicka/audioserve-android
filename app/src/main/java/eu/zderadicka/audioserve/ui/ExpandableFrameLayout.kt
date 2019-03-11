@@ -22,7 +22,7 @@ class ExpandableFrameLayout @JvmOverloads constructor(context: Context, attrs: A
     var minHeight: Int = 0
     var maxHeight: Int = 0
     var slidingBarHeight: Int = 0
-    val gestureDetector: GestureDetector
+    private val gestureDetector: GestureDetector
     var animator: ValueAnimator? = null
     private val touchSlop: Int = ViewConfiguration.get(context).scaledTouchSlop
     var midHeight: Int = 0

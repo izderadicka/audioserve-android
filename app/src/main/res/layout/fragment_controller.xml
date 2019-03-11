@@ -85,7 +85,7 @@
         app:layout_constraintTop_toTopOf="parent"
         app:srcCompat="@drawable/ic_rewind_white" />
 
-    <ImageView
+    <eu.zderadicka.audioserve.ui.LongPressButton
         android:id="@+id/fastForwardButton"
         android:layout_width="@dimen/media_button_size"
         android:layout_height="@dimen/media_button_size"
