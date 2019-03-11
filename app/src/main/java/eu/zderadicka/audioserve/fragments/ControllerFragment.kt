@@ -16,9 +16,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.view.animation.LinearInterpolator
 import android.widget.*
-import eu.zderadicka.audioserve.CUSTOM_COMMAND_FAST_PLAY_END
-import eu.zderadicka.audioserve.CUSTOM_COMMAND_FAST_PLAY_START
-import eu.zderadicka.audioserve.R
+import eu.zderadicka.audioserve.*
 import eu.zderadicka.audioserve.ui.*
 
 //import kotlinx.android.synthetic.main.fragment_controller.*
@@ -148,7 +146,7 @@ class ControllerFragment : MediaFragment(), SharedPreferences.OnSharedPreference
     lateinit var skipPreviousButton: ImageView
     lateinit var skipNextButton: ImageView
     lateinit var fastForwardButton: LongPressButton
-    lateinit var rewindButton: ImageView
+    lateinit var rewindButton: LongPressButton
     lateinit var mainView: View
     lateinit var speedBar: SeekBar
     lateinit var speedBarListener: DiscreteSeekbarListener
@@ -234,6 +232,17 @@ class ControllerFragment : MediaFragment(), SharedPreferences.OnSharedPreference
         rewindButton.setOnClickListener {
             mediaController?.transportControls?.rewind()
         }
+
+        rewindButton.setLongPressListener(object: LongPressListener{
+            override fun onStart() {
+                mediaController?.sendCommand(CUSTOM_COMMAND_REWIND_PLAY_START, null, null)
+            }
+
+            override fun onEnd() {
+                mediaController?.sendCommand(CUSTOM_COMMAND_REWIND_PLAY_END, null, null)
+            }
+
+        })
 
         fastForwardButton.setOnClickListener {
             mediaController?.transportControls?.fastForward()

@@ -29,6 +29,7 @@ Available features
 * Supports Android lifecycle - rotations, back, stop activity etc...
 * Supports Android audio focus (pauses when call comes in etc.)
 * Advanced playback features - playback speed, skip silence, boost volume
+* Advanced FastForward >> /Rewind << - when click  skips + 30s/-15s, but when pressed for longer time plays with 3x / or "pseudo plays back" - skips back 4s, then plays 1s repeatably
 
 
 KISS Design Principles

@@ -75,7 +75,7 @@
         app:layout_constraintEnd_toEndOf="parent"
         tools:text="10:00:00" />
 
-    <ImageView
+    <eu.zderadicka.audioserve.ui.LongPressButton
         android:id="@+id/rewindButton"
         android:layout_width="@dimen/media_button_size"
         android:layout_height="@dimen/media_button_size"

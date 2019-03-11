@@ -40,6 +40,7 @@ import eu.zderadicka.audioserve.net.FileCache
 import eu.zderadicka.audioserve.notifications.NotificationsManager
 import eu.zderadicka.audioserve.utils.cancelSleepTimer
 import java.io.File
+import kotlin.math.max
 import kotlin.math.min
 
 private const val LOG_TAG = "audioserve-service"
@@ -52,6 +53,12 @@ const val PLAYER_NOT_READY = "eu.zderadicka.audioserve.PLAYER_NOT_READY"
 
 const val CUSTOM_COMMAND_FAST_PLAY_START = "eu.zderadicka.audioserve.FAST_PLAY_START"
 const val CUSTOM_COMMAND_FAST_PLAY_END = "eu.zderadicka.audioserve.FAST_PLAY_END"
+const val CUSTOM_COMMAND_REWIND_PLAY_START = "eu.zderadicka.audioserve.REWIND_PLAY_START"
+const val CUSTOM_COMMAND_REWIND_PLAY_END = "eu.zderadicka.audioserve.REWIND_PLAY_END"
+
+private const val REWIND_PLAY_OFFSET = 3_000L
+private const val REWIND_PLAY_REPEAT = 1_000L
+
 
 const val AUDIOSERVICE_ACTION_PAUSE = "eu.zderadicka.audioserve.ACTION_PAUSE"
 const val AUDIOSERVICE_FORCE_RELOAD = "eu.zderadicka.audioserve.FORCE_RELOAD"
@@ -250,6 +257,12 @@ class AudioService : MediaBrowserServiceCompat() {
 
     private val preparer = object : MediaSessionConnector.PlaybackPreparer {
         private var lastParams: PlaybackParameters? = null
+        private var repeater: Runnable = object: Runnable {
+            override fun run() {
+                player.seekTo(max(0, player.currentPosition - REWIND_PLAY_OFFSET))
+                scheduler.postDelayed(this, REWIND_PLAY_REPEAT)
+            }
+        }
 
         override fun onPrepareFromSearch(query: String?, extras: Bundle?) {
             TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
@@ -272,6 +285,16 @@ class AudioService : MediaBrowserServiceCompat() {
                     }
                     lastParams = null
                 }
+
+                CUSTOM_COMMAND_REWIND_PLAY_START -> {
+                    if (player.playWhenReady) {
+                        scheduler.post(repeater)
+                    }
+                }
+
+                CUSTOM_COMMAND_REWIND_PLAY_END -> {
+                    scheduler.removeCallbacks(repeater)
+                }
             }
         }
 
@@ -280,7 +303,8 @@ class AudioService : MediaBrowserServiceCompat() {
         }
 
         override fun getCommands(): Array<String>? {
-            return arrayOf(CUSTOM_COMMAND_FAST_PLAY_START, CUSTOM_COMMAND_FAST_PLAY_END)
+            return arrayOf(CUSTOM_COMMAND_FAST_PLAY_START, CUSTOM_COMMAND_FAST_PLAY_END,
+                    CUSTOM_COMMAND_REWIND_PLAY_START, CUSTOM_COMMAND_REWIND_PLAY_END)
         }
 
         var sourceFactory: ExtractorMediaSource.Factory? = null
