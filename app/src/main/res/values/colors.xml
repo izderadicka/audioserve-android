@@ -5,6 +5,7 @@
     <color name="colorAccent">#ff4081</color>
     <color name="colorAccentLight">#f8bbd0</color>
     <color name="colorListBackground">#fafafa</color>
+    <color name="colorBackgroundOverlay">#80000000</color>
 
     <color name="list_separator">#bcaaa4</color>
 

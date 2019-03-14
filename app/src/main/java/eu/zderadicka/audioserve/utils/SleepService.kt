@@ -46,18 +46,24 @@ fun cancelSleepTimer(context: Context) {
     context.startService(intent)
 }
 
+fun extendSleepTimer(context: Context) {
+    val intent = Intent(context, SleepService::class.java)
+    intent.action = SLEEP_EXTEND_ACTION
+    context.startService(intent)
+}
+
 class SleepService() : Service() {
 
     private val remains =  -1
-    var statusListener: ((Boolean) -> Unit)? = null
+    var statusListener: ((Boolean, Int) -> Unit)? = null
         set(v) {
             field = v
-            v?.invoke(isRunning)
+            v?.invoke(isRunning, 0)
         }
 
     private var timer: MyTimer? by Delegates.observable<MyTimer?>(null) {
         _, _, newValue ->
-            statusListener?.invoke(newValue!= null)
+            statusListener?.invoke(newValue!= null, 0)
     }
     private lateinit var prefs: SharedPreferences
 
@@ -86,6 +92,7 @@ class SleepService() : Service() {
                 if (time > 0) {
 
                     timer = MyTimer(time )
+                    statusListener?.invoke(isRunning, time)
                     timer?.startWithNotification()
 
 
@@ -304,6 +311,7 @@ class SleepService() : Service() {
 
         override fun onTick(millisUntilFinished: Long) {
            remains = (millisUntilFinished.toDouble() / minuteMillis).roundToInt()
+            statusListener?.invoke(isRunning, remains)
             if (remains == 1) registerWithSensor()
             Log.d(LOG_TAG, "Timer tick $millisUntilFinished $remains")
             notificationManager.notify(NOTIFICATION_ID, createNotification(remains, startedExtended))

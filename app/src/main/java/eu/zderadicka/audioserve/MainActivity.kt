@@ -31,14 +31,14 @@ import android.os.IBinder
 import android.preference.PreferenceManager
 import android.support.v7.widget.SearchView
 import android.support.v7.widget.SwitchCompat
-import android.view.MotionEvent
 import eu.zderadicka.audioserve.data.*
 import eu.zderadicka.audioserve.net.DOWNLOAD_ACTION
 import eu.zderadicka.audioserve.net.DownloadService
 import eu.zderadicka.audioserve.ui.ExpandableFrameLayout
 import eu.zderadicka.audioserve.utils.SleepService
 import eu.zderadicka.audioserve.utils.cancelSleepTimer
-import kotlinx.android.synthetic.main.fragment_controller.*
+import eu.zderadicka.audioserve.utils.extendSleepTimer
+import kotlinx.android.synthetic.main.sleep_overlay.*
 
 
 private const val LOG_TAG = "Main"
@@ -279,6 +279,20 @@ class MainActivity : AppCompatActivity(),
         val haveServer = !prefs.getString("pref_server_url", null).isNullOrBlank()
         val haveSecret = !prefs.getString(("pref_shared_secret"), null).isNullOrBlank()
 
+        //mask clicks on the sleep overlay
+        sleepOverlayView.setOnClickListener {
+        }
+
+        cancelSleepBtn.setOnClickListener {
+            cancelSleepTimer(this)
+        }
+
+        extendSleepBtn.setOnClickListener{
+            extendSleepTimer(this)
+        }
+
+
+
         if (!haveSecret || !haveServer) startActivity(Intent(this, SettingsActivity::class.java))
 
     }
@@ -379,12 +393,18 @@ class MainActivity : AppCompatActivity(),
     }
 
 
-    private fun onTimerChange(isRunning:Boolean) {
+    private fun onTimerChange(isRunning:Boolean, remains_mins: Int) {
         val menu = nav_view.menu
         val startTimer = menu.findItem(R.id.nav_sleep)
         val stopTimer = menu.findItem(R.id.nav_cancel_sleep)
         startTimer.isVisible = !isRunning
         stopTimer.isVisible = isRunning
+        sleepOverlayView.visibility = if (isRunning) View.VISIBLE else View.GONE
+        val hours = (remains_mins / 60).toString().padStart(2,'0')
+        val mins = (remains_mins % 60).toString().padStart(2,'0')
+        sleepCounterView.text = "${hours}:${mins}"
+
+
     }
 
     private val timerServiceConnection = object: ServiceConnection {
