@@ -6,7 +6,15 @@
         android:icon="@drawable/ic_search"
         app:showAsAction="collapseActionView|ifRoom"
         app:actionViewClass="android.support.v7.widget.SearchView" />
+
+    <item android:id="@+id/action_sleep"
+    android:title="@string/start_sleep_timer"
+    app:showAsAction="ifRoom"
+    android:icon="@drawable/ic_timer_white"
+    />
+
     <item android:id="@+id/action_info"
+        android:orderInCategory="90"
         android:title="@string/action_info"
         app:showAsAction="ifRoom"
         android:icon="@drawable/ic_info"

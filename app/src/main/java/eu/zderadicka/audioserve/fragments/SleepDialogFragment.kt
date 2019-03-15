@@ -12,6 +12,7 @@ import android.widget.Switch
 import eu.zderadicka.audioserve.R
 import eu.zderadicka.audioserve.utils.SLEEP_START_ACTION
 import eu.zderadicka.audioserve.utils.SleepService
+import eu.zderadicka.audioserve.utils.startSleepTimer
 
 
 // All four must be dividable by 5
@@ -78,11 +79,7 @@ class SleepDialogFragment : DialogFragment() {
                 .setIcon(R.drawable.ic_timer)
                 .setView(view)
                 .setPositiveButton("Start",  { _, _ ->
-
-                    val intent = Intent(context, SleepService::class.java)
-                    intent.action = SLEEP_START_ACTION
-                    activity?.startService(intent)
-
+                    activity?.let { startSleepTimer(it) }
                 })
                 .setNegativeButton("Cancel",  { _, _ ->
 

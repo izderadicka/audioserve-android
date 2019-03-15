@@ -46,6 +46,12 @@ fun cancelSleepTimer(context: Context) {
     context.startService(intent)
 }
 
+fun startSleepTimer(context: Context) {
+    val intent = Intent(context, SleepService::class.java)
+    intent.action = SLEEP_START_ACTION
+    context.startService(intent)
+}
+
 fun extendSleepTimer(context: Context) {
     val intent = Intent(context, SleepService::class.java)
     intent.action = SLEEP_EXTEND_ACTION

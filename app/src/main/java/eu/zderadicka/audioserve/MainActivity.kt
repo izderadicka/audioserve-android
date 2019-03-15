@@ -21,7 +21,6 @@ import android.view.View
 import android.widget.TextView
 import android.widget.Toast
 import eu.zderadicka.audioserve.fragments.*
-import eu.zderadicka.audioserve.utils.ifStoppedOrDead
 import kotlinx.android.synthetic.main.content_main.*
 import java.io.File
 import android.app.SearchManager
@@ -35,9 +34,7 @@ import eu.zderadicka.audioserve.data.*
 import eu.zderadicka.audioserve.net.DOWNLOAD_ACTION
 import eu.zderadicka.audioserve.net.DownloadService
 import eu.zderadicka.audioserve.ui.ExpandableFrameLayout
-import eu.zderadicka.audioserve.utils.SleepService
-import eu.zderadicka.audioserve.utils.cancelSleepTimer
-import eu.zderadicka.audioserve.utils.extendSleepTimer
+import eu.zderadicka.audioserve.utils.*
 import kotlinx.android.synthetic.main.sleep_overlay.*
 
 
@@ -87,16 +84,25 @@ class MainActivity : AppCompatActivity(),
 
     }
 
+
+    private var playerControlsVisible = false
+    set(value) {
+        if (field!= value) {
+            field = value
+            invalidateOptionsMenu()
+        }
+    }
     private val mCallback = object : MediaControllerCompat.Callback() {
         override fun onPlaybackStateChanged(state: PlaybackStateCompat?) {
-            if (state == null) return
             super.onPlaybackStateChanged(state)
             ifStoppedOrDead(state,
                     {
                         playerControlsContainer.visibility = View.GONE
+                        playerControlsVisible = false
                     },
                     {
                         playerControlsContainer.visibility = View.VISIBLE
+                        playerControlsVisible = true
                         //playerControlsContainer.layoutParams.height = resources.getDimension(R.dimen.control_view_height_max).toInt();
                     })
 
@@ -392,8 +398,16 @@ class MainActivity : AppCompatActivity(),
         mCallback.onPlaybackStateChanged(mediaController?.playbackState)
     }
 
-
+    private var timerOn = false
+    set(value) {
+        if (field!= value) {
+            invalidateOptionsMenu()
+            field = value
+        }
+    }
     private fun onTimerChange(isRunning:Boolean, remains_mins: Int) {
+
+        timerOn = isRunning
         val menu = nav_view.menu
         val startTimer = menu.findItem(R.id.nav_sleep)
         val stopTimer = menu.findItem(R.id.nav_cancel_sleep)
@@ -452,7 +466,7 @@ class MainActivity : AppCompatActivity(),
                 super.onBackPressed()
             } else {
                 backDoublePressed = true
-                Toast.makeText(this, "Press Back again to exit", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this, getString(R.string.press_back_toast), Toast.LENGTH_SHORT).show()
                 Handler().postDelayed({ backDoublePressed = false }, 2000)
             }
 
@@ -466,6 +480,8 @@ class MainActivity : AppCompatActivity(),
         // Inflate the menu; this adds items to the action bar if it is present.
 
         menuInflater.inflate(R.menu.main, menu)
+        val timerItem = menu.findItem(R.id.action_sleep)
+        timerItem.isVisible = ! timerOn && playerControlsVisible
         val searchItem = menu.findItem(R.id.action_search)
         searchItem.isVisible = searchPrefix != null
         val infoItem = menu.findItem(R.id.action_info)
@@ -483,10 +499,10 @@ class MainActivity : AppCompatActivity(),
         // automatically handle clicks on the Home/Up button, so long
         // as you specify a parent activity in AndroidManifest.xml.
         Log.d(LOG_TAG, "Clicked menu item id ${item.itemId} which is resource ${resources.getResourceName(item.itemId)}")
-        when (item.itemId) {
+        return when (item.itemId) {
             R.id.action_reload -> {
                 folderFragment?.reload()
-                return true
+                true
             }
 
             R.id.action_info -> {
@@ -495,7 +511,12 @@ class MainActivity : AppCompatActivity(),
                 intent.putExtra(ARG_FOLDER_NAME, folderFragment?.folderName)
                 intent.putExtra(ARG_FOLDER_DETAILS, folderDetails)
                 startActivity(intent)
-                return true
+                true
+            }
+
+            R.id.action_sleep -> {
+                startSleepTimer(this)
+                true
             }
 
 

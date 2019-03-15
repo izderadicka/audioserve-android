@@ -67,7 +67,7 @@
     <string name="transcoding">TRANSCODING</string>
     <string name="pref_downloads_summary">When dowloading folder %1$s files will download in parallell.
     Assure you have enough transcoding slots on the server</string>
-    <string name="action_sleep_timer">Sleep Timer</string>
+    <string name="action_sleep_timer">Sleep Timer Details</string>
     <string name="minutes">Minutes</string>
     <string name="extend_by">Extend By</string>
     <string name="pause_after">Pause After</string>
@@ -112,4 +112,6 @@
     <string name="pitch">Pitch:</string>
     <string name="action_modified">Recently Modified</string>
     <string name="recently_modified">Recently Modified Folders</string>
+    <string name="start_sleep_timer">Start Sleep Timer</string>
+    <string name="press_back_toast">Press Back again to exit</string>
 </resources>
