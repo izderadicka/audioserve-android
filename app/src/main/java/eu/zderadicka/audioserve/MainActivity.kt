@@ -192,7 +192,7 @@ class MainActivity : AppCompatActivity(),
 
         collection = collectionFromFolderId(folderId)?: collectionFromSearchId(folderId)?: collectionFromModifiedId(folderId)
         searchPrefix = if (collection == null || isOffline) null else "${AudioService.SEARCH_PREFIX}${collection}_"
-        Log.d(LOG_TAG, "Loaded folder ${folderId} in collection ${collection}")
+        Log.d(LOG_TAG, "Loaded folder $folderId in collection $collection")
         this.folderDetails = folderDetails
         invalidateOptionsMenu()
         updateDrawerMenu()
@@ -405,7 +405,7 @@ class MainActivity : AppCompatActivity(),
             field = value
         }
     }
-    private fun onTimerChange(isRunning:Boolean, remains_mins: Int) {
+    private fun onTimerChange(isRunning:Boolean, remainsMins: Int) {
 
         timerOn = isRunning
         val menu = nav_view.menu
@@ -414,11 +414,16 @@ class MainActivity : AppCompatActivity(),
         startTimer.isVisible = !isRunning
         stopTimer.isVisible = isRunning
         sleepOverlayView.visibility = if (isRunning) View.VISIBLE else View.GONE
-        val hours = (remains_mins / 60).toString().padStart(2,'0')
-        val mins = (remains_mins % 60).toString().padStart(2,'0')
-        sleepCounterView.text = "${hours}:${mins}"
+        setTimerRemaingTime(remainsMins)
 
 
+    }
+
+    @SuppressLint("SetTextI18n")
+    private fun setTimerRemaingTime(remainsMins: Int) {
+        val hours = (remainsMins / 60).toString().padStart(2,'0')
+        val mins = (remainsMins % 60).toString().padStart(2,'0')
+        sleepCounterView.text = "$hours:$mins"
     }
 
     private val timerServiceConnection = object: ServiceConnection {
@@ -432,6 +437,7 @@ class MainActivity : AppCompatActivity(),
             val svc = (service as SleepService.LocalBinder).service
             svc.statusListener = this@MainActivity::onTimerChange
             this.svc = svc
+            setTimerRemaingTime(svc.remainsMins)
         }
 
     }

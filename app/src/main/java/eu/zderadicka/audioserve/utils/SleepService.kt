@@ -60,7 +60,15 @@ fun extendSleepTimer(context: Context) {
 
 class SleepService() : Service() {
 
-    private val remains =  -1
+    val remainsMins: Int
+    get() {
+        return if (timer?.remains?:-1>= 0) {
+            timer?.remains?:0
+        } else {
+            0
+        }
+    }
+
     var statusListener: ((Boolean, Int) -> Unit)? = null
         set(v) {
             field = v
@@ -225,7 +233,7 @@ class SleepService() : Service() {
         if (mediaPlayer == null) {
             mediaPlayer = MediaPlayer()
             mediaPlayer?.setOnPreparedListener({ mp -> mp.start() })
-            mediaPlayer?.setOnCompletionListener({ mp ->
+            mediaPlayer?.setOnCompletionListener{ mp ->
                 mp.stop()
                 mp.reset()
                 if (nextSound!= null) {
@@ -234,7 +242,7 @@ class SleepService() : Service() {
                     nextSound = null
 
                 }
-            })
+            }
         }
         try {
             if (mediaPlayer?.isPlaying?:false) {
