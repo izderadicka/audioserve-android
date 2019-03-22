@@ -8,7 +8,7 @@
         android:bottom="2dp"/>
     <corners android:bottomRightRadius="32dp"
         android:bottomLeftRadius="32dp"
-        android:topLeftRadius="32dp"
-        android:topRightRadius="32dp"/>
+        android:topLeftRadius="36dp"
+        android:topRightRadius="36dp"/>
     <solid android:color="@color/colorBackgroundOverlay"/>
 </shape>

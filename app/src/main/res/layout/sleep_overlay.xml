@@ -3,22 +3,22 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/sleepOverlayView"
-    android:layout_width="64dp"
-    android:layout_height="172dp"
+    android:layout_width="72dp"
+    android:layout_height="164dp"
     android:layout_gravity="end"
     android:layout_marginTop="32dp"
     android:layout_marginRight="16dp"
     android:background="@drawable/sleep_overlay_background"
-    android:visibility="gone">
+    android:visibility="visible">
 
 
     <ImageView
         android:id="@+id/cancelSleepBtn"
-        android:layout_width="48dp"
+        android:layout_width="0dp"
         android:layout_height="48dp"
-        android:layout_marginStart="8dp"
-        android:layout_marginTop="16dp"
+        android:layout_marginTop="12dp"
         android:tint="@color/colorAccent"
+        app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"
         app:srcCompat="@drawable/ic_timer_cancel" />
@@ -30,7 +30,7 @@
         android:layout_marginStart="8dp"
 
         android:layout_marginEnd="8dp"
-        android:layout_marginBottom="16dp"
+        android:layout_marginBottom="12dp"
         android:tint="@color/colorAccent"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
