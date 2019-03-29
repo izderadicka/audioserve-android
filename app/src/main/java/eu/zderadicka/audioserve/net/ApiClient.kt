@@ -185,17 +185,23 @@ class ApiClient private constructor(val context: Context) {
     }
 
     fun loadFolder(folder: String = "", collection: Int, callback: (AudioFolder?, ApiError?) -> Unit) {
-        loadFolder(folder, collection, false, callback)
+        loadFolder(folder, collection, false, null, callback)
     }
 
-    fun loadFolder(folder: String = "", collection: Int, forceReload: Boolean, callback: (AudioFolder?, ApiError?) -> Unit) {
+    fun loadFolder(folder: String = "", collection: Int, forceReload: Boolean,
+                   ordering: String?,
+                   callback: (AudioFolder?, ApiError?) -> Unit) {
         var uri = baseUrl
         if (collection > 0) {
             uri += "$collection/"
         }
         uri += folder
 
-        sendRequest(uri, forceReload, {
+        val builder = Uri.parse(uri).buildUpon()
+        addOrdering(builder, ordering)
+        val  folderUri = builder.build().toString()
+
+        sendRequest(folderUri, forceReload, {
             val f = parseFolderfromJson(it, "", folder)
             if (collection > 0) {
                 f.collectionIndex = collection
@@ -205,18 +211,30 @@ class ApiClient private constructor(val context: Context) {
     }
 
     fun loadSearch(query: String, collection: Int,  callback: (AudioFolder?, ApiError?) -> Unit) {
-        loadSearch(query, collection, false, callback)
+        loadSearch(query, collection, false, null, callback)
     }
 
-    fun loadSearch(query: String, collection: Int, forceReload: Boolean, callback: (AudioFolder?, ApiError?) -> Unit) {
+    private fun addOrdering(builder: Uri.Builder, ordering: String?) {
+        ordering?.let {
+            if (it != "a") {
+                builder.appendQueryParameter("ord", it)
+            }
+        }
+    }
+
+    fun loadSearch(query: String, collection: Int, forceReload: Boolean,
+                   ordering: String?,
+                   callback: (AudioFolder?, ApiError?) -> Unit) {
         var uri = baseUrl
         if (collection > 0) {
             uri += "$collection/"
         }
         uri += "search"
 
-        val queryUri = Uri.parse(uri).buildUpon().appendQueryParameter("q", query).build()
-        sendRequest(queryUri.toString(), forceReload, {
+        val queryBuilder = Uri.parse(uri).buildUpon().appendQueryParameter("q", query)
+        addOrdering(queryBuilder, ordering)
+        val queryUri = queryBuilder.build().toString()
+        sendRequest(queryUri, forceReload, {
             val f = parseFolderfromJson(it, "search", "")
             if (collection > 0) {
                 f.collectionIndex = collection

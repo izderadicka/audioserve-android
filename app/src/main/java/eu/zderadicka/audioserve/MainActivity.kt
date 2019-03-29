@@ -496,6 +496,24 @@ class MainActivity : AppCompatActivity(),
         val searchView = menu.findItem(R.id.action_search).actionView as SearchView
         searchView.setSearchableInfo(
                 searchManager.getSearchableInfo(componentName))
+        val orderingMenu = menu.findItem(R.id.submenu_ordering)
+        if (searchPrefix != null) {
+            orderingMenu.isVisible = true
+
+            val ordering = PreferenceManager
+                    .getDefaultSharedPreferences(this)
+                    .getString("pref_ordering", FoldersOrdering.Alphabetical.letter)
+            when (ordering) {
+                FoldersOrdering.Alphabetical.letter -> {
+                    menu.findItem(R.id.action_ordering_alphabetical).isChecked = true
+                }
+                FoldersOrdering.RecentFirst.letter -> {
+                    menu.findItem(R.id.action_ordering_recent).isChecked = true
+                }
+            }
+        } else {
+            orderingMenu.isVisible = false
+        }
 
         return true
     }
@@ -525,9 +543,32 @@ class MainActivity : AppCompatActivity(),
                 true
             }
 
+            R.id.action_ordering_alphabetical -> {
+                item.isChecked = true
+                changeOrdering(FoldersOrdering.Alphabetical)
+                true
+            }
+            R.id.action_ordering_recent -> {
+                changeOrdering(FoldersOrdering.RecentFirst)
+                item.isChecked = true
+                true
+            }
+
 
             else -> return super.onOptionsItemSelected(item)
         }
+    }
+
+    private fun changeOrdering(ord: FoldersOrdering) {
+
+        val prefs = PreferenceManager.getDefaultSharedPreferences(this)
+        val current = prefs.getString("pref_ordering", FoldersOrdering.Alphabetical.letter)
+        if (ord.letter != current) {
+            Log.d(LOG_TAG, "Changed ordering to ${ord.letter}")
+            prefs.edit().putString("pref_ordering", ord.letter).apply()
+            folderFragment?.reload()
+        }
+
     }
 
     private fun openInitialFolder(folderId: String, folderName: String) {

@@ -63,6 +63,7 @@ private const val REWIND_PLAY_REPEAT = 1_000L
 const val AUDIOSERVICE_ACTION_PAUSE = "eu.zderadicka.audioserve.ACTION_PAUSE"
 const val AUDIOSERVICE_FORCE_RELOAD = "eu.zderadicka.audioserve.FORCE_RELOAD"
 const val AUDIOSERVICE_DONT_PRELOAD_LATEST = "eu.zderadicka.audioserve.NO_PRELOAD_LATEST"
+const val AUDIOSERVE_ORDERING = "eu.zderadicka.audioserve.ORDERING"
 private const val AUDIOSERVICE_ACTION_SELF_START = "eu.zderadicka.audioserve.SELF_START"
 private const val PAUSE_DELAYED_TASK_SAVE_POSITION = "pause_task_save_position"
 private const val PAUSE_DELAYED_TASK_STOP_FOREGROUND = "pause_task_stop_fg"
@@ -878,7 +879,9 @@ mediaSessionConnector.setErrorMessageProvider(messageProvider);
                 val query = m.groups.get(2)?.value ?: ""
 
                 result.detach()
-                apiClient.loadSearch(query, collection, options.getBoolean(AUDIOSERVICE_FORCE_RELOAD))
+                apiClient.loadSearch(query, collection,
+                        options.getBoolean(AUDIOSERVICE_FORCE_RELOAD),
+                        options.getString(AUDIOSERVE_ORDERING))
                 { it, err ->
                     if (it != null) {
                         result.sendResult(it.getMediaItems(cacheManager))
@@ -902,7 +905,9 @@ mediaSessionConnector.setErrorMessageProvider(messageProvider);
             }
 
             result.detach()
-            apiClient.loadFolder(folder, index, options.getBoolean(AUDIOSERVICE_FORCE_RELOAD))
+            apiClient.loadFolder(folder, index,
+                    options.getBoolean(AUDIOSERVICE_FORCE_RELOAD),
+                    options.getString(AUDIOSERVE_ORDERING))
             { it, err ->
                 checkError(it, err)
                 {

@@ -14,6 +14,7 @@ import android.text.format.DateUtils
 import android.util.Log
 import eu.zderadicka.audioserve.utils.ifStoppedOrDead
 import android.os.Parcelable
+import android.preference.PreferenceManager
 import android.support.v4.content.ContextCompat
 import android.view.*
 import android.widget.*
@@ -467,6 +468,9 @@ class FolderFragment : MediaFragment(), BaseFolderFragment {
 
     private fun startLoading(forceReload:Boolean=false) {
         val options = Bundle()
+        val ordering = PreferenceManager.getDefaultSharedPreferences(context)
+                .getString("pref_ordering", FoldersOrdering.Alphabetical.letter)
+        options.putString(AUDIOSERVE_ORDERING, ordering)
         if (willPrepare) {
             willPrepare = false
             options.putBoolean(AUDIOSERVICE_DONT_PRELOAD_LATEST, true)

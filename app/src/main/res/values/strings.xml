@@ -114,4 +114,7 @@
     <string name="recently_modified">Recently Modified Folders</string>
     <string name="start_sleep_timer">Start Sleep Timer</string>
     <string name="press_back_toast">Press Back again to exit</string>
+    <string name="folders_ordering">Folders Ordering</string>
+    <string name="alphabetical">Alphabetical</string>
+    <string name="recent_first">Recent First</string>
 </resources>

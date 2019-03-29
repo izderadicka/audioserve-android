@@ -19,6 +19,20 @@
         app:showAsAction="ifRoom"
         android:icon="@drawable/ic_info"
         />
+    <item android:id="@+id/submenu_ordering"
+        android:orderInCategory="200"
+        android:title="@string/folders_ordering"
+        app:showAsAction="never">
+        <menu>
+            <group android:id="@+id/group_ordering"
+                android:checkableBehavior="single">
+                <item android:id="@+id/action_ordering_alphabetical"
+                    android:title="@string/alphabetical"/>
+                <item android:id="@+id/action_ordering_recent"
+                    android:title="@string/recent_first"/>
+            </group>
+        </menu>
+    </item>
 
     <item
         android:id="@+id/action_reload"
