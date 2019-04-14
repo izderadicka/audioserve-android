@@ -117,4 +117,7 @@
     <string name="folders_ordering">Folders Ordering</string>
     <string name="alphabetical">Alphabetical</string>
     <string name="recent_first">Recent First</string>
+    <string name="pref_group_title">Group</string>
+    <string name="pref_group_summary_null">This device is not part of group, it will not send position updates to server and will not sync position with other devices</string>
+    <string name="pref_group_summary_filled">"This device is part of group %1$s, it will share and sync position with other devices in this group. Set empty to disable this."</string>
 </resources>

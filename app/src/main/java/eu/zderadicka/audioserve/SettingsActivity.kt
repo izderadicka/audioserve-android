@@ -297,6 +297,16 @@ class SettingsFragment: PreferenceFragment(), SharedPreferences.OnSharedPreferen
                 pref.summary = getString(R.string.pref_volume_boost_db_summary, v)
             }
 
+            "pref_group" -> {
+                val v  = sps.getString(pref.key, null)
+
+                if (v.isNullOrBlank()) {
+                    pref.summary = getString(R.string.pref_group_summary_null)
+                } else {
+                    pref.summary = getString(R.string.pref_group_summary_filled,v)
+                }
+            }
+
 
         }
     }

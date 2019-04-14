@@ -16,6 +16,11 @@
             android:selectAllOnFocus="true"
             android:singleLine="true"
             android:title="@string/pref_shared_secret_title" />
+        <EditTextPreference
+            android:key="pref_group"
+            android:selectAllOnFocus="true"
+            android:singleLine="true"
+            android:title="@string/pref_group_title" />
         <Preference
             android:key="pref_test_connection"
             android:summary="@string/pref_test_connection_summary"

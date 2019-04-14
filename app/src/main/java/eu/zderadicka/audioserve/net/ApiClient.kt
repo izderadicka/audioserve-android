@@ -120,6 +120,7 @@ class ApiClient private constructor(val context: Context) {
     // after login success or failure
     private var loginDone = false
     private val unsentRequests: ArrayList<Request<*>> = ArrayList()
+    private var positionClient:PositionClient? = null
 
 
     // getApplicationContext() is key, it keeps you from leaking the
@@ -133,7 +134,9 @@ class ApiClient private constructor(val context: Context) {
 
     @Synchronized
     fun loadPreferences(cb: ((ApiError?) -> Unit)? = null) {
-        baseUrl = PreferenceManager.getDefaultSharedPreferences(context).getString("pref_server_url", "")
+        val sps = PreferenceManager.getDefaultSharedPreferences(context)
+        baseUrl = sps.getString("pref_server_url", "")
+        val group = sps.getString("pref_group", null)
         if (baseUrl.length == 0) {
             Log.w(LOG_TAG, "BaseURL is empty!")
         } else {
@@ -144,6 +147,9 @@ class ApiClient private constructor(val context: Context) {
         login {
             if (it == null) {
                 Log.d(LOG_TAG, "Successfully logged into server")
+                positionClient?.close()
+                positionClient = PositionClient(baseUrl, token!!, group)
+                positionClient?.open()
             }
             if (cb != null) {
                 cb(it)
@@ -153,6 +159,10 @@ class ApiClient private constructor(val context: Context) {
 
     init {
         loadPreferences()
+    }
+
+    fun sendPosition(filePath:String?, position:Double) {
+        positionClient?.sendPosition(filePath, position)
     }
 
     fun <T> addToRequestQueue(req: Request<T>) {
@@ -372,11 +382,11 @@ class ApiClient private constructor(val context: Context) {
         handler.removeCallbacksAndMessages(RELOGIN_TAG)
         val request = object : StringRequest(Request.Method.POST, baseUrl + "authenticate",
                 {
-                    cb(null)
                     token = it
                     val pref = PreferenceManager.getDefaultSharedPreferences(context)
                     pref.edit().putString("pref_token", token).apply()
                     Log.d(LOG_TAG, "Login success")
+                    cb(null)
                     afterLogin()
                     fireLoginSuccess(it)
                     renewToken(it)

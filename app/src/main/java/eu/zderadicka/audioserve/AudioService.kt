@@ -68,6 +68,9 @@ private const val AUDIOSERVICE_ACTION_SELF_START = "eu.zderadicka.audioserve.SEL
 private const val PAUSE_DELAYED_TASK_SAVE_POSITION = "pause_task_save_position"
 private const val PAUSE_DELAYED_TASK_STOP_FOREGROUND = "pause_task_stop_fg"
 
+private const val POSITION_UPDATE_PERIOD = 3_000L
+private const val POSITION_UPDATE_TAG = "eu.zderadicka.audioserve.POSITION_UPDATE"
+
 
 private class ResultWrapper(val result: MediaBrowserServiceCompat.Result<List<MediaBrowserCompat.MediaItem>>) {
     private var resultSent = false
@@ -216,6 +219,7 @@ class AudioService : MediaBrowserServiceCompat() {
 
         override fun onStop(player: Player) {
             Log.d(LOG_TAG, "Stoping play")
+            if (player.playWhenReady) stopPositionUpdate(true)
             recents.updateRecent(currentMediaItem,
                 session.controller.playbackState.position)
             deletePreviousQueueItem = -1
@@ -463,15 +467,20 @@ class AudioService : MediaBrowserServiceCompat() {
     }
 
     private val sessionCallback = object : MediaControllerCompat.Callback() {
+        private var previousState:Int = 0;
         override fun onPlaybackStateChanged(state: PlaybackStateCompat) {
             super.onPlaybackStateChanged(state)
             Log.d(LOG_TAG, "Playback state changed in service ${state}")
             when (state.state) {
                 PlaybackStateCompat.STATE_PLAYING -> {
                     notifManager.sendNotification(true)
+                    startPositionUpdate()
                 }
                 PlaybackStateCompat.STATE_PAUSED -> {
                     notifManager.sendNotification()
+                    if (previousState == PlaybackStateCompat.STATE_PLAYING) {
+                        stopPositionUpdate(true)
+                    }
                 }
             }
             if (seekAfterPrepare == null) {
@@ -505,6 +514,8 @@ class AudioService : MediaBrowserServiceCompat() {
             if (state.state == PlaybackStateCompat.STATE_PLAYING) {
                 scheduler.removeCallbacksAndMessages(PAUSE_DELAYED_TASK_STOP_FOREGROUND)
             }
+
+            previousState = state.state
         }
 
         override fun onMetadataChanged(metadata: MediaMetadataCompat?) {
@@ -536,6 +547,10 @@ class AudioService : MediaBrowserServiceCompat() {
                             saveRecent(oldItem, applicationContext)
                         }
                     }
+                }
+
+                if (player.playWhenReady) {
+                    startPositionUpdate()
                 }
             }
 
@@ -569,7 +584,7 @@ class AudioService : MediaBrowserServiceCompat() {
 
     private val prefsListener = SharedPreferences.OnSharedPreferenceChangeListener { sharedPreferences, key ->
         when (key) {
-            "pref_server_url", "pref_shared_secret" -> apiClient.loadPreferences()
+            "pref_server_url", "pref_shared_secret", "pref_group" -> apiClient.loadPreferences()
             "pref_preload" -> {
                 preloadFiles = sharedPreferences.getString("pref_preload", "2").toInt()
             }
@@ -772,6 +787,37 @@ mediaSessionConnector.setErrorMessageProvider(messageProvider);
 
         Log.d(LOG_TAG, "Audioservice destroyed")
     }
+
+    // Playback update to server
+
+    private fun startPositionUpdate() {
+        fun updatePosition() {
+            apiClient.sendPosition(currentMediaItem?.mediaId, player.currentPosition / 1000.0)
+            scheduler.postAtTime({
+                updatePosition()
+            },
+                    POSITION_UPDATE_TAG,
+                    SystemClock.uptimeMillis() + POSITION_UPDATE_PERIOD)
+        }
+        scheduler.removeCallbacksAndMessages(POSITION_UPDATE_TAG)
+        scheduler.postAtTime({
+            updatePosition()
+        },
+                POSITION_UPDATE_TAG,
+                SystemClock.uptimeMillis() + 500 // this willl get through initial changes in statuses
+        )
+    }
+
+    private fun stopPositionUpdate(reportCurrent:Boolean = false) {
+        scheduler.removeCallbacksAndMessages(POSITION_UPDATE_TAG)
+        if (reportCurrent) {
+            apiClient.sendPosition(currentMediaItem?.mediaId, player.currentPosition/1000.0)
+        }
+
+    }
+
+
+    // Media session methods
 
     private val SEARCH_RE = Regex("""^(\d+)_(.*)""")
 

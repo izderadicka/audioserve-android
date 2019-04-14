@@ -236,3 +236,15 @@ fun duplicateMediaItemWithExtrasAssured(item: MediaBrowserCompat.MediaItem):Medi
         else if (item.isPlayable) MediaBrowserCompat.MediaItem.FLAG_PLAYABLE else 0)
 
 }
+
+fun mediaIdToPositionPath(mediaId: String, group:String) : String? {
+    val m = AUDIO_START_RE.matchEntire(mediaId)
+    if (m == null) {
+        return null
+    } else {
+        var collection = m.groups.get(1)?.value
+        if (collection.isNullOrEmpty()) collection = "0"
+        return "$group/$collection/${m.groups.get(2)?.value?:""}"
+    }
+
+}
