@@ -9,7 +9,7 @@
     android:layout_marginTop="32dp"
     android:layout_marginRight="16dp"
     android:background="@drawable/sleep_overlay_background"
-    android:visibility="visible">
+    android:visibility="gone">
 
 
     <ImageView
