@@ -20,10 +20,7 @@ import com.android.volley.toolbox.HttpHeaderParser
 import com.android.volley.toolbox.ImageRequest
 import com.android.volley.toolbox.StringRequest
 import com.android.volley.toolbox.Volley
-import eu.zderadicka.audioserve.data.AudioFolder
-import eu.zderadicka.audioserve.data.parseCollectionsFromJson
-import eu.zderadicka.audioserve.data.parseFolderfromJson
-import eu.zderadicka.audioserve.data.parseTranscodingsFromJson
+import eu.zderadicka.audioserve.data.*
 import eu.zderadicka.audioserve.utils.encodeUri
 import eu.zderadicka.audioserve.utils.fromMarkdown
 import java.io.File
@@ -164,6 +161,19 @@ class ApiClient private constructor(val context: Context) {
     fun sendPosition(filePath:String?, position:Double) {
         positionClient?.sendPosition(filePath, position)
     }
+
+    fun queryPosition(folderPath:String?, cb: (RemotePositionResponse?, PositionClientError?)->Unit) {
+        positionClient?.sendQuery(folderPath,cb)
+    }
+
+    fun queryPositionForMediaId(mediaId:String, cb: (RemotePositionResponse?, PositionClientError?)->Unit) {
+        positionClient?.apply {
+            val folderPath = mediaIdToFolderPath(mediaId)
+            sendQuery(folderPath,cb)
+        }
+    }
+
+
 
     fun <T> addToRequestQueue(req: Request<T>) {
         if (!loginDone) {

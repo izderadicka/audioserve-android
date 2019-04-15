@@ -154,4 +154,7 @@ class AudioFolder(name: String, path: String, val subfolders: ArrayList<Subfolde
     }
 }
 
+data class RemotePosition(val folder:String, val file:String, val timestamp: Long, val position:Double)
+data class RemotePositionResponse(val folder: RemotePosition?, val last: RemotePosition?)
+
 

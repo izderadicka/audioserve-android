@@ -50,6 +50,24 @@ fun parseTranscodingsFromJson(data: String): TranscodingLimits {
     return TranscodingLimits(low, medium, high)
 }
 
+fun parseRemotePositionResponse(data: String): RemotePositionResponse {
+    val json = JSONObject(data)
+    val folder = json.optJSONObject("folder")
+    val last = json.optJSONObject("last")
+
+    fun parsePosition(o: JSONObject?): RemotePosition? {
+        if (o == null) return null
+        return RemotePosition(
+                o.getString("folder"),
+                o.getString("file"),
+                o.getLong("timestamp"),
+                o.getDouble("position")
+        )
+    }
+
+    return RemotePositionResponse(parsePosition(folder), parsePosition(last))
+}
+
 
 
 

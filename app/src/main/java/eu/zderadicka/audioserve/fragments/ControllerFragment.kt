@@ -17,7 +17,10 @@ import android.view.ViewGroup
 import android.view.animation.LinearInterpolator
 import android.widget.*
 import eu.zderadicka.audioserve.*
+import eu.zderadicka.audioserve.data.mediaIdToPositionPath
+import eu.zderadicka.audioserve.net.ApiClient
 import eu.zderadicka.audioserve.ui.*
+import java.io.File
 
 //import kotlinx.android.synthetic.main.fragment_controller.*
 
@@ -214,7 +217,26 @@ class ControllerFragment : MediaFragment(), SharedPreferences.OnSharedPreference
         playPauseButton.setOnClickListener {
 
             if (canPlay) {
-                mediaController?.transportControls?.play()
+                mediaController?.apply {
+                    //TODO - we need find better way to do this
+                    val mediaId = metadata?.description?.mediaId
+                    if (mediaId != null) {
+                        val api = ApiClient.getInstance(context!!)
+                        api.queryPositionForMediaId(mediaId) {
+                            res, err ->
+                            if (res != null) {
+                                Log.d(LOG_TAG, "Got position $res")
+                            }
+                            else {
+                                Log.e(LOG_TAG, "Error reading position: $err")
+                            }
+                            transportControls?.play()
+                        }
+                    } else {
+
+                        transportControls?.play()
+                    }
+                }
             } else {
                 mediaController?.transportControls?.pause()
             }

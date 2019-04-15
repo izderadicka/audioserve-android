@@ -1,12 +1,24 @@
 package eu.zderadicka.audioserve.net
 
 import android.net.Uri
+import android.os.Handler
 import android.util.Log
+import eu.zderadicka.audioserve.data.RemotePositionResponse
 import eu.zderadicka.audioserve.data.mediaIdToPositionPath
+import eu.zderadicka.audioserve.data.parseRemotePositionResponse
 import okhttp3.*
+import java.io.File
 
 private const val LOG_TAG = "PositionClient"
 private const val NORMAL_CLOSE = 1000
+
+enum class PositionClientError {
+    Socket,
+    CanceledByNext,
+    NotReady,
+    Timeout,
+    InvalidResponse
+}
 
 class PositionClient(val serverUrl:String, val token:String, val group: String?) {
 
@@ -14,6 +26,20 @@ class PositionClient(val serverUrl:String, val token:String, val group: String?)
     private val client = OkHttpClient()
     private val listener = SocketListener()
     private var lastFile:String? = null
+    private var pendingReceive: ((RemotePositionResponse?, PositionClientError?) -> Unit)? = null
+    private val handler = Handler()
+
+    private fun finishPendingReceive(err: PositionClientError) {
+        pendingReceive?.invoke(null, err)
+        pendingReceive = null
+    }
+
+    private val timeout = object: Runnable {
+        override fun run() {
+            finishPendingReceive(PositionClientError.Timeout)
+        }
+
+    }
 
     fun open() {
         if (group.isNullOrBlank()) return
@@ -37,6 +63,25 @@ class PositionClient(val serverUrl:String, val token:String, val group: String?)
         socket?.apply {
             val msg = encodeMessage(filePath,position)
             send(msg)
+        }
+
+    }
+
+    fun mediaIdToFolderPath(mediaId:String) :String {
+        return File(mediaIdToPositionPath(mediaId, group?:"group")).parent
+    }
+
+    fun sendQuery(folderPath:String?, cb: (RemotePositionResponse?, PositionClientError?) -> Unit) {
+        finishPendingReceive(PositionClientError.CanceledByNext)
+        handler.removeCallbacks(timeout)
+        if (socket == null) {
+            cb(null, PositionClientError.NotReady)
+        } else {
+            socket?.apply {
+                pendingReceive = cb
+                send(if (folderPath.isNullOrBlank()) "?" else folderPath)
+                handler.postDelayed(timeout, 3_000)
+            }
         }
 
     }
@@ -75,6 +120,17 @@ class PositionClient(val serverUrl:String, val token:String, val group: String?)
 
         override fun onMessage(webSocket: WebSocket, text: String) {
             Log.d(LOG_TAG, "Got message $text")
+            handler.removeCallbacks(timeout)
+            try {
+                val res = parseRemotePositionResponse(text)
+                pendingReceive?.invoke(res, null)
+            }
+            catch (e:Exception) {
+                Log.e(LOG_TAG, "Got invalid response, error: $e")
+                pendingReceive?.invoke(null, PositionClientError.InvalidResponse)
+            }
+            pendingReceive = null
+
         }
 
         override fun onClosed(webSocket: WebSocket, code: Int, reason: String) {
