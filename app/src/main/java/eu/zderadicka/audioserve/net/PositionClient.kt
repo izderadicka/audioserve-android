@@ -28,6 +28,7 @@ class PositionClient(val serverUrl:String, val token:String, val group: String?)
     private var lastFile:String? = null
     private var pendingReceive: ((RemotePositionResponse?, PositionClientError?) -> Unit)? = null
     private val handler = Handler()
+    private var closed = false
 
     private fun finishPendingReceive(err: PositionClientError) {
         pendingReceive?.invoke(null, err)
@@ -42,6 +43,7 @@ class PositionClient(val serverUrl:String, val token:String, val group: String?)
     }
 
     fun open() {
+        closed = false
         if (group.isNullOrBlank()) return
         val parsedUri = Uri.parse(serverUrl)
         val socketUri = parsedUri.buildUpon()
@@ -100,6 +102,7 @@ class PositionClient(val serverUrl:String, val token:String, val group: String?)
 
 
     fun close() {
+        closed = true
         socket?.close(NORMAL_CLOSE, null)
     }
 
@@ -110,6 +113,13 @@ class PositionClient(val serverUrl:String, val token:String, val group: String?)
 
         override fun onFailure(webSocket: WebSocket, t: Throwable, response: Response?) {
             Log.w(LOG_TAG, "Socket Error: $t")
+            // try reopen if socket is lost
+            if (!closed) {
+                handler.postDelayed({
+                    open()
+                }, 1000)
+            }
+
         }
 
         override fun onClosing(webSocket: WebSocket, code: Int, reason: String) {
