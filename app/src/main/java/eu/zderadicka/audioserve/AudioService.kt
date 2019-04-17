@@ -144,7 +144,7 @@ class AudioService : MediaBrowserServiceCompat() {
     private var playQueue: MutableList<MediaItem> = ArrayList<MediaItem>()
     private lateinit var apiClient: ApiClient
     private var preloadFiles: Int = 2
-    private var seekAfterPrepare: Long? = null
+    private var delayedSeek: SeekState? = null
     private var deletePreviousQueueItem: Int = -1 // delete previous queue Item
     private var isOffline: Boolean = false
     private val scheduler = Handler()
@@ -223,7 +223,7 @@ class AudioService : MediaBrowserServiceCompat() {
             recents.updateRecent(currentMediaItem,
                 session.controller.playbackState.position)
             deletePreviousQueueItem = -1
-            seekAfterPrepare = null
+            delayedSeek = null
             needResume = false
             super.onStop(player)
             session.isActive = false
@@ -349,7 +349,8 @@ class AudioService : MediaBrowserServiceCompat() {
                 playQueue = currentFolder.slice(folderPosition until currentFolder.size).toMutableList()
                 cacheManager.resetLoading(* playQueue.slice(0 until min(preloadFiles + 1, playQueue.size))
                         .map { it.mediaId!! }.toTypedArray())
-                cacheManager.ensureCaching(currentFolder[folderPosition])
+                val topItem = currentFolder[folderPosition]
+                cacheManager.ensureCaching(topItem)
                 val ms = playQueue.map {
                     val transcode = cacheManager.shouldTranscode(it)
                     factory.createMediaSource(apiClient.uriFromMediaId(it.mediaId!!, transcode))
@@ -363,8 +364,14 @@ class AudioService : MediaBrowserServiceCompat() {
                     playerController.requestAudioFocus()
                 }
                 val seekTo = extras?.getLong(METADATA_KEY_LAST_POSITION)
-                if (seekTo != null && seekTo > 1000) {
-                    seekAfterPrepare = seekTo
+                if (seekTo != null && seekTo>0L)  {
+                    if (cacheManager.isCached(mediaId)) {
+                        delayedSeek = SeekWhenReady(seekTo, mediaId)
+                    } else {
+                        delayedSeek = SeekAfterLoad(seekTo, mediaId)
+                    }
+                } else {
+                    delayedSeek = null
                 }
 
                 previousPositionUpdateTime = extras?.getLong(METADATA_KEY_LAST_LISTENED_TIMESTAMP) ?: 0
@@ -390,7 +397,7 @@ class AudioService : MediaBrowserServiceCompat() {
                 if (playerPos == queuePos) {
                     val duration = mi.description.extras?.getLong(METADATA_KEY_DURATION) ?: 0L
                     val pos = player.currentPosition
-                    if (duration - pos > 5000) {
+                    if (duration - pos > 5000 || delayedSeek != null) {
                         player.playWhenReady = false
                         playQueue.add(queuePos + 1, mi)
                         currentSourcesList!!.addMediaSource(playerPos + 1,
@@ -431,7 +438,6 @@ class AudioService : MediaBrowserServiceCompat() {
 
     private val cacheListener: FileCache.Listener = object : FileCache.Listener {
         override fun onCacheChange(path: String, status: FileCache.Status) {
-
             fun send_event(cached: Boolean) {
                 val b = Bundle()
                 b.putString(METADATA_KEY_MEDIA_ID, path)
@@ -444,15 +450,18 @@ class AudioService : MediaBrowserServiceCompat() {
             Log.d(LOG_TAG, "Cache change on $path to ${status.name}")
             if (status == FileCache.Status.FullyCached) {
                 send_event(true)
+
                 scheduler.post {
+                    val was_playing = player.playWhenReady
                     preparer.duplicateInQueue(path) { idx, pos ->
                         Log.d(LOG_TAG, "Duplicted $idx,$pos, current player pos ${player.currentPosition}")
                         try {
                             player.seekTo(idx + 1, pos) //TODO find best way for gapless seek +200 looked like better when emulated
+                            delayedSeek = delayedSeek?.loaded(path)
                         } catch (e:IllegalSeekPositionException) {
                             Log.e(LOG_TAG, "Error seeking in duplicated item")
                         }
-                        player.playWhenReady = true
+                        player.playWhenReady = was_playing
                         deletePreviousQueueItem = idx
 
                     }
@@ -483,23 +492,23 @@ class AudioService : MediaBrowserServiceCompat() {
                     }
                 }
             }
-            if (seekAfterPrepare == null) {
+            if (delayedSeek == null) {
                 lastPositionUpdateTime = System.currentTimeMillis() //state.lastPositionUpdateTime
                 if (currentMediaItem != null && session.controller?.metadata?.description?.mediaId == currentMediaItem?.mediaId) {
+
                     currentMediaItem?.let { recents.updateRecent(it, state.position) }
                 }
             }
 
             if ((state.state == PlaybackStateCompat.STATE_PAUSED || state.state == PlaybackStateCompat.STATE_PLAYING)
-                    && seekAfterPrepare != null) {
-                val seekTo = seekAfterPrepare!!
-                seekAfterPrepare = null
-                Log.d(LOG_TAG, "Seeking to previous position $seekTo")
-                session.controller.transportControls.seekTo(seekTo)
+                    && delayedSeek != null && state.actions and PlaybackStateCompat.ACTION_SEEK_TO ==  PlaybackStateCompat.ACTION_SEEK_TO) {
+                Log.d(LOG_TAG,"Trying to apply delayed seek to ${currentMediaItem?.mediaId}")
+
+                delayedSeek = currentMediaItem?.mediaId?.let{ delayedSeek?.ready(it, session)}
 
             } else if ((state.state == PlaybackStateCompat.STATE_ERROR)
-                    && seekAfterPrepare != null) {
-                seekAfterPrepare = null
+                    && delayedSeek != null) {
+                delayedSeek = null
             }
 
             if ((state.state == PlaybackStateCompat.STATE_PAUSED || state.state == PlaybackStateCompat.STATE_PLAYING)
@@ -1001,6 +1010,36 @@ mediaSessionConnector.setErrorMessageProvider(messageProvider);
         } else {
             BrowserRoot(EMPTY_ROOT_TAG, null)
         }
+    }
+
+    // Delayed seek state
+
+    interface SeekState {
+        fun loaded(mediaId:String): SeekState?
+        fun ready(mediaId:String, session: MediaSessionCompat): SeekState?
+
+    }
+    inner class SeekAfterLoad(private val seekTo: Long, private val forMediaId: String): SeekState {
+        override fun ready(mediaId: String, session: MediaSessionCompat): SeekState? = this
+        override fun loaded(mediaId: String): SeekState =
+                if (mediaId == forMediaId) SeekWhenReady(seekTo, forMediaId) else this
+
+    }
+
+    inner class SeekWhenReady(private val seekTo: Long, private val forMediaId: String): SeekState {
+        override fun ready(mediaId: String, session: MediaSessionCompat): SeekState? {
+
+            if (mediaId == forMediaId) {
+                Log.d(LOG_TAG, "Seeking to previous position $seekTo")
+                session.controller.transportControls.seekTo(seekTo)
+                return null
+
+            } else {
+                return this
+            }
+        }
+
+        override fun loaded(mediaId: String): SeekState? = this
     }
 
 }

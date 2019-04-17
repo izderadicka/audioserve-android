@@ -177,8 +177,6 @@ class MainActivity : AppCompatActivity(),
         pendingMediaItem = null
 
         if (!error && item != null) {
-            val ctl = MediaControllerCompat.getMediaController(this).transportControls
-
             val extras = Bundle()
             val startAt: Long = item.description.extras?.getLong(METADATA_KEY_LAST_POSITION) ?: 0
             if (startAt > 0) {
@@ -187,7 +185,7 @@ class MainActivity : AppCompatActivity(),
             }
             extras.putLong(METADATA_KEY_LAST_LISTENED_TIMESTAMP,
                     item.description.extras?.getLong(METADATA_KEY_LAST_LISTENED_TIMESTAMP)?: 0)
-            ctl.prepareFromMediaId(item.mediaId, extras)
+            mediaController?.transportControls?.prepareFromMediaId(item.mediaId, extras)
         }
 
         collection = collectionFromFolderId(folderId)?: collectionFromSearchId(folderId)?: collectionFromModifiedId(folderId)
