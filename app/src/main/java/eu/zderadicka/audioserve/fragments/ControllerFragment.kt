@@ -121,6 +121,27 @@ class ControllerFragment : MediaFragment(), SharedPreferences.OnSharedPreference
             }
 
         }
+
+        override fun onSessionEvent(event: String?, extras: Bundle?) {
+            when (event) {
+                SEEK_WAITING -> {
+                    showDelayedSeekProgress(true)
+                }
+                SEEK_WAITING_DONE -> {
+                    showDelayedSeekProgress(false, false)
+                }
+            }
+        }
+    }
+
+    private fun showDelayedSeekProgress(show:Boolean=true, cancel:Boolean=true) {
+        if (show) {
+            delayedSeekProgressBar.visibility = View.VISIBLE
+        } else {
+            delayedSeekProgressBar.visibility = View.GONE
+            if (cancel) mediaController?.sendCommand(CUSTOM_COMMAND_CANCEL_DELAYED_SEEK, null, null)
+
+        }
     }
 
 
@@ -159,6 +180,7 @@ class ControllerFragment : MediaFragment(), SharedPreferences.OnSharedPreference
     lateinit var pitchView: TextView
     lateinit var silenceSwitch: Switch
     lateinit var volumeBoostSwitch: Switch
+    lateinit var delayedSeekProgressBar: ProgressBar
 
     var progressAnimator: ValueAnimator? = null
 
@@ -183,6 +205,7 @@ class ControllerFragment : MediaFragment(), SharedPreferences.OnSharedPreference
         volumeBoostSwitch = view.findViewById(R.id.volumeBoostSwitch)
         speedView = view.findViewById(R.id.speedView)
         pitchView = view.findViewById(R.id.pitchView)
+        delayedSeekProgressBar = view.findViewById(R.id.delayedSeekProgressBar)
         speedBarListener = DiscreteSeekbarListener(
                 context!!,
                 SPEED_RANGE,
@@ -215,7 +238,7 @@ class ControllerFragment : MediaFragment(), SharedPreferences.OnSharedPreference
         })
 
         playPauseButton.setOnClickListener {
-
+            showDelayedSeekProgress(false)
             if (canPlay) {
                 mediaController?.apply {
                     //TODO - we need find better way to do this
@@ -244,10 +267,12 @@ class ControllerFragment : MediaFragment(), SharedPreferences.OnSharedPreference
         }
 
         skipNextButton.setOnClickListener {
+            showDelayedSeekProgress(false)
             mediaController?.transportControls?.skipToNext()
         }
 
         skipPreviousButton.setOnClickListener {
+            showDelayedSeekProgress(false)
             mediaController?.transportControls?.skipToPrevious()
         }
 

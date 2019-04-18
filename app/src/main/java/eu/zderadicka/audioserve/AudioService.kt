@@ -50,11 +50,15 @@ private const val REWIND_MS = 15 * 1000L
 const val MEDIA_FULLY_CACHED = "eu.zderadicka.audioserve.FULLY_CACHED"
 const val MEDIA_CACHE_DELETED = "eu.zderadicka.audioserve.CACHE_DELETED"
 const val PLAYER_NOT_READY = "eu.zderadicka.audioserve.PLAYER_NOT_READY"
+const val SEEK_WAITING = "eu.zderadicka.audioserve.SEEK_WAITING"
+const val SEEK_WAITING_DONE = "eu.zderadicka.audioserve.SEEK_WAITING_DONE"
+
 
 const val CUSTOM_COMMAND_FAST_PLAY_START = "eu.zderadicka.audioserve.FAST_PLAY_START"
 const val CUSTOM_COMMAND_FAST_PLAY_END = "eu.zderadicka.audioserve.FAST_PLAY_END"
 const val CUSTOM_COMMAND_REWIND_PLAY_START = "eu.zderadicka.audioserve.REWIND_PLAY_START"
 const val CUSTOM_COMMAND_REWIND_PLAY_END = "eu.zderadicka.audioserve.REWIND_PLAY_END"
+const val CUSTOM_COMMAND_CANCEL_DELAYED_SEEK = "eu.zderadicka.audioserve.CANCEL_DELAYED_SEEK"
 
 private const val REWIND_PLAY_OFFSET = 4_000L
 private const val REWIND_PLAY_REPEAT = 1_000L
@@ -235,6 +239,8 @@ class AudioService : MediaBrowserServiceCompat() {
                 am.abandonAudioFocus(focusCallback)
             }
         }
+
+
     }
 
     private fun calcAutoRewind(): Int {
@@ -300,6 +306,10 @@ class AudioService : MediaBrowserServiceCompat() {
                 CUSTOM_COMMAND_REWIND_PLAY_END -> {
                     scheduler.removeCallbacks(repeater)
                 }
+
+                CUSTOM_COMMAND_CANCEL_DELAYED_SEEK -> {
+                    delayedSeek = null
+                }
             }
         }
 
@@ -309,7 +319,8 @@ class AudioService : MediaBrowserServiceCompat() {
 
         override fun getCommands(): Array<String>? {
             return arrayOf(CUSTOM_COMMAND_FAST_PLAY_START, CUSTOM_COMMAND_FAST_PLAY_END,
-                    CUSTOM_COMMAND_REWIND_PLAY_START, CUSTOM_COMMAND_REWIND_PLAY_END)
+                    CUSTOM_COMMAND_REWIND_PLAY_START, CUSTOM_COMMAND_REWIND_PLAY_END,
+                    CUSTOM_COMMAND_CANCEL_DELAYED_SEEK)
         }
 
         var sourceFactory: ExtractorMediaSource.Factory? = null
@@ -366,9 +377,9 @@ class AudioService : MediaBrowserServiceCompat() {
                 val seekTo = extras?.getLong(METADATA_KEY_LAST_POSITION)
                 if (seekTo != null && seekTo>0L)  {
                     if (cacheManager.isCached(mediaId)) {
-                        delayedSeek = SeekWhenReady(seekTo, mediaId)
+                        delayedSeek = SeekWhenReady(seekTo, mediaId, session)
                     } else {
-                        delayedSeek = SeekAfterLoad(seekTo, mediaId)
+                        delayedSeek = SeekAfterLoad(seekTo, mediaId, session)
                     }
                 } else {
                     delayedSeek = null
@@ -438,7 +449,7 @@ class AudioService : MediaBrowserServiceCompat() {
 
     private val cacheListener: FileCache.Listener = object : FileCache.Listener {
         override fun onCacheChange(path: String, status: FileCache.Status) {
-            fun send_event(cached: Boolean) {
+            fun sendEvent(cached: Boolean) {
                 val b = Bundle()
                 b.putString(METADATA_KEY_MEDIA_ID, path)
                 session.sendSessionEvent(if (cached) MEDIA_FULLY_CACHED else MEDIA_CACHE_DELETED, b)
@@ -449,7 +460,7 @@ class AudioService : MediaBrowserServiceCompat() {
             }
             Log.d(LOG_TAG, "Cache change on $path to ${status.name}")
             if (status == FileCache.Status.FullyCached) {
-                send_event(true)
+                sendEvent(true)
 
                 scheduler.post {
                     val was_playing = player.playWhenReady
@@ -469,7 +480,7 @@ class AudioService : MediaBrowserServiceCompat() {
 
 
             } else if (status == FileCache.Status.NotCached) {
-                send_event(false)
+                sendEvent(false)
             }
         }
 
@@ -1019,19 +1030,42 @@ mediaSessionConnector.setErrorMessageProvider(messageProvider);
         fun ready(mediaId:String, session: MediaSessionCompat): SeekState?
 
     }
-    inner class SeekAfterLoad(private val seekTo: Long, private val forMediaId: String): SeekState {
+
+    abstract class SeekStateBase(private val session: MediaSessionCompat,
+                                 protected val forMediaId: String): SeekState {
+        fun sendEvent(evt: String) {
+            val b = Bundle()
+            b.putString(METADATA_KEY_MEDIA_ID, forMediaId)
+            session.sendSessionEvent(evt, b)
+
+        }
+    }
+    inner class SeekAfterLoad(private val seekTo: Long,
+                              forMediaId: String,
+                              session: MediaSessionCompat
+                              ):
+            SeekStateBase(session, forMediaId) {
+
+        init {
+            sendEvent(SEEK_WAITING)
+        }
         override fun ready(mediaId: String, session: MediaSessionCompat): SeekState? = this
         override fun loaded(mediaId: String): SeekState =
-                if (mediaId == forMediaId) SeekWhenReady(seekTo, forMediaId) else this
+                if (mediaId == forMediaId) SeekWhenReady(seekTo, forMediaId, session, true) else this
 
     }
 
-    inner class SeekWhenReady(private val seekTo: Long, private val forMediaId: String): SeekState {
+    inner class SeekWhenReady(private val seekTo: Long,
+                              forMediaId: String,
+                              session: MediaSessionCompat,
+                              val sendEvent: Boolean = false):
+            SeekStateBase(session, forMediaId) {
         override fun ready(mediaId: String, session: MediaSessionCompat): SeekState? {
 
             if (mediaId == forMediaId) {
                 Log.d(LOG_TAG, "Seeking to previous position $seekTo")
                 session.controller.transportControls.seekTo(seekTo)
+                if (sendEvent) sendEvent(SEEK_WAITING_DONE)
                 return null
 
             } else {

@@ -167,9 +167,13 @@ class ApiClient private constructor(val context: Context) {
     }
 
     fun queryPositionForMediaId(mediaId:String, cb: (RemotePositionResponse?, PositionClientError?)->Unit) {
-        positionClient?.apply {
-            val folderPath = mediaIdToFolderPath(mediaId)
-            sendQuery(folderPath,cb)
+        positionClient.apply {
+            if (this == null) {
+                cb(null, PositionClientError.NotReady)
+            } else {
+                val folderPath = mediaIdToFolderPath(mediaId)
+                sendQuery(folderPath,cb)
+            }
         }
     }
 
