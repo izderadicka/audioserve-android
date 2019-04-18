@@ -145,8 +145,12 @@ class ApiClient private constructor(val context: Context) {
             if (it == null) {
                 Log.d(LOG_TAG, "Successfully logged into server")
                 positionClient?.close()
-                positionClient = PositionClient(baseUrl, token!!, group)
-                positionClient?.open()
+                if (group.isNullOrBlank()) {
+                    positionClient = null
+                } else {
+                    positionClient = PositionClient(baseUrl, token!!, group)
+                    positionClient?.open()
+                }
             }
             if (cb != null) {
                 cb(it)
@@ -163,7 +167,13 @@ class ApiClient private constructor(val context: Context) {
     }
 
     fun queryPosition(folderPath:String?, cb: (RemotePositionResponse?, PositionClientError?)->Unit) {
-        positionClient?.sendQuery(folderPath,cb)
+        positionClient.apply {
+            if (this == null) {
+                cb(null, PositionClientError.NotReady)
+            } else {
+                sendQuery(folderPath,cb)
+            }
+        }
     }
 
     fun queryPositionForMediaId(mediaId:String, cb: (RemotePositionResponse?, PositionClientError?)->Unit) {
