@@ -11,6 +11,7 @@ import java.io.File
 
 private const val LOG_TAG = "PositionClient"
 private const val NORMAL_CLOSE = 1000
+private const val TIMEOUT_DURATION = 2_000L
 
 enum class PositionClientError {
     Socket,
@@ -82,7 +83,7 @@ class PositionClient(val serverUrl:String, val token:String, val group: String?)
             socket?.apply {
                 pendingReceive = cb
                 send(if (folderPath.isNullOrBlank()) "?" else folderPath)
-                handler.postDelayed(timeout, 3_000)
+                handler.postDelayed(timeout, TIMEOUT_DURATION)
             }
         }
 

@@ -68,9 +68,6 @@ fun parseRemotePositionResponse(data: String): RemotePositionResponse {
     return RemotePositionResponse(parsePosition(folder), parsePosition(last))
 }
 
-
-
-
 fun readFolderFromJson(stream: InputStream, name: String, path: String): AudioFolder {
     val data = readAsString(stream)
     return parseFolderfromJson(data, name, path)
@@ -265,4 +262,19 @@ fun mediaIdToPositionPath(mediaId: String, group:String) : String? {
         return "$group/$collection/${m.groups.get(2)?.value?:""}"
     }
 
+}
+
+private val POSITION_RE = Regex("""^[^/]+?/(\d+)/(.+)""")
+fun splitPositionFolder(f: String): Pair<String,Int> {
+    val m = POSITION_RE.matchEntire(f);
+    if (m == null) return Pair(f,0)
+    val collection = m.groupValues[1].toInt()
+    val folder = m.groupValues[2]
+    return Pair(folder, collection)
+
+}
+
+private val CHAPTER_RE = Regex("""\$\$[\d\-]+\$\$""")
+fun normTitle(t:String): String {
+   return CHAPTER_RE.replace(t, "")
 }

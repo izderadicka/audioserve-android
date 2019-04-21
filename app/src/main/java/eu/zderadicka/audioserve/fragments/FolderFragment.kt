@@ -62,6 +62,7 @@ class FolderItemViewHolder(itemView: View, viewType: Int, val clickCB: (Int, Ite
     var downloadButton: ImageButton? = null
     var bookmarkButton: ImageButton? = null
     var extensionView: TextView? = null
+    var positionSeparatorView: TextView? = null
     var isFile = false
     private set
     var isBookmark = false
@@ -99,6 +100,7 @@ class FolderItemViewHolder(itemView: View, viewType: Int, val clickCB: (Int, Ite
             ITEM_TYPE_BOOKMARK -> {
                 durationView = itemView.findViewById(R.id.durationView)
                 positionView = itemView.findViewById(R.id.positionView)
+                positionSeparatorView = itemView.findViewById(R.id.positionSeparatorView)
                 lastListenedView = itemView.findViewById(R.id.bookmarkedAtView)
                 folderPathView = itemView.findViewById(R.id.folderPathView)
                 isBookmark = true
@@ -230,20 +232,31 @@ class FolderAdapter(val context: Context, val isSearch:Boolean,
             holder.bitRateView?.text =
                     item.description.extras?.getInt(METADATA_KEY_BITRATE)?.toString()?:"?"
 
-            if (item.description.extras?.getBoolean(METADATA_KEY_TRANSCODED)?: false) {
+            if (item.description.extras?.getBoolean(METADATA_KEY_TRANSCODED) == true) {
                 holder.transcodedIcon?.visibility = View.VISIBLE
             } else {
                 holder.transcodedIcon?.visibility = View.INVISIBLE
             }
 
-            if (item.description.extras?.getBoolean(METADATA_KEY_CACHED)?: false) {
+            if (item.description.extras?.getBoolean(METADATA_KEY_CACHED) == true) {
                 holder.cachedIcon?.visibility = View.VISIBLE
             } else {
                 holder.cachedIcon?.visibility = View.INVISIBLE
             }
         } else if (holder.isBookmark) {
-            holder.positionView?.text = DateUtils.formatElapsedTime((
+            var pos = DateUtils.formatElapsedTime((
                     item.description.extras?.getLong(METADATA_KEY_LAST_POSITION)?: 0) / 1000L)
+            
+            if (item.description.extras?.getBoolean(METADATA_KEY_IS_REMOTE_POSITION) ==true) {
+                holder.durationView?.visibility = View.GONE
+                holder.positionSeparatorView?.visibility = View.GONE
+                pos = context.getString(R.string.remote_pos, pos)
+            } else {
+                holder.durationView?.visibility = View.VISIBLE
+                holder.positionSeparatorView?.visibility = View.VISIBLE
+                
+            }
+            holder.positionView?.text = pos
 
             holder.lastListenedView?.text = DateUtils.getRelativeTimeSpanString(
                     item.description.extras?.getLong(METADATA_KEY_LAST_LISTENED_TIMESTAMP)?:0,
