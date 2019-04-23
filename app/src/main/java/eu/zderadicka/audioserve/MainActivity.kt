@@ -553,7 +553,15 @@ class MainActivity : AppCompatActivity(),
                 true
             }
             R.id.action_check_remote_positions -> {
-                checkRemotePositions(null)
+                ApiClient.getInstance(this).queryPositionForFolderOrMediaId(null, null){
+                    items, err ->
+                    if (err!= null) {
+                        Log.e(LOG_TAG, "Error querying position $err")
+                    } else {
+                        checkRemotePositions(items, null)
+                    }
+                }
+
 
                 true
             }
@@ -563,29 +571,25 @@ class MainActivity : AppCompatActivity(),
         }
     }
 
-    fun checkRemotePositions(onContinueWithCurrent: (() -> Unit)?) {
-        ApiClient.getInstance(this).queryPositionForFolderOrMediaId(null, null){
-            items, err ->
-            if (err!= null) {
-                Log.e(LOG_TAG, "Error querying position $err")
-            } else {
-                val d = RemotePositionsDialogFragment()
-                d.setListener(object: RemotePositionsDialogFragment.Listener {
-                    override fun onItemChosen(item: MediaBrowserCompat.MediaItem) {
-                        onItemClicked(item, ItemAction.Open, false)
-                    }
+    fun checkRemotePositions(items: ArrayList<MediaBrowserCompat.MediaItem>,
+                             onContinueWithCurrent: (() -> Unit)?) {
 
-                    override fun onContinueWithCurrent() {
-                        onContinueWithCurrent?.invoke()
-                    }
-
-                })
-                val args = Bundle()
-                args.putParcelableArrayList(REMOTE_POSITIONS_LIST, items)
-                d.arguments = args
-                d.show(supportFragmentManager, "Positions dialog")
+        val d = RemotePositionsDialogFragment()
+        d.setListener(object: RemotePositionsDialogFragment.Listener {
+            override fun onItemChosen(item: MediaBrowserCompat.MediaItem) {
+                onItemClicked(item, ItemAction.Open, false)
             }
-        }
+
+            override fun onContinueWithCurrent() {
+                onContinueWithCurrent?.invoke()
+            }
+
+        })
+        val args = Bundle()
+        args.putParcelableArrayList(REMOTE_POSITIONS_LIST, items)
+        d.arguments = args
+        d.show(supportFragmentManager, "Positions dialog")
+
     }
 
     private fun changeOrdering(ord: FoldersOrdering) {

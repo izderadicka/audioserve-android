@@ -90,18 +90,28 @@ class RemotePositionsDialogFragment(): DialogFragment() {
 
     override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
         return activity?.let {
+
+            fun instructionsVisible(view:View, visible:Boolean) {
+                view.findViewById<View>(R.id.instructions_ok).visibility = if (visible) View.VISIBLE else View.GONE
+                view.findViewById<View>(R.id.instructions_empty).visibility = if (visible) View.GONE else View.VISIBLE
+            }
+
             val inflater = requireActivity().layoutInflater
             val view = inflater.inflate(R.layout.fragment_remote_positions, null)
-            val adapter = PositionsAdapter(it, items) {
-                item ->
-                Log.d(LOG_TAG, "Chosen remote position $item")
-                dismiss()
-                listener?.onItemChosen(item)
+            if (items.isNullOrEmpty()) {
+                instructionsVisible(view, false)
+            } else {
+                instructionsVisible(view, true)
+                val adapter = PositionsAdapter(it, items) { item ->
+                    Log.d(LOG_TAG, "Chosen remote position $item")
+                    dismiss()
+                    listener?.onItemChosen(item)
 
+                }
+                val positionsList = view.findViewById<RecyclerView>(R.id.positionsList)
+                positionsList.layoutManager = LinearLayoutManager(it)
+                positionsList.adapter = adapter
             }
-            val positionsList = view.findViewById<RecyclerView>(R.id.positionsList)
-            positionsList.layoutManager = LinearLayoutManager(it)
-            positionsList.adapter = adapter
             val builder = AlertDialog.Builder(it)
             builder
                     .setTitle(getString(R.string.other_playback_positions))

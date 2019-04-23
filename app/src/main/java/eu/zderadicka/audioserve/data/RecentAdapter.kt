@@ -83,8 +83,8 @@ class RecentAdapter(private val ctx: Context) {
                 if (remoteItem != null ) {
                     val addRemote = list.firstOrNull()?.let {
                         it.mediaId != remoteItem.mediaId ||
-                                (it.description.extras?.getLong(METADATA_KEY_DURATION) ?: 0
-                                - (remoteItem.description.extras?.getLong(METADATA_KEY_DURATION)
+                                ((it.description.extras?.getLong(METADATA_KEY_LAST_POSITION) ?: 0)
+                                - (remoteItem.description.extras?.getLong(METADATA_KEY_LAST_POSITION)
                                         ?: 0L))
                                         .absoluteValue > MIN_TIME_DIFFERENCE_FOR_POSITION_SHARING
 
