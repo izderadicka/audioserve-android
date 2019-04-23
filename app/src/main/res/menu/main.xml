@@ -19,6 +19,13 @@
         app:showAsAction="ifRoom"
         android:icon="@drawable/ic_info"
         />
+
+    <item android:id="@+id/action_check_remote_positions"
+        android:title="@string/check_remote_positions"
+        app:showAsAction="never"
+        android:orderInCategory="190"
+        />
+
     <item android:id="@+id/submenu_ordering"
         android:orderInCategory="200"
         android:title="@string/folders_ordering"

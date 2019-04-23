@@ -264,7 +264,7 @@ fun mediaIdToPositionPath(mediaId: String, group:String) : String? {
 
 }
 
-private val POSITION_RE = Regex("""^[^/]+?/(\d+)/(.+)""")
+private val POSITION_RE = Regex("""^(\d+)/(.+)""")
 fun splitPositionFolder(f: String): Pair<String,Int> {
     val m = POSITION_RE.matchEntire(f);
     if (m == null) return Pair(f,0)

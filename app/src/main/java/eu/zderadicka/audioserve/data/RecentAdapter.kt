@@ -7,6 +7,7 @@ import android.support.v4.media.MediaBrowserCompat.MediaItem
 import android.support.v4.media.MediaDescriptionCompat
 import android.util.Log
 import eu.zderadicka.audioserve.net.ApiClient
+import eu.zderadicka.audioserve.net.positionToMediaItem
 import java.io.File
 import kotlin.math.absoluteValue
 
@@ -78,9 +79,8 @@ class RecentAdapter(private val ctx: Context) {
                         File(mediaId).parent
                     })
             list.addAll(getRecents(ctx, path))
-            ApiClient.getInstance(ctx).queryPosition(null) { res, err ->
-                if (res != null && res.last != null) {
-                    val remoteItem = positionToMediaItem(res.last)
+            ApiClient.getInstance(ctx).queryLastPosition{ remoteItem, err ->
+                if (remoteItem != null ) {
                     val addRemote = list.firstOrNull()?.let {
                         it.mediaId != remoteItem.mediaId ||
                                 (it.description.extras?.getLong(METADATA_KEY_DURATION) ?: 0
@@ -97,28 +97,6 @@ class RecentAdapter(private val ctx: Context) {
         }.start()
 
 
-    }
-
-    private fun positionToMediaItem(pos: RemotePosition): MediaItem {
-        val (folder, collection) = splitPositionFolder(pos.folder)
-        val name = normTitle(File(pos.file).nameWithoutExtension)
-        var mediaId = "audio/$folder/${pos.file}"
-        if (collection > 0) mediaId = "$collection/$mediaId"
-        val extras = Bundle()
-        val descBuilder = MediaDescriptionCompat.Builder()
-                .setMediaId(mediaId)
-                .setTitle(name)
-                .setSubtitle(folder)
-
-        //extras.putLong(METADATA_KEY_DURATION, c.getLong(c.getColumnIndex(RecentEntry.COLUMN_DURATION)))
-        extras.putLong(METADATA_KEY_LAST_POSITION, (pos.position * 1000).toLong())
-        extras.putLong(METADATA_KEY_LAST_LISTENED_TIMESTAMP, pos.timestamp)
-        extras.putBoolean(METADATA_KEY_IS_BOOKMARK, true)
-        extras.putBoolean(METADATA_KEY_IS_REMOTE_POSITION, true)
-
-        descBuilder.setExtras(extras)
-        val item = MediaItem(descBuilder.build(), MediaItem.FLAG_PLAYABLE)
-        return item
     }
 
     fun lastForFolder(parentId: String, cb: (MediaItem) -> Unit) {

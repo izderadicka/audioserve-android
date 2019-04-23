@@ -1,11 +1,12 @@
 package eu.zderadicka.audioserve.net
 
 import android.net.Uri
+import android.os.Bundle
 import android.os.Handler
+import android.support.v4.media.MediaBrowserCompat
+import android.support.v4.media.MediaDescriptionCompat
 import android.util.Log
-import eu.zderadicka.audioserve.data.RemotePositionResponse
-import eu.zderadicka.audioserve.data.mediaIdToPositionPath
-import eu.zderadicka.audioserve.data.parseRemotePositionResponse
+import eu.zderadicka.audioserve.data.*
 import okhttp3.*
 import java.io.File
 
@@ -82,7 +83,7 @@ class PositionClient(val serverUrl:String, val token:String, val group: String?)
         } else {
             socket?.apply {
                 pendingReceive = cb
-                send(if (folderPath.isNullOrBlank()) "?" else folderPath)
+                send(folderPath?: group!!)
                 handler.postDelayed(timeout, TIMEOUT_DURATION)
             }
         }
@@ -151,6 +152,28 @@ class PositionClient(val serverUrl:String, val token:String, val group: String?)
 
     }
 
+}
+
+fun positionToMediaItem(pos: RemotePosition): MediaBrowserCompat.MediaItem {
+    val (folder, collection) = splitPositionFolder(pos.folder)
+    val name = normTitle(File(pos.file).nameWithoutExtension)
+    var mediaId = "audio/$folder/${pos.file}"
+    if (collection > 0) mediaId = "$collection/$mediaId"
+    val extras = Bundle()
+    val descBuilder = MediaDescriptionCompat.Builder()
+            .setMediaId(mediaId)
+            .setTitle(name)
+            .setSubtitle(folder)
+
+    //extras.putLong(METADATA_KEY_DURATION, c.getLong(c.getColumnIndex(RecentEntry.COLUMN_DURATION)))
+    extras.putLong(METADATA_KEY_LAST_POSITION, (pos.position * 1000).toLong())
+    extras.putLong(METADATA_KEY_LAST_LISTENED_TIMESTAMP, pos.timestamp)
+    extras.putBoolean(METADATA_KEY_IS_BOOKMARK, true)
+    extras.putBoolean(METADATA_KEY_IS_REMOTE_POSITION, true)
+
+    descBuilder.setExtras(extras)
+    val item = MediaBrowserCompat.MediaItem(descBuilder.build(), MediaBrowserCompat.MediaItem.FLAG_PLAYABLE)
+    return item
 }
 
 

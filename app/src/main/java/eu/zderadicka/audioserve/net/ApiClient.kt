@@ -8,6 +8,7 @@ import android.os.Handler
 import android.os.Looper
 import android.os.SystemClock
 import android.preference.PreferenceManager
+import android.support.v4.media.MediaBrowserCompat
 import android.text.Html
 import android.text.format.DateUtils
 import android.text.format.DateUtils.DAY_IN_MILLIS
@@ -166,12 +167,32 @@ class ApiClient private constructor(val context: Context) {
         positionClient?.sendPosition(filePath, position)
     }
 
-    fun queryPosition(folderPath:String?, cb: (RemotePositionResponse?, PositionClientError?)->Unit) {
+    fun queryLastPosition(cb: (MediaBrowserCompat.MediaItem?, PositionClientError?)->Unit) {
         positionClient.apply {
             if (this == null) {
                 cb(null, PositionClientError.NotReady)
             } else {
-                sendQuery(folderPath,cb)
+                sendQuery(null){res, err ->
+                    cb(if (res?.last != null) positionToMediaItem(res.last) else null, err)
+                }
+            }
+        }
+    }
+
+    fun queryPositionForFolderOrMediaId(folderId: String?, mediaId:String?, cb: (ArrayList<MediaBrowserCompat.MediaItem>, PositionClientError?)->Unit) {
+        positionClient.apply {
+            if (this == null) {
+                cb(ArrayList(), PositionClientError.NotReady)
+            } else {
+                val folderPath = mediaId?.let{mediaIdToFolderPath(it)}?:folderId
+                sendQuery(folderPath){res,err ->
+                    val list = ArrayList<MediaBrowserCompat.MediaItem>()
+                    res?.apply {
+                        res.folder?.also {list.add(positionToMediaItem(it))}
+                        res.last?.also {list.add(positionToMediaItem(it))}
+                    }
+                    cb(list,err)
+                }
             }
         }
     }

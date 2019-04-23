@@ -31,6 +31,7 @@ import android.preference.PreferenceManager
 import android.support.v7.widget.SearchView
 import android.support.v7.widget.SwitchCompat
 import eu.zderadicka.audioserve.data.*
+import eu.zderadicka.audioserve.net.ApiClient
 import eu.zderadicka.audioserve.net.DOWNLOAD_ACTION
 import eu.zderadicka.audioserve.net.DownloadService
 import eu.zderadicka.audioserve.ui.ExpandableFrameLayout
@@ -551,9 +552,39 @@ class MainActivity : AppCompatActivity(),
                 item.isChecked = true
                 true
             }
+            R.id.action_check_remote_positions -> {
+                checkRemotePositions(null)
+
+                true
+            }
 
 
             else -> return super.onOptionsItemSelected(item)
+        }
+    }
+
+    fun checkRemotePositions(onContinueWithCurrent: (() -> Unit)?) {
+        ApiClient.getInstance(this).queryPositionForFolderOrMediaId(null, null){
+            items, err ->
+            if (err!= null) {
+                Log.e(LOG_TAG, "Error querying position $err")
+            } else {
+                val d = RemotePositionsDialogFragment()
+                d.setListener(object: RemotePositionsDialogFragment.Listener {
+                    override fun onItemChosen(item: MediaBrowserCompat.MediaItem) {
+                        onItemClicked(item, ItemAction.Open, false)
+                    }
+
+                    override fun onContinueWithCurrent() {
+                        onContinueWithCurrent?.invoke()
+                    }
+
+                })
+                val args = Bundle()
+                args.putParcelableArrayList(REMOTE_POSITIONS_LIST, items)
+                d.arguments = args
+                d.show(supportFragmentManager, "Positions dialog")
+            }
         }
     }
 

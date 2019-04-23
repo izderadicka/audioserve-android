@@ -121,4 +121,9 @@
     <string name="pref_group_summary_null">This device is not part of group, it will not send position updates to server and will not sync position with other devices</string>
     <string name="pref_group_summary_filled">"This device is part of group %1$s, it will share and sync position with other devices in this group. Set empty to disable this."</string>
     <string name="remote_pos">Remote: %1$s</string>
+    <string name="check_remote_positions">Check Remote Positions</string>
+    <string name="other_playback_positions">Other Playback Positions</string>
+    <string name="continue_with_current">Continue With Current</string>
+    <string name="recent_positions_intro">Below are most recent playback positions. Click on them to continue to listen there:</string>
+    <string name="recent_positions_none">No more recent positions then current</string>
 </resources>

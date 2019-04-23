@@ -2,7 +2,6 @@ package eu.zderadicka.audioserve.fragments
 
 import android.annotation.SuppressLint
 import android.app.Dialog
-import android.content.Intent
 import android.os.Bundle
 import android.preference.PreferenceManager
 import android.support.v4.app.DialogFragment
@@ -10,8 +9,6 @@ import android.support.v7.app.AlertDialog
 import android.widget.NumberPicker
 import android.widget.Switch
 import eu.zderadicka.audioserve.R
-import eu.zderadicka.audioserve.utils.SLEEP_START_ACTION
-import eu.zderadicka.audioserve.utils.SleepService
 import eu.zderadicka.audioserve.utils.startSleepTimer
 
 
