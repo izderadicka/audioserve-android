@@ -43,13 +43,13 @@ enum class ApiError {
     companion object {
         fun fromResponseError(err: VolleyError): ApiError =
                 if (err is TimeoutError || err is NoConnectionError) {
-                    ApiError.Network
+                    Network
                 } else if (err is AuthFailureError) {
-                    ApiError.UnauthorizedAccess
+                    UnauthorizedAccess
                 } else if (err is NetworkError || err is ServerError || err is ParseError) {
-                    ApiError.Server
+                    Server
                 } else {
-                    ApiError.Unknown
+                    Unknown
                 }
     }
 }
@@ -133,7 +133,7 @@ class ApiClient private constructor(val context: Context) {
     @Synchronized
     fun loadPreferences(cb: ((ApiError?) -> Unit)? = null) {
         val sps = PreferenceManager.getDefaultSharedPreferences(context)
-        baseUrl = sps.getString("pref_server_url", "")
+        baseUrl = sps.getString("pref_server_url", "")!!
         val group = sps.getString("pref_group", null)
         if (baseUrl.length == 0) {
             Log.w(LOG_TAG, "BaseURL is empty!")
@@ -179,17 +179,28 @@ class ApiClient private constructor(val context: Context) {
         }
     }
 
-    fun queryPositionForFolderOrMediaId(folderId: String?, mediaId:String?, cb: (ArrayList<MediaBrowserCompat.MediaItem>, PositionClientError?)->Unit) {
+    fun queryPositionForFolderOrMediaId(
+            folderId: String?,
+            mediaId:String?,
+            position: Long?,
+            cb: (ArrayList<MediaBrowserCompat.MediaItem>, PositionClientError?)->Unit) {
         positionClient.apply {
             if (this == null) {
                 cb(ArrayList(), PositionClientError.NotReady)
             } else {
-                val folderPath = mediaId?.let{mediaIdToFolderPath(it)}?:folderId
+                val folderPath = mediaId?.let{mediaIdToFolderPath(it)}?:folderId?.let{folderIdToFolderPath(folderId)}
                 sendQuery(folderPath){res,err ->
                     val list = ArrayList<MediaBrowserCompat.MediaItem>()
+                    fun addToList(pos:RemotePosition) {
+                        val item =  positionToMediaItem(pos)
+                        if (item.isNotablyDifferentFrom(mediaId, position)) {
+                            list.add(item)
+                        }
+                    }
+
                     res?.apply {
-                        res.folder?.also {list.add(positionToMediaItem(it))}
-                        res.last?.also {list.add(positionToMediaItem(it))}
+                        res.folder?.also {addToList(it)}
+                        res.last?.also {addToList(it)}
                     }
                     cb(list,err)
                 }
@@ -197,15 +208,10 @@ class ApiClient private constructor(val context: Context) {
         }
     }
 
-    fun queryPositionForMediaId(mediaId:String, cb: (RemotePositionResponse?, PositionClientError?)->Unit) {
-        positionClient.apply {
-            if (this == null) {
-                cb(null, PositionClientError.NotReady)
-            } else {
-                val folderPath = mediaIdToFolderPath(mediaId)
-                sendQuery(folderPath,cb)
-            }
-        }
+    fun queryPositionForMediaId(mediaId:String,
+                                position: Long?,
+                                cb: (ArrayList<MediaBrowserCompat.MediaItem>, PositionClientError?)->Unit) {
+        queryPositionForFolderOrMediaId(null, mediaId, position, cb)
     }
 
 
@@ -425,7 +431,7 @@ class ApiClient private constructor(val context: Context) {
         }
 
         handler.removeCallbacksAndMessages(RELOGIN_TAG)
-        val request = object : StringRequest(Request.Method.POST, baseUrl + "authenticate",
+        val request = object : StringRequest(Method.POST, baseUrl + "authenticate",
                 {
                     token = it
                     val pref = PreferenceManager.getDefaultSharedPreferences(context)
@@ -469,7 +475,7 @@ class ApiClient private constructor(val context: Context) {
             }
 
             override fun getPriority(): Priority {
-                return Request.Priority.HIGH
+                return Priority.HIGH
             }
         }
 
@@ -507,7 +513,7 @@ class ApiClient private constructor(val context: Context) {
     }
 
     inner abstract class MyRequest<T>(val uri: String, private val callback: (T?, ApiError?) -> Unit)
-        :Request<T>( Request.Method.GET, encodeUri(uri),
+        :Request<T>( Method.GET, encodeUri(uri),
             {
                 Log.e(LOG_TAG, "Network Error $it")
                 val err = ApiError.fromResponseError(it)
@@ -520,7 +526,7 @@ class ApiClient private constructor(val context: Context) {
             }) {
 
         private var cancelled: Boolean = false
-        private val canceledLock = java.lang.Object()
+        private val canceledLock = Object()
 
 
         override fun getHeaders(): MutableMap<String, String> {

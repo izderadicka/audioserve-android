@@ -9,6 +9,10 @@ import org.json.JSONException
 import org.json.JSONObject
 import java.io.File
 import java.io.InputStream
+import kotlin.math.absoluteValue
+
+
+private const val MIN_TIME_DIFFERENCE_FOR_POSITION_SHARING = 20_000L
 
 fun readAsString(stream: InputStream): String {
     val sb=StringBuilder()
@@ -150,6 +154,10 @@ private val AUDIO_START_RE = Regex("""^(\d+)?/?audio/(.+)""")
 private val FOLDER_START_RE = Regex("""^(\d+)?/?folder/(.+)""")
 private val ITEM_START_RE = Regex("""^(\d+)?/?(folder|audio)/(.+)""")
 
+fun isTrueFolder(mediaId: String): Boolean =
+    FOLDER_START_RE.matches(mediaId)
+
+
 fun folderIdFromFileId(fileId: String): String {
     val re = AUDIO_START_RE.matchEntire(fileId)
     if (re != null) {
@@ -253,13 +261,13 @@ fun duplicateMediaItemWithExtrasAssured(item: MediaBrowserCompat.MediaItem):Medi
 }
 
 fun mediaIdToPositionPath(mediaId: String, group:String) : String? {
-    val m = AUDIO_START_RE.matchEntire(mediaId)
+    val m = ITEM_START_RE.matchEntire(mediaId)
     if (m == null) {
         return null
     } else {
         var collection = m.groups.get(1)?.value
         if (collection.isNullOrEmpty()) collection = "0"
-        return "$group/$collection/${m.groups.get(2)?.value?:""}"
+        return "$group/$collection/${m.groups.get(3)?.value?:""}"
     }
 
 }
@@ -277,4 +285,19 @@ fun splitPositionFolder(f: String): Pair<String,Int> {
 private val CHAPTER_RE = Regex("""\$\$[\d\-]+\$\$""")
 fun normTitle(t:String): String {
    return CHAPTER_RE.replace(t, "")
+}
+
+fun MediaBrowserCompat.MediaItem.isNotablyDifferentFrom(other: MediaBrowserCompat.MediaItem): Boolean =
+    this.mediaId != other.mediaId ||
+            ((this.description.extras?.getLong(METADATA_KEY_LAST_POSITION) ?: 0)
+                    - (other.description.extras?.getLong(METADATA_KEY_LAST_POSITION)
+                    ?: 0L))
+                    .absoluteValue > MIN_TIME_DIFFERENCE_FOR_POSITION_SHARING
+
+fun MediaBrowserCompat.MediaItem.isNotablyDifferentFrom(otherId: String?, position: Long?): Boolean {
+    if (otherId == null || position == null) return true
+    return this.mediaId != otherId ||
+            ((this.description.extras?.getLong(METADATA_KEY_LAST_POSITION) ?: 0)
+                    - position)
+                    .absoluteValue > MIN_TIME_DIFFERENCE_FOR_POSITION_SHARING
 }

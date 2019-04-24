@@ -12,9 +12,6 @@ import java.io.File
 import kotlin.math.absoluteValue
 
 private const val LOG_TAG = "RecentAdapter"
-private const val MIN_TIME_DIFFERENCE_FOR_POSITION_SHARING = 20_000L
-private const val IN_PAST_OFFSET = 60_000L
-
 
 private fun MediaItem.updateMediaItemTime(updateTime: Long, positionTime: Long) {
     description.extras?.apply {
@@ -82,12 +79,7 @@ class RecentAdapter(private val ctx: Context) {
             ApiClient.getInstance(ctx).queryLastPosition{ remoteItem, err ->
                 if (remoteItem != null ) {
                     val addRemote = list.firstOrNull()?.let {
-                        it.mediaId != remoteItem.mediaId ||
-                                ((it.description.extras?.getLong(METADATA_KEY_LAST_POSITION) ?: 0)
-                                - (remoteItem.description.extras?.getLong(METADATA_KEY_LAST_POSITION)
-                                        ?: 0L))
-                                        .absoluteValue > MIN_TIME_DIFFERENCE_FOR_POSITION_SHARING
-
+                        it.isNotablyDifferentFrom(remoteItem)
                     } ?: true
                     if (addRemote) list.add(0, remoteItem)
                 }

@@ -62,6 +62,7 @@ class MainActivity : AppCompatActivity(),
     private var searchPrefix: String? = null
     private var collection: Int? = null
     private var folderDetails: Bundle? = null
+    private var folderId: String? = null
 
     private val mediaServiceConnectionCallback = object : MediaBrowserCompat.ConnectionCallback() {
         override fun onConnected() {
@@ -192,6 +193,7 @@ class MainActivity : AppCompatActivity(),
         collection = collectionFromFolderId(folderId)?: collectionFromSearchId(folderId)?: collectionFromModifiedId(folderId)
         searchPrefix = if (collection == null || isOffline) null else "${AudioService.SEARCH_PREFIX}${collection}_"
         Log.d(LOG_TAG, "Loaded folder $folderId in collection $collection")
+        this.folderId = folderId
         this.folderDetails = folderDetails
         invalidateOptionsMenu()
         updateDrawerMenu()
@@ -553,7 +555,11 @@ class MainActivity : AppCompatActivity(),
                 true
             }
             R.id.action_check_remote_positions -> {
-                ApiClient.getInstance(this).queryPositionForFolderOrMediaId(null, null){
+                ApiClient.getInstance(this).queryPositionForFolderOrMediaId(
+                        folderId?.let{if (isTrueFolder(it)) it else null},
+                        if (playerControlsVisible) mediaController?.metadata?.description?.mediaId else null,
+                        if (playerControlsVisible) controllerFragment.currentPlayTime else null
+                ){
                     items, err ->
                     if (err!= null) {
                         Log.e(LOG_TAG, "Error querying position $err")

@@ -75,6 +75,10 @@ class PositionClient(val serverUrl:String, val token:String, val group: String?)
         return File(mediaIdToPositionPath(mediaId, group?:"group")).parent
     }
 
+    fun folderIdToFolderPath(folderId:String) :String? {
+        return mediaIdToPositionPath(folderId, group?:"group")
+    }
+
     fun sendQuery(folderPath:String?, cb: (RemotePositionResponse?, PositionClientError?) -> Unit) {
         finishPendingReceive(PositionClientError.CanceledByNext)
         handler.removeCallbacks(timeout)

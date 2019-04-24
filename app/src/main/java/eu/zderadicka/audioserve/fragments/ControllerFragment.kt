@@ -241,19 +241,24 @@ class ControllerFragment : MediaFragment(), SharedPreferences.OnSharedPreference
             showDelayedSeekProgress(false)
             if (canPlay) {
                 mediaController?.apply {
-                    //TODO - we need find better way to do this
                     val mediaId = metadata?.description?.mediaId
-                    if (mediaId != null) {
+                    val mainActivity = activity
+                    if (mediaId != null && mainActivity is MainActivity) {
                         val api = ApiClient.getInstance(context!!)
-                        api.queryPositionForMediaId(mediaId) {
+                        api.queryPositionForMediaId(mediaId, currentPlayTime) {
                             res, err ->
-                            if (res != null) {
-                                Log.d(LOG_TAG, "Got position $res")
-                            }
-                            else {
+                            if (err != null) {
                                 Log.e(LOG_TAG, "Error reading position: $err")
+                                transportControls?.play()
                             }
-                            transportControls?.play()
+                            else if (!res.isNullOrEmpty()){
+                                mainActivity.checkRemotePositions(res) {
+                                    transportControls?.play()
+                                }
+                            } else {
+                                transportControls?.play()
+                            }
+
                         }
                     } else {
 
@@ -402,6 +407,5 @@ class ControllerFragment : MediaFragment(), SharedPreferences.OnSharedPreference
         get() {
             return seekBar.progress.toLong()
         }
-
 
 }
