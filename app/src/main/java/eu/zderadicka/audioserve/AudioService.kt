@@ -604,7 +604,6 @@ class AudioService : MediaBrowserServiceCompat() {
 
     private val prefsListener = SharedPreferences.OnSharedPreferenceChangeListener { sharedPreferences, key ->
         when (key) {
-            "pref_server_url", "pref_shared_secret", "pref_group" -> apiClient.loadPreferences()
             "pref_preload" -> {
                 preloadFiles = sharedPreferences.getString("pref_preload", "2").toInt()
             }
@@ -614,6 +613,7 @@ class AudioService : MediaBrowserServiceCompat() {
             "pref_offline" -> {
                 isOffline = sharedPreferences.getBoolean("pref_offline", false)
                 preparer.sourceFactory = null
+
             }
             "pref_autorewind" -> {
                 enableAutoRewind = sharedPreferences.getBoolean("pref_autorewind", true)

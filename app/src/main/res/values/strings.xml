@@ -124,6 +124,6 @@
     <string name="check_remote_positions">Check Remote Positions</string>
     <string name="other_playback_positions">Other Playback Positions</string>
     <string name="continue_with_current">Continue With Current</string>
-    <string name="recent_positions_intro">Below are most recent playback positions. Click on them to continue to listen there:</string>
-    <string name="recent_positions_none">No more recent positions then current</string>
+    <string name="recent_positions_intro">Below are most recent shared playback positions. Click on them to continue to listen there:</string>
+    <string name="recent_positions_none">No recent shared positions other then current</string>
 </resources>

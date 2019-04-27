@@ -44,6 +44,12 @@ class PositionClient(val serverUrl:String, val token:String, val group: String?)
 
     }
 
+    private val reopen = object : Runnable {
+        override fun run() {
+            open()
+        }
+    }
+
     fun open() {
         closed = false
         if (group.isNullOrBlank()) return
@@ -108,6 +114,7 @@ class PositionClient(val serverUrl:String, val token:String, val group: String?)
 
 
     fun close() {
+        handler.removeCallbacks(reopen)
         closed = true
         socket?.close(NORMAL_CLOSE, null)
     }
@@ -121,9 +128,7 @@ class PositionClient(val serverUrl:String, val token:String, val group: String?)
             Log.w(LOG_TAG, "Socket Error: $t")
             // try reopen if socket is lost
             if (!closed) {
-                handler.postDelayed({
-                    open()
-                }, 1000)
+                handler.postDelayed(reopen, 1000)
             }
 
         }

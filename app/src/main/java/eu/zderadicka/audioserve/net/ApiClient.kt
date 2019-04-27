@@ -1,8 +1,10 @@
 package eu.zderadicka.audioserve.net
 
 import android.content.Context
+import android.content.SharedPreferences
 import android.graphics.Bitmap
-import android.net.Uri
+import android.net.*
+import android.net.Network
 import android.os.Build
 import android.os.Handler
 import android.os.Looper
@@ -119,22 +121,43 @@ class ApiClient private constructor(val context: Context) {
     private var loginDone = false
     private val unsentRequests: ArrayList<Request<*>> = ArrayList()
     private var positionClient:PositionClient? = null
+    private var group: String? = null
+    private var isOffline = false
 
 
     // getApplicationContext() is key, it keeps you from leaking the
     // Activity or BroadcastReceiver if someone passes one in.
     val requestQueue: RequestQueue by lazy {
-        Volley.newRequestQueue(context.getApplicationContext())
+        Volley.newRequestQueue(context.applicationContext)
 
     }
 
     private val handler = Handler(Looper.getMainLooper())
 
+    private val prefsListener = SharedPreferences.OnSharedPreferenceChangeListener { sharedPreferences, key ->
+        when (key) {
+            "pref_server_url", "pref_shared_secret", "pref_group" -> loadPreferences()
+            "pref_offline" -> {
+                isOffline = sharedPreferences.getBoolean("pref_offline", false)
+                if (isOffline) {
+                    positionClient?.close()
+                    positionClient = null
+                } else {
+                    loadPreferences()
+                }
+            }
+
+
+        }
+    }
+
+
     @Synchronized
     fun loadPreferences(cb: ((ApiError?) -> Unit)? = null) {
         val sps = PreferenceManager.getDefaultSharedPreferences(context)
         baseUrl = sps.getString("pref_server_url", "")!!
-        val group = sps.getString("pref_group", null)
+        group = sps.getString("pref_group", null)
+        isOffline = sps.getBoolean("pref_offline", false)
         if (baseUrl.length == 0) {
             Log.w(LOG_TAG, "BaseURL is empty!")
         } else {
@@ -145,13 +168,7 @@ class ApiClient private constructor(val context: Context) {
         login {
             if (it == null) {
                 Log.d(LOG_TAG, "Successfully logged into server")
-                positionClient?.close()
-                if (group.isNullOrBlank()) {
-                    positionClient = null
-                } else {
-                    positionClient = PositionClient(baseUrl, token!!, group)
-                    positionClient?.open()
-                }
+                initPositionClient(true)
             }
             if (cb != null) {
                 cb(it)
@@ -159,9 +176,30 @@ class ApiClient private constructor(val context: Context) {
         }
     }
 
+    private fun initPositionClient(connected: Boolean) {
+        if (token == null) return // do nothing until we have token
+        positionClient?.close()
+        if (group.isNullOrBlank() || !connected || isOffline) {
+            positionClient = null
+        } else {
+            positionClient = PositionClient(baseUrl, token!!, group)
+            positionClient?.open()
+        }
+
+    }
+
+
+
     init {
         loadPreferences()
+        PreferenceManager.getDefaultSharedPreferences(context).registerOnSharedPreferenceChangeListener(prefsListener)
+        ConnectivityMonitor.getInstance(context).addListener{
+            Log.d(LOG_TAG, "network connectivity is $it")
+            initPositionClient(it)
+        }
     }
+
+
 
     fun sendPosition(filePath:String?, position:Double) {
         positionClient?.sendPosition(filePath, position)
