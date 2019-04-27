@@ -1,10 +1,6 @@
 package eu.zderadicka.audioserve.net
 
-import android.content.BroadcastReceiver
 import android.content.Context
-import android.content.Intent
-import android.content.IntentFilter
-import android.net.ConnectivityManager
 import android.net.Uri
 import android.os.ConditionVariable
 import android.os.FileObserver
@@ -12,7 +8,6 @@ import android.preference.PreferenceManager
 import android.util.Log
 import eu.zderadicka.audioserve.utils.defPrefs
 import eu.zderadicka.audioserve.utils.encodeUri
-import eu.zderadicka.audioserve.utils.isNetworkConnected
 import java.io.File
 import java.io.IOException
 import java.io.InputStream
@@ -403,7 +398,7 @@ class FileLoader(private val queue: BlockingDeque<CacheItem>,
     private var stopFlag = false
     fun stop() {
         stopFlag = true
-        context.unregisterReceiver(connectivityStateReceiver)
+        connectivityMonitor.removeListener(connectivityStateReceiver)
     }
 
     var currentPath: String? = null
@@ -411,6 +406,7 @@ class FileLoader(private val queue: BlockingDeque<CacheItem>,
 
     private var putBack = false
     private var myThread: Thread? = null
+    private val connectivityMonitor: ConnectivityMonitor = ConnectivityMonitor.getInstance(context)
 
     internal var isConnected = true
         set(v) {
@@ -430,26 +426,19 @@ class FileLoader(private val queue: BlockingDeque<CacheItem>,
             }
         }
     private val connectedCondition = ConditionVariable()
-    private val connectivityStateReceiver = object : BroadcastReceiver() {
-        override fun onReceive(context: Context?, intent: Intent?) {
-
-            if (intent?.action == ConnectivityManager.CONNECTIVITY_ACTION && context != null) {
-                isConnected = isNetworkConnected(context)
+    private val connectivityStateReceiver = { connected: Boolean ->
+                isConnected = connected
 
             }
-        }
 
-    }
 
     private var stream: InputStream? = null
 
     init {
-
-        context.registerReceiver(connectivityStateReceiver, IntentFilter(ConnectivityManager.CONNECTIVITY_ACTION))
-        isConnected = isNetworkConnected(context)
-
-
+        connectivityMonitor.addListener(connectivityStateReceiver)
     }
+
+
     private fun putItemBack(item:CacheItem?) {
         if (putBack && item != null) {
             Log.d(LOG_TAG, "Putting item back as loader was interrupted by network disconnect ")
@@ -492,8 +481,7 @@ class FileLoader(private val queue: BlockingDeque<CacheItem>,
                 if (!isConnected) {
                     Log.d(LOG_TAG, "Network is not connected cannot load cache")
                     connectedCondition.block(NOT_CONNECTED_WAIT)
-                    //Check status again if we did not miss broadcast
-                    if (isNetworkConnected(context)) isConnected = true
+
                 }
                 if (stopFlag) break
                 item = queue.take()

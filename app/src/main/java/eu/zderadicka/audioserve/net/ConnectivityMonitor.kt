@@ -69,7 +69,7 @@ class ConnectivityMonitor private constructor(context: Context) {
     }
 
     companion object {
-        var instance: ConnectivityMonitor? = null
+        private var instance: ConnectivityMonitor? = null
         @JvmStatic
         fun getInstance(context: Context): ConnectivityMonitor =
                 synchronized(this) {
