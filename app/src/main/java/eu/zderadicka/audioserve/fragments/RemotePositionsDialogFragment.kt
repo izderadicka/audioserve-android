@@ -75,7 +75,7 @@ class PositionsAdapter(val context: Context, private val items: List<MediaBrowse
 }
 
 class RemotePositionsDialogFragment(): DialogFragment() {
-    lateinit var items: List<MediaBrowserCompat.MediaItem>
+    var items: List<MediaBrowserCompat.MediaItem>? = null
     private var listener: Listener? = null
 
     fun setListener(l:Listener) {
@@ -84,7 +84,7 @@ class RemotePositionsDialogFragment(): DialogFragment() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         arguments?.apply {
-            items = getParcelableArrayList<MediaBrowserCompat.MediaItem>(REMOTE_POSITIONS_LIST)!!
+            items = getParcelableArrayList<MediaBrowserCompat.MediaItem>(REMOTE_POSITIONS_LIST)
         }
     }
 
@@ -102,7 +102,7 @@ class RemotePositionsDialogFragment(): DialogFragment() {
                 instructionsVisible(view, false)
             } else {
                 instructionsVisible(view, true)
-                val adapter = PositionsAdapter(it, items) { item ->
+                val adapter = PositionsAdapter(it, items!!) { item ->
                     Log.d(LOG_TAG, "Chosen remote position $item")
                     dismiss()
                     listener?.onItemChosen(item)

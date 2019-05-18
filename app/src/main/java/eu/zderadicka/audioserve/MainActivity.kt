@@ -516,6 +516,9 @@ class MainActivity : AppCompatActivity(),
             orderingMenu.isVisible = false
         }
 
+        val checkRecentItem = menu.findItem(R.id.action_check_remote_positions)
+        checkRecentItem.isVisible = ApiClient.getInstance(this).isPositionEnabled
+
         return true
     }
 
@@ -577,7 +580,7 @@ class MainActivity : AppCompatActivity(),
         }
     }
 
-    fun checkRemotePositions(items: ArrayList<MediaBrowserCompat.MediaItem>,
+    fun checkRemotePositions(items: ArrayList<MediaBrowserCompat.MediaItem>?,
                              onContinueWithCurrent: (() -> Unit)?) {
 
         val d = RemotePositionsDialogFragment()

@@ -22,24 +22,26 @@ enum class PositionClientError {
     InvalidResponse
 }
 
+private typealias PendingReceive = (RemotePositionResponse?, PositionClientError?) -> Unit
+
 class PositionClient(val serverUrl:String, val token:String, val group: String?) {
 
     private var socket:WebSocket? = null
     private val client = OkHttpClient()
     private val listener = SocketListener()
     private var lastFile:String? = null
-    private var pendingReceive: ((RemotePositionResponse?, PositionClientError?) -> Unit)? = null
+    private var pendingQuery: PendingQuery? = null
     private val handler = Handler()
     private var closed = false
 
-    private fun finishPendingReceive(err: PositionClientError) {
-        pendingReceive?.invoke(null, err)
-        pendingReceive = null
+    private fun finishPendingQuery(err: PositionClientError) {
+        pendingQuery?.pendingReceive?.invoke(null, err)
+        pendingQuery = null
     }
 
     private val timeout = object: Runnable {
         override fun run() {
-            finishPendingReceive(PositionClientError.Timeout)
+            finishPendingQuery(PositionClientError.Timeout)
         }
 
     }
@@ -85,19 +87,30 @@ class PositionClient(val serverUrl:String, val token:String, val group: String?)
         return mediaIdToPositionPath(folderId, group?:"group")
     }
 
-    fun sendQuery(folderPath:String?, cb: (RemotePositionResponse?, PositionClientError?) -> Unit) {
-        finishPendingReceive(PositionClientError.CanceledByNext)
+    fun sendQuery(folderPath:String?, cb: PendingReceive) {
+        finishPendingQuery(PositionClientError.CanceledByNext)
         handler.removeCallbacks(timeout)
         if (socket == null) {
             cb(null, PositionClientError.NotReady)
         } else {
             socket?.apply {
-                pendingReceive = cb
+                pendingQuery = PendingQuery(cb, folderPath, System.currentTimeMillis())
                 send(folderPath?: group!!)
                 handler.postDelayed(timeout, TIMEOUT_DURATION)
             }
         }
 
+    }
+
+    private fun resendQuery() {
+        handler.removeCallbacks(timeout)
+        socket?.apply {
+            pendingQuery?.apply {
+                pendingQuery = PendingQuery(pendingReceive, query, System.currentTimeMillis())
+                send(query ?: group!!)
+                handler.postDelayed(timeout, TIMEOUT_DURATION)
+            }
+        }
     }
 
     private fun encodeMessage(filePath: String, position: Double):String =
@@ -120,15 +133,41 @@ class PositionClient(val serverUrl:String, val token:String, val group: String?)
     }
 
     inner class SocketListener : WebSocketListener() {
+        private val initialErrorRetryInterval: Long = 1_000
+        private val maxErrorRetryInterval: Long = 60_000
+        private var errorRetryInterval: Long = initialErrorRetryInterval
+
+        private fun resetErrorInterval() {
+            errorRetryInterval = initialErrorRetryInterval
+        }
+
         override fun onOpen(webSocket: WebSocket, response: Response) {
             Log.d(LOG_TAG, "Socket opened")
+            resetErrorInterval()
+            handler.removeCallbacks(timeout);
+            handler.removeCallbacks(reopen);
+
+            pendingQuery?.also {
+                val currentTime = System.currentTimeMillis()
+                if (currentTime - it.timeStamp < 2 * TIMEOUT_DURATION)  resendQuery()
+            }
         }
 
         override fun onFailure(webSocket: WebSocket, t: Throwable, response: Response?) {
             Log.w(LOG_TAG, "Socket Error: $t")
+            pendingQuery?.also {
+                //extend timeout, but only if it is first error
+                if (it.errors == 0) {
+                    handler.removeCallbacks(timeout)
+                    handler.postDelayed(timeout, TIMEOUT_DURATION)
+                } else {
+                    it.errors+=1
+                }
+            }
             // try reopen if socket is lost
             if (!closed) {
-                handler.postDelayed(reopen, 1000)
+                handler.postDelayed(reopen, errorRetryInterval)
+                if (errorRetryInterval < maxErrorRetryInterval) errorRetryInterval+= initialErrorRetryInterval
             }
 
         }
@@ -141,16 +180,17 @@ class PositionClient(val serverUrl:String, val token:String, val group: String?)
 
         override fun onMessage(webSocket: WebSocket, text: String) {
             Log.d(LOG_TAG, "Got message $text")
+            resetErrorInterval()
             handler.removeCallbacks(timeout)
             try {
                 val res = parseRemotePositionResponse(text)
-                pendingReceive?.invoke(res, null)
+                pendingQuery?.pendingReceive?.invoke(res, null)
             }
             catch (e:Exception) {
                 Log.e(LOG_TAG, "Got invalid response, error: $e")
-                pendingReceive?.invoke(null, PositionClientError.InvalidResponse)
+                pendingQuery?.pendingReceive?.invoke(null, PositionClientError.InvalidResponse)
             }
-            pendingReceive = null
+            pendingQuery = null
 
         }
 
@@ -160,6 +200,13 @@ class PositionClient(val serverUrl:String, val token:String, val group: String?)
         }
 
     }
+
+    inner class PendingQuery(
+            val pendingReceive:PendingReceive,
+            val query: String?,
+            val timeStamp: Long,
+            var errors: Int = 0
+    )
 
 }
 

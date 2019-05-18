@@ -317,6 +317,23 @@ fun deleteBookmark(id: Long, context: Context): Int {
 
 }
 
+fun getLastRecent(context: Context, cb: (MediaBrowserCompat.MediaItem?)-> Unit) {
+    class Fetcher(val ctx:Context):AsyncTask<Unit,Unit,MediaBrowserCompat.MediaItem?>() {
+        override fun onPostExecute(result: MediaBrowserCompat.MediaItem?) {
+           cb(result)
+        }
+
+        override fun doInBackground(vararg params: Unit?): MediaBrowserCompat.MediaItem? {
+            val list = getRecents(ctx,onlyLatest = true)
+           return list.firstOrNull()
+        }
+
+    }
+
+    val task = Fetcher(context)
+    task.execute()
+}
+
 fun getRecents(context: Context, exceptPath: String? = null, onlyLatest: Boolean = false): List<MediaBrowserCompat.MediaItem> {
     var selection: String? = null
     var selectionArgs: Array<String?>? = null

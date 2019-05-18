@@ -63,9 +63,9 @@ private const val LOGIN_REQUEST_TAG = "LOGIN"
 private const val IMAGE_REQUEST_TAG = "IMAGE"
 private const val TEXT_REQUEST_TAG = "TEXT"
 
-private const val RELOGIN_TAG= "RELOGIN"
+private const val RELOGIN_TAG = "RELOGIN"
 
-private const val CACHE_SOFT_TTL: Long = 24  * DateUtils.HOUR_IN_MILLIS
+private const val CACHE_SOFT_TTL: Long = 24 * DateUtils.HOUR_IN_MILLIS
 private const val CACHE_MAX_TTL: Long = 7 * DateUtils.DAY_IN_MILLIS
 
 internal fun encodeSecret(secret: String): String {
@@ -84,7 +84,7 @@ internal fun encodeSecret(secret: String): String {
 
 }
 
-internal fun tokenValidityEpoch(token:String): Long {
+internal fun tokenValidityEpoch(token: String): Long {
 
     val bytes = Base64.decode(token, Base64.DEFAULT)
     val buf = ByteBuffer.allocate(8)
@@ -95,15 +95,13 @@ internal fun tokenValidityEpoch(token:String): Long {
 }
 
 
-internal fun tokenValidityDays(token:String): Int {
+internal fun tokenValidityDays(token: String): Int {
     val now = System.currentTimeMillis() / 1000
     val secs = tokenValidityEpoch(token) - now
-    if (secs < 0 ) return 0
+    if (secs < 0) return 0
     val days = secs / 3600 / 24
     return days.toInt()
 }
-
-
 
 
 data class TranscodingLimits(var low: Int, var medium: Int, var high: Int)
@@ -120,7 +118,7 @@ class ApiClient private constructor(val context: Context) {
     // after login success or failure
     private var loginDone = false
     private val unsentRequests: ArrayList<Request<*>> = ArrayList()
-    private var positionClient:PositionClient? = null
+    private var positionClient: PositionClient? = null
     private var group: String? = null
     private var isOffline = false
 
@@ -189,28 +187,30 @@ class ApiClient private constructor(val context: Context) {
     }
 
 
-
     init {
         loadPreferences()
         PreferenceManager.getDefaultSharedPreferences(context).registerOnSharedPreferenceChangeListener(prefsListener)
-        ConnectivityMonitor.getInstance(context).addListener{
+        ConnectivityMonitor.getInstance(context).addListener {
             Log.d(LOG_TAG, "network connectivity is $it")
             initPositionClient(it)
         }
     }
 
 
+    val isPositionEnabled: Boolean
+        get() = positionClient != null
 
-    fun sendPosition(filePath:String?, position:Double) {
+
+    fun sendPosition(filePath: String?, position: Double) {
         positionClient?.sendPosition(filePath, position)
     }
 
-    fun queryLastPosition(cb: (MediaBrowserCompat.MediaItem?, PositionClientError?)->Unit) {
+    fun queryLastPosition(cb: (MediaBrowserCompat.MediaItem?, PositionClientError?) -> Unit) {
         positionClient.apply {
             if (this == null) {
                 cb(null, PositionClientError.NotReady)
             } else {
-                sendQuery(null){res, err ->
+                sendQuery(null) { res, err ->
                     cb(if (res?.last != null) positionToMediaItem(res.last) else null, err)
                 }
             }
@@ -219,39 +219,50 @@ class ApiClient private constructor(val context: Context) {
 
     fun queryPositionForFolderOrMediaId(
             folderId: String?,
-            mediaId:String?,
+            mediaId: String?,
             position: Long?,
-            cb: (ArrayList<MediaBrowserCompat.MediaItem>, PositionClientError?)->Unit) {
+            cb: (ArrayList<MediaBrowserCompat.MediaItem>?, PositionClientError?) -> Unit) {
         positionClient.apply {
             if (this == null) {
                 cb(ArrayList(), PositionClientError.NotReady)
             } else {
-                val folderPath = mediaId?.let{mediaIdToFolderPath(it)}?:folderId?.let{folderIdToFolderPath(folderId)}
-                sendQuery(folderPath){res,err ->
-                    val list = ArrayList<MediaBrowserCompat.MediaItem>()
-                    fun addToList(pos:RemotePosition) {
-                        val item =  positionToMediaItem(pos)
-                        if (item.isNotablyDifferentFrom(mediaId, position)) {
-                            list.add(item)
+                val folderPath = mediaId?.let { mediaIdToFolderPath(it) }
+                        ?: folderId?.let { folderIdToFolderPath(folderId) }
+                sendQuery(folderPath) { res, err ->
+
+                    if (res != null) {
+
+                        getLastRecent(context) {lastRecentLocal ->
+
+                            val list = ArrayList<MediaBrowserCompat.MediaItem>()
+                            fun addToList(pos: RemotePosition) {
+                                val item = positionToMediaItem(pos)
+                                if (item.isNotablyDifferentFrom(mediaId, position) &&
+                                        (lastRecentLocal == null || item.isNotablyDifferentFrom(lastRecentLocal))) {
+                                    list.add(item)
+                                }
+                            }
+
+                            res.folder?.also { addToList(it) }
+                            res.last?.also { addToList(it) }
+                            cb(list, null)
+
+
                         }
+                    } else {
+                        cb(null, err)
                     }
 
-                    res?.apply {
-                        res.folder?.also {addToList(it)}
-                        res.last?.also {addToList(it)}
-                    }
-                    cb(list,err)
                 }
             }
         }
     }
 
-    fun queryPositionForMediaId(mediaId:String,
+    fun queryPositionForMediaId(mediaId: String,
                                 position: Long?,
-                                cb: (ArrayList<MediaBrowserCompat.MediaItem>, PositionClientError?)->Unit) {
+                                cb: (ArrayList<MediaBrowserCompat.MediaItem>?, PositionClientError?) -> Unit) {
         queryPositionForFolderOrMediaId(null, mediaId, position, cb)
     }
-
 
 
     fun <T> addToRequestQueue(req: Request<T>) {
@@ -270,7 +281,7 @@ class ApiClient private constructor(val context: Context) {
     }
 
     private fun <T> sendRequest(uri: String, forceReload: Boolean, convert: (String) -> T, callback: (T?, ApiError?) -> Unit) {
-        val request = ConvertingRequest(uri,convert, callback)
+        val request = ConvertingRequest(uri, convert, callback)
         request.setShouldCache(true)
         if (forceReload) {
             requestQueue.cache.remove(uri)
@@ -298,7 +309,7 @@ class ApiClient private constructor(val context: Context) {
 
         val builder = Uri.parse(uri).buildUpon()
         addOrdering(builder, ordering)
-        val  folderUri = builder.build().toString()
+        val folderUri = builder.build().toString()
 
         sendRequest(folderUri, forceReload, {
             val f = parseFolderfromJson(it, "", folder)
@@ -309,7 +320,7 @@ class ApiClient private constructor(val context: Context) {
         }, callback)
     }
 
-    fun loadSearch(query: String, collection: Int,  callback: (AudioFolder?, ApiError?) -> Unit) {
+    fun loadSearch(query: String, collection: Int, callback: (AudioFolder?, ApiError?) -> Unit) {
         loadSearch(query, collection, false, null, callback)
     }
 
@@ -369,7 +380,7 @@ class ApiClient private constructor(val context: Context) {
     }
 
     fun loadTranscodings(callback: (TranscodingLimits?, ApiError?) -> Unit) {
-        loadTranscodings(false,callback)
+        loadTranscodings(false, callback)
     }
 
     fun loadTranscodings(forceReload: Boolean, callback: (TranscodingLimits?, ApiError?) -> Unit) {
@@ -381,17 +392,16 @@ class ApiClient private constructor(val context: Context) {
 
         val url = baseUrl + path
 
-        val request = object: ImageRequest(url,
-                {callback(it,null)},
+        val request = object : ImageRequest(url,
+                { callback(it, null) },
                 1024,
                 1024,
                 ImageView.ScaleType.CENTER,
                 Bitmap.Config.ARGB_8888,
                 {
                     val err = ApiError.fromResponseError(it)
-                    callback(null,err)
-                })
-        {
+                    callback(null, err)
+                }) {
             override fun getHeaders(): MutableMap<String, String> {
                 return authorizationHeaders
             }
@@ -403,21 +413,19 @@ class ApiClient private constructor(val context: Context) {
 
     }
 
-    fun loadText(path:String, callback: (CharSequence?, ApiError?)-> Unit) {
+    fun loadText(path: String, callback: (CharSequence?, ApiError?) -> Unit) {
         val url = baseUrl + path
-        val req = object: MyRequest<CharSequence>(url, callback)
-
-        {
+        val req = object : MyRequest<CharSequence>(url, callback) {
             override fun parseNetworkResponse(response: NetworkResponse?): Response<CharSequence> {
 
                 var parsed = ""
-                val contentType = response?.headers?.get("Content-Type")?:"text/plain"
+                val contentType = response?.headers?.get("Content-Type") ?: "text/plain"
                 val semi = contentType.indexOf(';')
-                if (semi>0) {
+                if (semi > 0) {
                     contentType.substring(0, semi).trim()
                 }
 
-                if (response!= null) {
+                if (response != null) {
                     try {
                         val charset = Charset.forName("UTF-8")
                         parsed = String(response.data, charset)
@@ -428,13 +436,13 @@ class ApiClient private constructor(val context: Context) {
 
                 if (contentType == "text/html") {
                     @Suppress("DEPRECATION")
-                    val html = if (Build.VERSION.SDK_INT>=24) Html.fromHtml(parsed, Html.FROM_HTML_MODE_LEGACY)
-                                else Html.fromHtml(parsed)
+                    val html = if (Build.VERSION.SDK_INT >= 24) Html.fromHtml(parsed, Html.FROM_HTML_MODE_LEGACY)
+                    else Html.fromHtml(parsed)
                     return Response.success(html, HttpHeaderParser.parseCacheHeaders(response))
                 }
 
                 if (contentType == "text/x-markdown") {
-                    val md = fromMarkdown(context,parsed)
+                    val md = fromMarkdown(context, parsed)
                     return Response.success(md, HttpHeaderParser.parseCacheHeaders(response))
                 }
 
@@ -460,11 +468,12 @@ class ApiClient private constructor(val context: Context) {
                 unsentRequests.clear()
             }
         }
-        fun renewToken(token:String) {
+
+        fun renewToken(token: String) {
             val days = tokenValidityDays(token)
-            val dur: Long = if (days > 1) (days-1) * DAY_IN_MILLIS else 5 * MINUTE_IN_MILLIS
+            val dur: Long = if (days > 1) (days - 1) * DAY_IN_MILLIS else 5 * MINUTE_IN_MILLIS
             val renewAt = SystemClock.uptimeMillis() + dur
-            handler.postAtTime({login({})},RELOGIN_TAG, renewAt)
+            handler.postAtTime({ login({}) }, RELOGIN_TAG, renewAt)
 
         }
 
@@ -489,13 +498,13 @@ class ApiClient private constructor(val context: Context) {
                     Log.e(LOG_TAG, "Login error: $it")
                     val pref = PreferenceManager.getDefaultSharedPreferences(context)
                     val savedToken = pref.getString("pref_token", null)
-                    if (savedToken != null && tokenValidityDays(savedToken)>1 && token == null) {
+                    if (savedToken != null && tokenValidityDays(savedToken) > 1 && token == null) {
                         Log.i(LOG_TAG, "Reusing saved token as it's still valid")
                         token = savedToken
                     }
                     val err = ApiError.fromResponseError(it)
                     // renew only if not Unauthorized access, because in that case we have probably wrong shared secret
-                    if (err != ApiError.UnauthorizedAccess) token?.let{renewToken(it)}
+                    if (err != ApiError.UnauthorizedAccess) token?.let { renewToken(it) }
                     cb(err)
                     afterLogin()
                     fireLoginError(err)
@@ -524,34 +533,35 @@ class ApiClient private constructor(val context: Context) {
     }
 
     interface LoginListener {
-        fun loginSuccess(token:String) {}
+        fun loginSuccess(token: String) {}
 
         fun loginError(error: ApiError) {}
     }
 
-    private val loginListeners:ArrayList<LoginListener> = ArrayList()
+    private val loginListeners: ArrayList<LoginListener> = ArrayList()
     private fun fireLoginError(error: ApiError) = synchronized(this) {
-        loginListeners.forEach{it.loginError(error)}
-    }
-    private fun fireLoginSuccess(token:String) = synchronized(this) {
-        loginListeners.forEach{it.loginSuccess(token)}
+        loginListeners.forEach { it.loginError(error) }
     }
 
-    fun addLoginListener(l:LoginListener) = loginListeners.add(l)
-    fun removeLoginListener(l:LoginListener) = loginListeners.remove(l)
+    private fun fireLoginSuccess(token: String) = synchronized(this) {
+        loginListeners.forEach { it.loginSuccess(token) }
+    }
+
+    fun addLoginListener(l: LoginListener) = loginListeners.add(l)
+    fun removeLoginListener(l: LoginListener) = loginListeners.remove(l)
 
 
     private val authorizationHeaders: HashMap<String, String>
-    get() {
-        val headers = HashMap<String, String>(1)
-        if (token != null) {
-            headers.put("Authorization", "Bearer $token")
+        get() {
+            val headers = HashMap<String, String>(1)
+            if (token != null) {
+                headers.put("Authorization", "Bearer $token")
+            }
+            return headers
         }
-        return headers
-    }
 
     inner abstract class MyRequest<T>(val uri: String, private val callback: (T?, ApiError?) -> Unit)
-        :Request<T>( Method.GET, encodeUri(uri),
+        : Request<T>(Method.GET, encodeUri(uri),
             {
                 Log.e(LOG_TAG, "Network Error $it")
                 val err = ApiError.fromResponseError(it)
@@ -587,11 +597,11 @@ class ApiClient private constructor(val context: Context) {
     }
 
 
-        inner class ConvertingRequest<T>(uri: String, val convert: (String) -> T,
+    inner class ConvertingRequest<T>(uri: String, val convert: (String) -> T,
                                      callback: (T?, ApiError?) -> Unit)
         : MyRequest<T>(
             uri, callback
-            ) {
+    ) {
 
         override fun parseNetworkResponse(response: NetworkResponse?): Response<T> {
             var parsed: String

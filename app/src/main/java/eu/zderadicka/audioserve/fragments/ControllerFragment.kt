@@ -249,6 +249,8 @@ class ControllerFragment : MediaFragment(), SharedPreferences.OnSharedPreference
                             res, err ->
                             if (err != null) {
                                 Log.e(LOG_TAG, "Error reading position: $err")
+                                //TODO: remove debug toasts
+                                Toast.makeText(context, "Cann't get remote position: $err",Toast.LENGTH_SHORT).show()
                                 transportControls?.play()
                             }
                             else if (!res.isNullOrEmpty()){
@@ -256,6 +258,7 @@ class ControllerFragment : MediaFragment(), SharedPreferences.OnSharedPreference
                                     transportControls?.play()
                                 }
                             } else {
+                                Toast.makeText(context, "No more recent remote positions",Toast.LENGTH_SHORT).show()
                                 transportControls?.play()
                             }
 

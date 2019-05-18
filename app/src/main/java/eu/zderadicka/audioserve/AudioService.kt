@@ -72,7 +72,7 @@ private const val AUDIOSERVICE_ACTION_SELF_START = "eu.zderadicka.audioserve.SEL
 private const val PAUSE_DELAYED_TASK_SAVE_POSITION = "pause_task_save_position"
 private const val PAUSE_DELAYED_TASK_STOP_FOREGROUND = "pause_task_stop_fg"
 
-private const val POSITION_UPDATE_PERIOD = 3_000L
+private const val POSITION_UPDATE_PERIOD = 10_000L
 private const val POSITION_UPDATE_TAG = "eu.zderadicka.audioserve.POSITION_UPDATE"
 
 
@@ -605,7 +605,7 @@ class AudioService : MediaBrowserServiceCompat() {
     private val prefsListener = SharedPreferences.OnSharedPreferenceChangeListener { sharedPreferences, key ->
         when (key) {
             "pref_preload" -> {
-                preloadFiles = sharedPreferences.getString("pref_preload", "2").toInt()
+                preloadFiles = sharedPreferences.getString("pref_preload", "2")!!.toInt()
             }
             "pref_cache_location" -> {
                 preparer.sourceFactory = null
@@ -619,7 +619,7 @@ class AudioService : MediaBrowserServiceCompat() {
                 enableAutoRewind = sharedPreferences.getBoolean("pref_autorewind", true)
             }
             "pref_delayed_fg_stop" -> {
-                delayedFgStop = PreferenceManager.getDefaultSharedPreferences(this).getString("pref_delayed_fg_stop", "0").toInt()
+                delayedFgStop = PreferenceManager.getDefaultSharedPreferences(this).getString("pref_delayed_fg_stop", "0")!!.toInt()
             }
             "pref_skip_silence", "pref_playback_speed", "pref_playback_pitch" -> {
                 setPlaybackParams()
@@ -629,7 +629,7 @@ class AudioService : MediaBrowserServiceCompat() {
                 volumeBooster.enabled = sharedPreferences.getBoolean("pref_volume_boost", false)
             }
             "pref_volume_boost_db" -> {
-                volumeBooster.gain = sharedPreferences.getString("pref_volume_boost_db", "0").toInt() * 100
+                volumeBooster.gain = sharedPreferences.getString("pref_volume_boost_db", "0")!!.toInt() * 100
             }
         }
     }
