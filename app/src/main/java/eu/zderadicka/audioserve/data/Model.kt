@@ -12,6 +12,7 @@ const val METADATA_KEY_DURATION = MediaMetadataCompat.METADATA_KEY_DURATION
 const val METADATA_KEY_TITLE = MediaMetadataCompat.METADATA_KEY_TITLE
 const val METADATA_KEY_ARTIST = MediaMetadataCompat.METADATA_KEY_ARTIST
 const val METADATA_KEY_LAST_POSITION = "eu.zderadicka.audioserve.last_position"
+const val METADATA_PLAY_AFTER_SEEK = "eu.zderadicka.audioserve.play_after_seek"
 const val METADATA_KEY_BITRATE = "eu.zderadicka.audioserve.bitrate"
 const val METADATA_KEY_TRANSCODED = "eu.zderadicka.audioserve.transcoded"
 const val METADATA_KEY_CACHED = "eu.zderadicka.audioserve.cached"

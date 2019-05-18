@@ -254,7 +254,7 @@ class ControllerFragment : MediaFragment(), SharedPreferences.OnSharedPreference
                                 transportControls?.play()
                             }
                             else if (!res.isNullOrEmpty()){
-                                mainActivity.checkRemotePositions(res) {
+                                mainActivity.checkRemotePositions(res, true) {
                                     transportControls?.play()
                                 }
                             } else {

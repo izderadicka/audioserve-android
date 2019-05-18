@@ -195,6 +195,7 @@ class AudioService : MediaBrowserServiceCompat() {
             val autoRewind = calcAutoRewind()
             if (autoRewind > 100) {
                 super.onSeekTo(player, player.currentPosition - autoRewind)
+                Log.d(LOG_TAG, "Autorewind $autoRewind")
             }
             if (requestAudioFocus()) {
                 super.onPlay(player)
@@ -248,7 +249,7 @@ class AudioService : MediaBrowserServiceCompat() {
         val prevPos = if (previousPositionUpdateTime > 0) previousPositionUpdateTime else lastPositionUpdateTime
         previousPositionUpdateTime = 0
         val updatedBefore = System.currentTimeMillis() - prevPos
-        Log.d(LOG_TAG, "Determine autorewind for item ${currentMediaItem}, updated before${updatedBefore}")
+        Log.d(LOG_TAG, "Determine autorewind for item ${currentMediaItem}, updated before $updatedBefore")
         return if (updatedBefore < 10_000) 0
         else if (updatedBefore < 5 * MINUTE_IN_MILLIS) 2000
         else if (updatedBefore < 30 * MINUTE_IN_MILLIS) 15_000
@@ -375,11 +376,12 @@ class AudioService : MediaBrowserServiceCompat() {
                     playerController.requestAudioFocus()
                 }
                 val seekTo = extras?.getLong(METADATA_KEY_LAST_POSITION)
+                val playAfter = extras?.getBoolean(METADATA_PLAY_AFTER_SEEK)?:false
                 if (seekTo != null && seekTo>0L)  {
                     if (cacheManager.isCached(mediaId)) {
-                        delayedSeek = SeekWhenReady(seekTo, mediaId, session)
+                        delayedSeek = SeekWhenReady(seekTo, mediaId, session, false, playAfter)
                     } else {
-                        delayedSeek = SeekAfterLoad(seekTo, mediaId, session)
+                        delayedSeek = SeekAfterLoad(seekTo, mediaId, session, playAfter)
                     }
                 } else {
                     delayedSeek = null
@@ -504,7 +506,7 @@ class AudioService : MediaBrowserServiceCompat() {
                 }
             }
             if (delayedSeek == null) {
-                lastPositionUpdateTime = System.currentTimeMillis() //state.lastPositionUpdateTime
+                lastPositionUpdateTime = System.currentTimeMillis()
                 if (currentMediaItem != null && session.controller?.metadata?.description?.mediaId == currentMediaItem?.mediaId) {
 
                     currentMediaItem?.let { recents.updateRecent(it, state.position) }
@@ -1032,7 +1034,8 @@ mediaSessionConnector.setErrorMessageProvider(messageProvider);
     }
 
     abstract class SeekStateBase(private val session: MediaSessionCompat,
-                                 protected val forMediaId: String): SeekState {
+                                 protected val forMediaId: String,
+                                 protected val playAfter: Boolean): SeekState {
         fun sendEvent(evt: String) {
             val b = Bundle()
             b.putString(METADATA_KEY_MEDIA_ID, forMediaId)
@@ -1042,29 +1045,35 @@ mediaSessionConnector.setErrorMessageProvider(messageProvider);
     }
     inner class SeekAfterLoad(private val seekTo: Long,
                               forMediaId: String,
-                              session: MediaSessionCompat
+                              session: MediaSessionCompat,
+                              playAfter: Boolean = false
                               ):
-            SeekStateBase(session, forMediaId) {
+            SeekStateBase(session, forMediaId, playAfter) {
 
         init {
             sendEvent(SEEK_WAITING)
         }
         override fun ready(mediaId: String, session: MediaSessionCompat): SeekState? = this
         override fun loaded(mediaId: String): SeekState =
-                if (mediaId == forMediaId) SeekWhenReady(seekTo, forMediaId, session, true) else this
+                if (mediaId == forMediaId) SeekWhenReady(seekTo, forMediaId, session, true, playAfter) else this
 
     }
 
     inner class SeekWhenReady(private val seekTo: Long,
                               forMediaId: String,
                               session: MediaSessionCompat,
-                              val sendEvent: Boolean = false):
-            SeekStateBase(session, forMediaId) {
+                              val sendEvent: Boolean = false,
+                              playAfter: Boolean = false):
+            SeekStateBase(session, forMediaId, playAfter) {
         override fun ready(mediaId: String, session: MediaSessionCompat): SeekState? {
 
             if (mediaId == forMediaId) {
                 Log.d(LOG_TAG, "Seeking to previous position $seekTo")
+                lastPositionUpdateTime = System.currentTimeMillis();
                 session.controller.transportControls.seekTo(seekTo)
+                if (playAfter) {
+                    session.controller.transportControls.play()
+                }
                 if (sendEvent) sendEvent(SEEK_WAITING_DONE)
                 return null
 

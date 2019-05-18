@@ -187,6 +187,9 @@ class MainActivity : AppCompatActivity(),
             }
             extras.putLong(METADATA_KEY_LAST_LISTENED_TIMESTAMP,
                     item.description.extras?.getLong(METADATA_KEY_LAST_LISTENED_TIMESTAMP)?: 0)
+            if (item.description.extras?.getBoolean(METADATA_PLAY_AFTER_SEEK) == true) {
+                extras.putBoolean(METADATA_PLAY_AFTER_SEEK, true)
+            }
             mediaController?.transportControls?.prepareFromMediaId(item.mediaId, extras)
         }
 
@@ -567,7 +570,7 @@ class MainActivity : AppCompatActivity(),
                     if (err!= null) {
                         Log.e(LOG_TAG, "Error querying position $err")
                     } else {
-                        checkRemotePositions(items, null)
+                        checkRemotePositions(items, false,null)
                     }
                 }
 
@@ -581,11 +584,15 @@ class MainActivity : AppCompatActivity(),
     }
 
     fun checkRemotePositions(items: ArrayList<MediaBrowserCompat.MediaItem>?,
+                             playAfter: Boolean,
                              onContinueWithCurrent: (() -> Unit)?) {
 
         val d = RemotePositionsDialogFragment()
         d.setListener(object: RemotePositionsDialogFragment.Listener {
             override fun onItemChosen(item: MediaBrowserCompat.MediaItem) {
+                if (playAfter) {
+                    item.description.extras?.putBoolean(METADATA_PLAY_AFTER_SEEK, true)
+                }
                 onItemClicked(item, ItemAction.Open, false)
             }
 
