@@ -569,6 +569,7 @@ class MainActivity : AppCompatActivity(),
                     items, err ->
                     if (err!= null) {
                         Log.e(LOG_TAG, "Error querying position $err")
+                        Toast.makeText(this, "Cann't get remote position: $err",Toast.LENGTH_SHORT).show()
                     } else {
                         checkRemotePositions(items, false,null)
                     }

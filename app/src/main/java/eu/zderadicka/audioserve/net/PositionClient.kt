@@ -15,9 +15,9 @@ private const val NORMAL_CLOSE = 1000
 private const val TIMEOUT_DURATION = 2_000L
 
 enum class PositionClientError {
-    Socket,
+    SocketError,
     CanceledByNext,
-    NotReady,
+    NotConnected,
     Timeout,
     InvalidResponse
 }
@@ -41,12 +41,26 @@ class PositionClient(val serverUrl:String, val token:String, val group: String?)
 
     private val timeout = object: Runnable {
         override fun run() {
-            finishPendingQuery(PositionClientError.Timeout)
+            pendingQuery?.apply {
+               if (errors>0) {
+                   finishPendingQuery(PositionClientError.Timeout)
+               } else {
+                   // try to open the websocketsocket
+                   errors+=1;
+                   if (! closed) {
+                       close(stayClosed = false)
+                       open()
+                   } else {
+                       finishPendingQuery(PositionClientError.Timeout)
+                   }
+               }
+            }
+
         }
 
     }
 
-    private val reopen = object : Runnable {
+    private val reopen = object : Runnable   {
         override fun run() {
             open()
         }
@@ -91,7 +105,7 @@ class PositionClient(val serverUrl:String, val token:String, val group: String?)
         finishPendingQuery(PositionClientError.CanceledByNext)
         handler.removeCallbacks(timeout)
         if (socket == null) {
-            cb(null, PositionClientError.NotReady)
+            cb(null, PositionClientError.NotConnected)
         } else {
             socket?.apply {
                 pendingQuery = PendingQuery(cb, folderPath, System.currentTimeMillis())
@@ -126,9 +140,9 @@ class PositionClient(val serverUrl:String, val token:String, val group: String?)
         }
 
 
-    fun close() {
+    fun close(stayClosed:Boolean = true) {
         handler.removeCallbacks(reopen)
-        closed = true
+        closed = stayClosed
         socket?.close(NORMAL_CLOSE, null)
     }
 

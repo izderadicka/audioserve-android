@@ -4,7 +4,6 @@ import android.content.Context
 import android.content.SharedPreferences
 import android.graphics.Bitmap
 import android.net.*
-import android.net.Network
 import android.os.Build
 import android.os.Handler
 import android.os.Looper
@@ -208,7 +207,7 @@ class ApiClient private constructor(val context: Context) {
     fun queryLastPosition(cb: (MediaBrowserCompat.MediaItem?, PositionClientError?) -> Unit) {
         positionClient.apply {
             if (this == null) {
-                cb(null, PositionClientError.NotReady)
+                cb(null, PositionClientError.NotConnected)
             } else {
                 sendQuery(null) { res, err ->
                     cb(if (res?.last != null) positionToMediaItem(res.last) else null, err)
@@ -224,7 +223,7 @@ class ApiClient private constructor(val context: Context) {
             cb: (ArrayList<MediaBrowserCompat.MediaItem>?, PositionClientError?) -> Unit) {
         positionClient.apply {
             if (this == null) {
-                cb(ArrayList(), PositionClientError.NotReady)
+                cb(ArrayList(), PositionClientError.NotConnected)
             } else {
                 val folderPath = mediaId?.let { mediaIdToFolderPath(it) }
                         ?: folderId?.let { folderIdToFolderPath(folderId) }

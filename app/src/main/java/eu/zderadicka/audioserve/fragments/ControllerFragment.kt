@@ -243,8 +243,8 @@ class ControllerFragment : MediaFragment(), SharedPreferences.OnSharedPreference
                 mediaController?.apply {
                     val mediaId = metadata?.description?.mediaId
                     val mainActivity = activity
-                    if (mediaId != null && mainActivity is MainActivity) {
-                        val api = ApiClient.getInstance(context!!)
+                    val api = ApiClient.getInstance(context!!)
+                    if (mediaId != null && mainActivity is MainActivity && api.isPositionEnabled) {
                         api.queryPositionForMediaId(mediaId, currentPlayTime) {
                             res, err ->
                             if (err != null) {
@@ -258,7 +258,7 @@ class ControllerFragment : MediaFragment(), SharedPreferences.OnSharedPreference
                                     transportControls?.play()
                                 }
                             } else {
-                                Toast.makeText(context, "No more recent remote positions",Toast.LENGTH_SHORT).show()
+                                //Toast.makeText(context, "No more recent remote positions",Toast.LENGTH_SHORT).show()
                                 transportControls?.play()
                             }
 
