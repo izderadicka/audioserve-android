@@ -9,14 +9,14 @@ import android.support.v7.app.AlertDialog
 import android.widget.NumberPicker
 import android.widget.Switch
 import eu.zderadicka.audioserve.R
+import eu.zderadicka.audioserve.utils.currentSleepExtendMins
+import eu.zderadicka.audioserve.utils.currentSleepMins
 import eu.zderadicka.audioserve.utils.startSleepTimer
 
 
 // All four must be dividable by 5
 private const val MAX_SLEEP = 120
-private const val DEFAULT_SLEEP = 30
-private const val MAX_EXTEND = 120
-private const val DEFAULT_EXTEND = 15
+private const val MAX_SLEEP_EXTEND = 120
 
 private fun calcSteps (max:Int): Array<String> {
     return (1..minsToVal(max)).map{ valToMins(it).toString()}.toTypedArray()
@@ -39,23 +39,12 @@ class SleepDialogFragment : DialogFragment() {
         sleepAfterPicker.maxValue= minsToVal(MAX_SLEEP)
         sleepAfterPicker.wrapSelectorWheel = false
         extendByPicker.minValue=1
-        extendByPicker.maxValue= minsToVal(MAX_EXTEND)
+        extendByPicker.maxValue= minsToVal(MAX_SLEEP_EXTEND)
         extendByPicker.wrapSelectorWheel = false
         sleepAfterPicker.displayedValues = calcSteps(MAX_SLEEP)
-        extendByPicker.displayedValues = calcSteps(MAX_EXTEND)
-        var currentSleep = sps.getInt("pref_sleep", -1)
-        if (currentSleep < 0)  {
-            currentSleep = DEFAULT_SLEEP
-            sps.edit().putInt("pref_sleep", currentSleep).commit()
-        }
-        sleepAfterPicker.value = minsToVal(currentSleep)
-
-        var currentExtend = sps.getInt("pref_extend", -1)
-        if (currentExtend < 0 ) {
-            currentExtend = DEFAULT_EXTEND
-            sps.edit().putInt("pref_extend", currentExtend).commit()
-        }
-        extendByPicker.value = minsToVal(currentExtend)
+        extendByPicker.displayedValues = calcSteps(MAX_SLEEP_EXTEND)
+        sleepAfterPicker.value = minsToVal(currentSleepMins(context!!))
+        extendByPicker.value = minsToVal(currentSleepExtendMins(context!!))
         sleepAfterPicker.setOnValueChangedListener{_, _, newValue ->
             sps.edit().putInt("pref_sleep", valToMins(newValue)).apply()
         }

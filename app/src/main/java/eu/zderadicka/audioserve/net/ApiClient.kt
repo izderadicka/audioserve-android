@@ -566,7 +566,12 @@ class ApiClient private constructor(val context: Context) {
                 val err = ApiError.fromResponseError(it)
                 if (err == ApiError.UnauthorizedAccess && token == null) {
                     // started offline - try again to log in
-                    login {}
+                    login {
+                        if (it == null && ! group.isNullOrEmpty()) {
+                            //we logged in reinit positionClient
+                            initPositionClient(true)
+                        }
+                    }
                 }
                 callback(null, err)
 

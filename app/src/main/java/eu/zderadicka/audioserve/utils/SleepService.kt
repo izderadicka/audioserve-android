@@ -38,7 +38,31 @@ private const val minuteMillis = 60_000L
 private const val NOTIFICATION_ID = 74211
 private const val LOG_TAG = "SleepService"
 
+private const val DEFAULT_SLEEP = 30
+private const val DEFAULT_SLEEP_EXTEND = 15
+
 private const val MIN_G_FOR_ACTION = 1.5F
+
+fun currentSleepMins(ctx: Context) : Int {
+    val sps = PreferenceManager.getDefaultSharedPreferences(ctx)
+    var currentSleep = sps.getInt("pref_sleep", -1)
+    if (currentSleep < 0)  {
+        currentSleep = DEFAULT_SLEEP
+        sps.edit().putInt("pref_sleep", currentSleep).commit()
+    }
+
+    return currentSleep
+}
+
+fun currentSleepExtendMins(ctx: Context) : Int {
+    val sps = PreferenceManager.getDefaultSharedPreferences(ctx)
+    var currentExtend = sps.getInt("pref_extend", -1)
+    if (currentExtend < 0 ) {
+        currentExtend = DEFAULT_SLEEP_EXTEND
+        sps.edit().putInt("pref_extend", currentExtend).commit()
+    }
+    return currentExtend
+}
 
 fun cancelSleepTimer(context: Context) {
     val intent = Intent(context, SleepService::class.java)
@@ -102,9 +126,8 @@ class SleepService() : Service() {
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         when (intent?.action) {
             SLEEP_START_ACTION -> {
-                val time =  prefs.getInt("pref_sleep", -1)
+                val time =  currentSleepMins(this)
                 if (time > 0) {
-
                     timer = MyTimer(time )
                     statusListener?.invoke(isRunning, time)
                     timer?.startWithNotification()
@@ -205,7 +228,7 @@ class SleepService() : Service() {
     }
 
     private fun extend() {
-            val time =  prefs.getInt("pref_extend", -1)
+            val time =  currentSleepExtendMins(this)
             if (time > 0 && timer != null) {
                 val remains = timer?.remains?:0
                 timer?.cancel()

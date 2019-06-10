@@ -65,7 +65,7 @@ class ExpandableFrameLayout @JvmOverloads constructor(context: Context, attrs: A
         override fun onScroll(e1: MotionEvent, e2: MotionEvent, distanceX: Float, distanceY: Float): Boolean {
             val distY = e1.rawY - e2.rawY
             val distX = e1.rawX - e2.rawX
-            Log.d(LOG_TAG, "Scroll in Y $distY")
+            //Log.d(LOG_TAG, "Scroll in Y $distY")
             isDragging = true
             if (abs(distY) > abs(distX)) {
                 if (distY > touchSlop && height < maxHeight) {
@@ -98,7 +98,7 @@ class ExpandableFrameLayout @JvmOverloads constructor(context: Context, attrs: A
     }
 
     override fun onTouchEvent(event: MotionEvent): Boolean {
-        Log.d(LOG_TAG, "Player touch $event")
+        //Log.d(LOG_TAG, "Player touch $event")
 
         if (event.actionMasked == MotionEvent.ACTION_UP) {
 

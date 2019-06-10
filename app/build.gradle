@@ -18,8 +18,8 @@ android {
         applicationId "eu.zderadicka.audioserve"
         minSdkVersion 21
         targetSdkVersion 28
-        versionCode 33
-        versionName "0.8.3"
+        versionCode 34
+        versionName "0.8.4"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }
     buildTypes {
