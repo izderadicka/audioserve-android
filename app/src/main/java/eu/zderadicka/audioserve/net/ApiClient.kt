@@ -440,7 +440,7 @@ class ApiClient private constructor(val context: Context) {
                     return Response.success(html, HttpHeaderParser.parseCacheHeaders(response))
                 }
 
-                if (contentType == "text/x-markdown") {
+                if (contentType == "text/x-markdown" || contentType == "text/markdown") {
                     val md = fromMarkdown(context, parsed)
                     return Response.success(md, HttpHeaderParser.parseCacheHeaders(response))
                 }
