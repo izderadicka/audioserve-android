@@ -141,7 +141,7 @@ class PositionClient(val serverUrl:String, val token:String, val group: String?)
 
     private fun encodeMessage(filePath: String, position: Double):String =
         lastFile.let {
-            fun fmt(p:Double) = "%.3f".format(p)
+            fun fmt(p:Double) = "%.3f".format(java.util.Locale.US, p)
             return if (it == filePath) {
                 "${fmt(position)}|"
             } else {
