@@ -10,5 +10,5 @@
         android:bottomLeftRadius="32dp"
         android:topLeftRadius="36dp"
         android:topRightRadius="36dp"/>
-    <solid android:color="@color/colorListBackground"/>
+    <solid android:color="@color/colorBackgroundOverlay"/>
 </shape>
