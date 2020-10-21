@@ -3,7 +3,8 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
-    android:layout_height="wrap_content">
+    android:layout_height="wrap_content"
+    >
 
     <TextView
         android:id="@+id/textView2"
@@ -15,6 +16,7 @@
         android:textAppearance="@style/TextAppearance.AppCompat"
         android:textSize="18sp"
         android:textStyle="bold"
+        android:textColor="@color/colorAccent"
         app:layout_constraintEnd_toEndOf="@+id/sleepAfter"
         app:layout_constraintHorizontal_bias="0.484"
         app:layout_constraintStart_toStartOf="@+id/sleepAfter"
@@ -30,6 +32,7 @@
         android:textAppearance="@style/TextAppearance.AppCompat"
         android:textSize="18sp"
         android:textStyle="bold"
+        android:textColor="@color/colorAccent"
         app:layout_constraintEnd_toEndOf="@+id/sleepAfter"
         app:layout_constraintStart_toStartOf="@+id/sleepAfter"
         app:layout_constraintTop_toBottomOf="@+id/sleepAfter" />
@@ -42,6 +45,7 @@
         android:layout_marginTop="8dp"
         android:descendantFocusability="blocksDescendants"
         android:theme="@style/NumberPickerText"
+        android:textColor="@color/colorAccent"
         app:layout_constraintEnd_toStartOf="@+id/guideline"
         app:layout_constraintTop_toBottomOf="@+id/textView2">
 
@@ -56,6 +60,7 @@
         android:textAppearance="@style/TextAppearance.AppCompat"
         android:textSize="18sp"
         android:textStyle="bold"
+        android:textColor="@color/colorAccent"
         app:layout_constraintEnd_toEndOf="@+id/extendBy"
         app:layout_constraintStart_toStartOf="@+id/extendBy"
         app:layout_constraintTop_toTopOf="parent" />
@@ -69,6 +74,7 @@
         android:textAppearance="@style/TextAppearance.AppCompat"
         android:textSize="18sp"
         android:textStyle="bold"
+        android:textColor="@color/colorAccent"
         app:layout_constraintEnd_toEndOf="@+id/extendBy"
         app:layout_constraintStart_toStartOf="@+id/extendBy"
         app:layout_constraintTop_toBottomOf="@+id/extendBy" />
@@ -81,6 +87,7 @@
         android:layout_marginTop="8dp"
         android:descendantFocusability="blocksDescendants"
         android:theme="@style/NumberPickerText"
+        android:textColor="@color/colorAccent"
         app:layout_constraintStart_toStartOf="@+id/guideline"
         app:layout_constraintTop_toBottomOf="@+id/textView4">
 
@@ -106,6 +113,7 @@
         android:switchPadding="16dp"
         android:text="@string/label_sound_notifications"
         android:textStyle="bold"
+        android:textColor="@color/colorAccent"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
