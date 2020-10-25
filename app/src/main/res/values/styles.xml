@@ -1,0 +1,70 @@
+<resources>
+
+    <!-- Base application theme. -->
+    <style name="AppTheme" parent="Theme.AppCompat.Light.DarkActionBar">
+        <!-- Customize your theme here. -->
+        <item name="colorPrimary">@color/colorPrimary</item>
+        <item name="colorPrimaryDark">@color/colorPrimaryDark</item>
+        <item name="colorAccent">@color/colorAccent</item>
+        <item name="android:colorBackground">@color/colorListBackground</item>
+
+    </style>
+
+    <style name="AppTheme.NoActionBar">
+        <item name="windowActionBar">false</item>
+        <item name="windowNoTitle">true</item>
+    </style>
+
+    <style name="AppTheme.AppBarOverlay" parent="ThemeOverlay.AppCompat.Dark.ActionBar" />
+
+    <style name="AppTheme.PopupOverlay" parent="ThemeOverlay.AppCompat.Light" />
+
+    <style name="NumberPickerText">
+        <item name="android:textSize">22dp</item>
+    </style>
+
+    <style name="SleepAlert" parent="Theme.AppCompat.Light.Dialog.Alert">
+
+        <item name="android:textSize">22sp</item>
+        <item name="android:textColor">@color/colorAccent</item>
+        <item name="android:windowTitleStyle">@style/SleepAlertTitle</item>
+
+    </style>
+
+    <style name="SleepAlertTitle" parent="">
+        <item name="android:textSize">32sp</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:textColor">@color/colorPrimaryDark</item>
+    </style>
+
+    <style name="NotifTitle" parent="@style/TextAppearance.Compat.Notification.Title">
+        <item name="android:textSize">16sp</item>
+        <item name="android:textStyle">bold</item>
+    </style>
+
+    <style name="NotifCounter" parent="@style/TextAppearance.Compat.Notification.Title">
+        <item name="android:textSize">32dp</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:textColor">@color/colorAccent</item>
+    </style>
+
+    <style name="PlayerControlLabel">
+        <item name="android:textColor">@android:color/white</item>
+        <item name="android:textStyle">bold</item>
+    </style>
+
+    <style name="PlayerBarValue" parent="PlayerControlLabel">
+        <item name="android:textSize">24dp</item>
+    </style>
+
+    <style name="PlayerDiscreteBar" parent="Widget.AppCompat.SeekBar.Discrete">
+        <item name="android:progressBackgroundTint">@android:color/white</item>
+    </style>
+
+    <style name="NavDrawerStyle" parent="Base.TextAppearance.AppCompat">
+        <item name="android:textSize">18dp</item>
+    </style>
+
+
+
+</resources>
