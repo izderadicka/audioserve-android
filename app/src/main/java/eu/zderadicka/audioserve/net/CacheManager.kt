@@ -206,7 +206,7 @@ class CacheManager private constructor(val context: Context) {
                 context.cacheDir.absolutePath)!!
         cacheDir = File(File(cacheBase), MEDIA_CACHE_DIR)
         val cacheSize: Long = PreferenceManager.getDefaultSharedPreferences(context).getString("pref_cache_size",
-                DEFAULT_CACHE_SIZE_MB.toString()).toLong() * 1024 * 1024
+                DEFAULT_CACHE_SIZE_MB.toString())!!.toLong() * 1024 * 1024
         cache =  FileCache(cacheDir,cacheSize, context)
         transcode = transcodingFromPrefs(context)
         PreferenceManager.getDefaultSharedPreferences(context).registerOnSharedPreferenceChangeListener(prefsListener)
@@ -240,7 +240,7 @@ class CacheManager private constructor(val context: Context) {
                 context.cacheDir.absolutePath)!!
         cacheDir = File(File(cacheBase), MEDIA_CACHE_DIR)
         val cacheSize: Long = PreferenceManager.getDefaultSharedPreferences(context).getString("pref_cache_size",
-                DEFAULT_CACHE_SIZE_MB.toString()).toLong() * 1024 * 1024
+                DEFAULT_CACHE_SIZE_MB.toString())!!.toLong() * 1024 * 1024
         val oldListeners: HashSet<FileCache.Listener> = cache.listeners.clone() as HashSet<FileCache.Listener>
         cache.removeAllListeners()
         cache = FileCache(cacheDir, cacheSize, context)

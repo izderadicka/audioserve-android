@@ -150,7 +150,7 @@ internal const val MAX_RECENT_RECORDS = 100
 class BookmarksProvider : ContentProvider() {
     lateinit var dbHelper: BookmarksDbHelper
 
-    override fun insert(uri: Uri?, values: ContentValues?): Uri =
+    override fun insert(uri: Uri, values: ContentValues?): Uri?  =
             when (uri) {
                 RecentEntry.CONTENT_URI -> insertRecent(uri, values)
                 BookmarkContract.BookmarkEntry.CONTENT_URI -> insertBookmark(uri, values)
@@ -212,7 +212,7 @@ class BookmarksProvider : ContentProvider() {
         return uri.buildUpon().appendPath(id.toString()).build()
     }
 
-    override fun query(uri: Uri?, projection: Array<out String>?, selection: String?,
+    override fun query(uri: Uri, projection: Array<out String>?, selection: String?,
                        selectionArgs: Array<out String>?, sortOrder: String?): Cursor =
             when (uri) {
                 RecentEntry.CONTENT_URI, RecentEntry.CONTENT_URI_LATEST ->
@@ -231,7 +231,7 @@ class BookmarksProvider : ContentProvider() {
         val c = db.query(RecentEntry.TABLE_NAME, projection
                 ?: RecentEntry.DEFAULT_PROJECTION, selection, selectionArgs,
                 null, null, RecentEntry.COLUMN_TIMESTAMP + " DESC", limit)
-        c.setNotificationUri(context.contentResolver, uri)
+        c.setNotificationUri(context!!.contentResolver, uri)
         return c
 
     }
@@ -242,16 +242,18 @@ class BookmarksProvider : ContentProvider() {
         val c = db.query(BookmarkContract.BookmarkEntry.TABLE_NAME, projection
                 ?: BookmarkContract.BookmarkEntry.DEFAULT_PROJECTION, selection, selectionArgs,
                 null, null, BookmarkContract.BookmarkEntry.COLUMN_TIMESTAMP + " DESC", null)
-        c.setNotificationUri(context.contentResolver, uri)
+        c.setNotificationUri(context!!.contentResolver, uri)
         return c
     }
 
     override fun onCreate(): Boolean {
-        dbHelper = BookmarksDbHelper(context)
+        dbHelper = BookmarksDbHelper(context!!)
         return true
     }
 
-    override fun update(uri: Uri?, values: ContentValues?, selection: String?, selectionArgs: Array<out String>?): Int {
+
+
+    override fun update(uri: Uri, values: ContentValues?, selection: String?, selectionArgs: Array<out String>?): Int {
         TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
     }
 
@@ -259,8 +261,10 @@ class BookmarksProvider : ContentProvider() {
 
             when (UriType.match(uri)) {
                 UriType.BookmarkItem -> {
-                    val id = uri!!.lastPathSegment
-                    delete_bookmark(id)
+                    uri.lastPathSegment?.let{
+                        delete_bookmark(it)
+                    }?:0
+
                 }
 
                 else -> throw UnsupportedOperationException("Invalid content URI $uri")
@@ -273,7 +277,7 @@ class BookmarksProvider : ContentProvider() {
                 "${BookmarkContract.BookmarkEntry._ID}=?", arrayOf(id))
     }
 
-    override fun getType(uri: Uri?): String {
+    override fun getType(uri: Uri): String {
         TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
     }
 

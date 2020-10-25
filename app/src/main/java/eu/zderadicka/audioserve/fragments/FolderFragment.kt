@@ -433,8 +433,8 @@ class FolderFragment : MediaFragment(), BaseFolderFragment {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         arguments?.let {
-            folderId = it.getString(ARG_FOLDER_PATH)
-            folderName = it.getString(ARG_FOLDER_NAME)
+            folderId = it.getString(ARG_FOLDER_PATH)!!
+            folderName = it.getString(ARG_FOLDER_NAME)!!
             willPrepare = it.getBoolean(ARG_PREPARE)
             it.remove(ARG_PREPARE)
         }

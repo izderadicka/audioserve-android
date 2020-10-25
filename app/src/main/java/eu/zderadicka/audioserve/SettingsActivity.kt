@@ -64,7 +64,7 @@ class SettingsFragment: PreferenceFragment(), SharedPreferences.OnSharedPreferen
                 val uri = Uri.parse(newValue as String)
                 uri != null && (uri.scheme == "http" || uri.scheme == "https")
                 && uri.host != null
-                && uri.path.endsWith("/")
+                && uri.path?.endsWith("/") == true
             } catch (e: Exception) {
                 false
             }

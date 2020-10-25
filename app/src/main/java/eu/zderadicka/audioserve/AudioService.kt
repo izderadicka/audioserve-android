@@ -118,7 +118,7 @@ private class VolumeBooster(ctx: Context): AudioListener {
     init {
         this.enabled = PreferenceManager.getDefaultSharedPreferences(ctx).getBoolean("pref_volume_boost", false)
         this.gain = PreferenceManager.getDefaultSharedPreferences(ctx)
-                .getString("pref_volume_boost_db", "0").toInt() * 100
+                .getString("pref_volume_boost_db", "0")!!.toInt() * 100
 
     }
     override fun onAudioSessionId(audioSessionId: Int) {

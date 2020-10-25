@@ -115,7 +115,7 @@ class DownloadService : Service() {
         failedCount = 0
 
         val numLoaders = PreferenceManager.getDefaultSharedPreferences(this)
-                .getString("pref_downloads", "2").toInt()
+                .getString("pref_downloads", "2")!!.toInt()
         startLoaders(numLoaders)
     }
 
