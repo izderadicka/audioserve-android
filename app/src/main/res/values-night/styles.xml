@@ -14,4 +14,9 @@
         <item name="android:textColorPrimary">@android:color/black</item>
     </style>
 
+    <style name="AppTheme.PopupOverlay" parent="ThemeOverlay.AppCompat.Light" >
+        <item name="android:textColorPrimary">@android:color/primary_text_dark</item>
+        <item name="android:colorBackground">@color/colorBackgroundOverlay</item>
+    </style>
+
 </resources>
