@@ -70,7 +70,7 @@
         android:layout_height="wrap_content"
         android:layout_marginEnd="8dp"
         android:layout_marginBottom="4dp"
-        android:textColor="?attr/colorBackgroundFloating"
+        android:textColor="@android:color/background_light"
         app:layout_constraintBottom_toBottomOf="@+id/seekBar"
         app:layout_constraintEnd_toEndOf="parent"
         tools:text="10:00:00" />

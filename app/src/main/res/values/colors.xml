@@ -13,4 +13,6 @@
 
     <color name="secondary_file_details">#5A5A5A</color>
 
+    <color name="player_seek_bar">#80081C24</color>
+
 </resources>

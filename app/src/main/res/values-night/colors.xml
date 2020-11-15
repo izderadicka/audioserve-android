@@ -11,4 +11,6 @@
     <color name="list_scrollbar">@color/colorPrimary</color>
     <color name="secondary_file_details">#8A8A8A</color>
 
+    <color name="player_seek_bar">#80444B4E</color>
+
 </resources>
