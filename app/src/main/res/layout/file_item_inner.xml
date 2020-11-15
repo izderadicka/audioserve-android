@@ -38,6 +38,7 @@
         android:layout_marginTop="8dp"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/folderItemName"
+        style="@style/SecondaryFileDetails"
         tools:text="0:00:00" />
 
     <TextView
@@ -47,6 +48,7 @@
         android:layout_marginStart="16dp"
         app:layout_constraintStart_toEndOf="@+id/durationView"
         app:layout_constraintTop_toTopOf="@+id/durationView"
+        style="@style/SecondaryFileDetails"
         tools:text="128" />
 
     <TextView
@@ -56,7 +58,9 @@
         android:layout_marginStart="2dp"
         android:text="kbps"
         app:layout_constraintStart_toEndOf="@+id/bookmarkedAtView"
-        app:layout_constraintTop_toTopOf="@+id/bookmarkedAtView" />
+        app:layout_constraintTop_toTopOf="@+id/bookmarkedAtView"
+        style="@style/SecondaryFileDetails"
+        />
 
     <TextView
         android:id="@+id/extesionView"
@@ -65,7 +69,9 @@
         android:layout_marginStart="8dp"
         tools:text="opus"
         app:layout_constraintStart_toEndOf="@+id/folderPathView"
-        app:layout_constraintTop_toTopOf="@+id/durationView" />
+        app:layout_constraintTop_toTopOf="@+id/durationView"
+        style="@style/SecondaryFileDetails"
+        />
 
     <ImageView
         android:id="@+id/transcodedIcon"
@@ -75,7 +81,9 @@
         android:layout_marginTop="6dp"
         app:layout_constraintStart_toEndOf="@+id/extesionView"
         app:layout_constraintTop_toBottomOf="@+id/folderItemName"
-        app:srcCompat="@drawable/ic_pulse" />
+        app:srcCompat="@drawable/ic_pulse"
+        android:tint="@color/secondary_file_details"
+        />
 
     <ImageView
         android:id="@+id/cachedIcon"
@@ -85,5 +93,6 @@
         android:layout_marginTop="6dp"
         app:layout_constraintStart_toEndOf="@+id/transcodedIcon"
         app:layout_constraintTop_toBottomOf="@+id/folderItemName"
-        app:srcCompat="@drawable/ic_offline_pin" />
+        app:srcCompat="@drawable/ic_offline_pin"
+        android:tint="@color/secondary_file_details"/>
 </android.support.constraint.ConstraintLayout>

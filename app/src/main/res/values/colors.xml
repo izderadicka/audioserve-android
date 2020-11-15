@@ -11,4 +11,6 @@
     <color name="list_thumb">@color/colorPrimary</color>
     <color name="list_scrollbar">@android:color/darker_gray</color>
 
+    <color name="secondary_file_details">#5A5A5A</color>
+
 </resources>
