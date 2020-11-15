@@ -12,5 +12,6 @@
     <dimen name="control_view_sliding_bar_height">56dp</dimen>
     <dimen name="seek_bar_thickness">4dp</dimen>
     <dimen name="seek_bar_thumb_size">20dp</dimen>
+    <dimen name="folder_list_scrollbar_size">18dp</dimen>
 
 </resources>

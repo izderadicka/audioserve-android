@@ -8,5 +8,7 @@
     <color name="colorBackgroundOverlay">#80000000</color>
 
     <color name="list_separator">#bcaaa4</color>
+    <color name="list_thumb">@color/colorPrimary</color>
+    <color name="list_scrollbar">@android:color/darker_gray</color>
 
 </resources>

@@ -12,6 +12,8 @@
         android:paddingLeft="22dp"
         android:paddingRight="22dp" />
 
-    <solid android:color="@color/colorPrimaryDark" />
+    <solid android:color="@color/list_thumb" />
+
+    <size android:width="@dimen/folder_list_scrollbar_size" />
 
 </shape>
