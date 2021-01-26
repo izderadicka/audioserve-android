@@ -43,6 +43,6 @@
         android:layout_below="@+id/textView7"
         android:layout_alignParentStart="true"
         android:layout_marginStart="24dp"
-        android:textAppearance="@style/TextAppearance.Compat.Notification"
+        android:textAppearance="@style/NotifText"
         android:text="@string/sleep_notification_text" />
 </RelativeLayout>
