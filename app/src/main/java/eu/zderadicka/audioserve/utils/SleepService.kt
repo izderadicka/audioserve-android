@@ -14,8 +14,8 @@ import android.net.Uri
 import android.os.*
 
 import android.preference.PreferenceManager
-import android.support.annotation.RequiresApi
-import android.support.v4.app.NotificationCompat
+import androidx.annotation.RequiresApi
+import androidx.core.app.NotificationCompat
 import android.util.Log
 import eu.zderadicka.audioserve.AUDIOSERVICE_ACTION_PAUSE
 import eu.zderadicka.audioserve.AudioService

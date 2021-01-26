@@ -3,15 +3,15 @@ package eu.zderadicka.audioserve.fragments
 import android.content.Context
 import android.database.Cursor
 import android.os.Bundle
-import android.support.v4.app.Fragment
-import android.support.v4.app.LoaderManager
-import android.support.v4.content.CursorLoader
-import android.support.v4.content.Loader
+import androidx.fragment.app.Fragment
+import androidx.loader.app.LoaderManager
+import androidx.loader.content.CursorLoader
+import androidx.loader.content.Loader
 import android.support.v4.media.MediaBrowserCompat
 import android.support.v4.media.MediaDescriptionCompat
-import android.support.v7.widget.LinearLayoutManager
-import android.support.v7.widget.RecyclerView
-import android.support.v7.widget.helper.ItemTouchHelper
+import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
+import androidx.recyclerview.widget.ItemTouchHelper
 import android.text.format.DateUtils
 import android.view.LayoutInflater
 import android.view.View
@@ -27,7 +27,7 @@ import eu.zderadicka.audioserve.data.METADATA_KEY_LAST_POSITION
 
 const val LOADER_ID = 0
 
-class BookmarkViewHolder(itemView: View, clickCallback: (Int) -> Unit): RecyclerView.ViewHolder(itemView) {
+class BookmarkViewHolder(itemView: View, clickCallback: (Int) -> Unit): androidx.recyclerview.widget.RecyclerView.ViewHolder(itemView) {
     var itemNameView: TextView = itemView.findViewById(R.id.folderItemName)
     var positionView: TextView = itemView.findViewById(R.id.positionView)
     var bookmarkedAtView: TextView = itemView.findViewById(R.id.bookmarkedAtView)
@@ -44,7 +44,7 @@ class BookmarkViewHolder(itemView: View, clickCallback: (Int) -> Unit): Recycler
 class BookmarksAdapter(val ctx: Context,
                        val onClickAction: (MediaBrowserCompat.MediaItem) -> Unit,
                        val requery: ()->Unit
-    ) : RecyclerView.Adapter<BookmarkViewHolder>() {
+    ) : androidx.recyclerview.widget.RecyclerView.Adapter<BookmarkViewHolder>() {
     var cursor: Cursor? = null
 
 
@@ -156,12 +156,12 @@ class BookmarksAdapter(val ctx: Context,
 
 class SwipeToDeleteCallback(val adapter: BookmarksAdapter): ItemTouchHelper.SimpleCallback(0,
         ItemTouchHelper.LEFT or ItemTouchHelper.RIGHT) {
-    override fun onMove(p0: RecyclerView, p1: RecyclerView.ViewHolder, p2: RecyclerView.ViewHolder): Boolean {
+    override fun onMove(p0: androidx.recyclerview.widget.RecyclerView, p1: androidx.recyclerview.widget.RecyclerView.ViewHolder, p2: androidx.recyclerview.widget.RecyclerView.ViewHolder): Boolean {
        // do nothing
         return false
     }
 
-    override fun onSwiped(vh: RecyclerView.ViewHolder, direction: Int) {
+    override fun onSwiped(vh: androidx.recyclerview.widget.RecyclerView.ViewHolder, direction: Int) {
        //delete at current pos
         adapter.deleteAtPosition(vh.adapterPosition)
 
@@ -169,11 +169,11 @@ class SwipeToDeleteCallback(val adapter: BookmarksAdapter): ItemTouchHelper.Simp
 
 }
 
-class BookmarksFragment: Fragment(), BaseFolderFragment, LoaderManager.LoaderCallbacks<Cursor> {
+class BookmarksFragment: androidx.fragment.app.Fragment(), BaseFolderFragment, androidx.loader.app.LoaderManager.LoaderCallbacks<Cursor> {
 
     lateinit var adapter: BookmarksAdapter
     lateinit var mediaActivity: MediaActivity
-    lateinit var folderView: RecyclerView
+    lateinit var folderView: androidx.recyclerview.widget.RecyclerView
 
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -193,7 +193,7 @@ class BookmarksFragment: Fragment(), BaseFolderFragment, LoaderManager.LoaderCal
                               savedInstanceState: Bundle?): View? {
         val view = inflater.inflate(R.layout.fragment_folder, container, false)
         folderView = view.findViewById(R.id.folderView)
-        folderView.layoutManager = LinearLayoutManager(context)
+        folderView.layoutManager = androidx.recyclerview.widget.LinearLayoutManager(context)
 
         adapter = BookmarksAdapter(activity!!.application, {item ->
             mediaActivity.onItemClicked(item, ItemAction.Open, false)
@@ -236,16 +236,16 @@ class BookmarksFragment: Fragment(), BaseFolderFragment, LoaderManager.LoaderCal
         loaderManager.restartLoader(LOADER_ID, null, this)
     }
 
-    override fun onCreateLoader(p0: Int, p1: Bundle?): Loader<Cursor> =
+    override fun onCreateLoader(p0: Int, p1: Bundle?): androidx.loader.content.Loader<Cursor> =
         activity?.let { ctx ->
-            CursorLoader(ctx, BookmarkContract.BookmarkEntry.CONTENT_URI,
+            androidx.loader.content.CursorLoader(ctx, BookmarkContract.BookmarkEntry.CONTENT_URI,
                     BookmarkContract.BookmarkEntry.DEFAULT_PROJECTION,
                     null, null,
                     "${BookmarkContract.BookmarkEntry.COLUMN_TIMESTAMP} DESC")
         }?: throw Exception("Activity cannot be null")
 
 
-    override fun onLoadFinished(loader: Loader<Cursor>, cursor: Cursor?) {
+    override fun onLoadFinished(loader: androidx.loader.content.Loader<Cursor>, cursor: Cursor?) {
         if (loader.id == LOADER_ID ) {
             if (cursor?.isClosed == true)
                 loaderManager.restartLoader(LOADER_ID, null, this)
@@ -254,7 +254,7 @@ class BookmarksFragment: Fragment(), BaseFolderFragment, LoaderManager.LoaderCal
         }
     }
 
-    override fun onLoaderReset(p0: Loader<Cursor>) {
+    override fun onLoaderReset(p0: androidx.loader.content.Loader<Cursor>) {
         adapter.swapCursor(null)
     }
 

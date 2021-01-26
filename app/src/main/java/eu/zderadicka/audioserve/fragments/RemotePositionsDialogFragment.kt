@@ -4,10 +4,10 @@ import android.app.AlertDialog
 import android.app.Dialog
 import android.content.Context
 import android.os.Bundle
-import android.support.v4.app.DialogFragment
+import androidx.fragment.app.DialogFragment
 import android.support.v4.media.MediaBrowserCompat
-import android.support.v7.widget.LinearLayoutManager
-import android.support.v7.widget.RecyclerView
+import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
 import android.text.format.DateUtils
 import android.util.Log
 import android.view.LayoutInflater
@@ -24,7 +24,7 @@ const val REMOTE_POSITIONS_LIST = "eu.zderadicka.audioserve.remote_positions_lis
 
 private const val LOG_TAG ="Remote Positions Dialog"
 
-class PositionViewHolder(itemView: View, viewType: Int, val clickCB: (Int) -> Unit) : RecyclerView.ViewHolder(itemView) {
+class PositionViewHolder(itemView: View, viewType: Int, val clickCB: (Int) -> Unit) : androidx.recyclerview.widget.RecyclerView.ViewHolder(itemView) {
     val itemName: TextView = itemView.findViewById(R.id.folderItemName)
     val positionView: TextView = itemView.findViewById(R.id.positionView)
     val lastListenedView: TextView = itemView.findViewById(R.id.bookmarkedAtView)
@@ -41,7 +41,7 @@ class PositionViewHolder(itemView: View, viewType: Int, val clickCB: (Int) -> Un
 
 class PositionsAdapter(val context: Context, private val items: List<MediaBrowserCompat.MediaItem>,
                        private val itemCb: (MediaBrowserCompat.MediaItem) -> Unit)
-    : RecyclerView.Adapter<PositionViewHolder>() {
+    : androidx.recyclerview.widget.RecyclerView.Adapter<PositionViewHolder>() {
 
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): PositionViewHolder {
@@ -74,7 +74,7 @@ class PositionsAdapter(val context: Context, private val items: List<MediaBrowse
 
 }
 
-class RemotePositionsDialogFragment(): DialogFragment() {
+class RemotePositionsDialogFragment(): androidx.fragment.app.DialogFragment() {
     var items: List<MediaBrowserCompat.MediaItem>? = null
     private var listener: Listener? = null
 
@@ -108,8 +108,8 @@ class RemotePositionsDialogFragment(): DialogFragment() {
                     listener?.onItemChosen(item)
 
                 }
-                val positionsList = view.findViewById<RecyclerView>(R.id.positionsList)
-                positionsList.layoutManager = LinearLayoutManager(it)
+                val positionsList = view.findViewById<androidx.recyclerview.widget.RecyclerView>(R.id.positionsList)
+                positionsList.layoutManager = androidx.recyclerview.widget.LinearLayoutManager(it)
                 positionsList.adapter = adapter
             }
             val builder = AlertDialog.Builder(it)

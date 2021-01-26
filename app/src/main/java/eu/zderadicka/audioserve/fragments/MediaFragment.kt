@@ -1,11 +1,11 @@
 package eu.zderadicka.audioserve.fragments
 
-import android.support.v4.app.Fragment
+import androidx.fragment.app.Fragment
 import android.support.v4.media.session.MediaControllerCompat
 import android.util.Log
 
 private const val LOG_TAG = "MediaFragment"
-abstract class MediaFragment: Fragment(){
+abstract class MediaFragment: androidx.fragment.app.Fragment(){
 
 
     internal var controllerRegistered = false

@@ -8,14 +8,14 @@ import android.support.v4.media.MediaBrowserCompat.MediaItem
 import android.support.v4.media.MediaMetadataCompat
 import android.support.v4.media.session.MediaControllerCompat
 import android.support.v4.media.session.PlaybackStateCompat
-import android.support.v7.widget.LinearLayoutManager
-import android.support.v7.widget.RecyclerView
+import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
 import android.text.format.DateUtils
 import android.util.Log
 import eu.zderadicka.audioserve.utils.ifStoppedOrDead
 import android.os.Parcelable
 import android.preference.PreferenceManager
-import android.support.v4.content.ContextCompat
+import androidx.core.content.ContextCompat
 import android.view.*
 import android.widget.*
 import eu.zderadicka.audioserve.*
@@ -47,7 +47,7 @@ private const val LOG_TAG = "FolderFragment"
 
 //TODO icon for item type - folder or audio file
 // TODO icon for currently played icon - that nice equlizer bar from Universal player
-class FolderItemViewHolder(itemView: View, viewType: Int, val clickCB: (Int, ItemAction) -> Unit) : RecyclerView.ViewHolder(itemView) {
+class FolderItemViewHolder(itemView: View, viewType: Int, val clickCB: (Int, ItemAction) -> Unit) : androidx.recyclerview.widget.RecyclerView.ViewHolder(itemView) {
 
     var itemName: TextView = itemView.findViewById(R.id.folderItemName)
     var durationView: TextView? = null
@@ -156,7 +156,7 @@ class FolderItemViewHolder(itemView: View, viewType: Int, val clickCB: (Int, Ite
 
 class FolderAdapter(val context: Context, val isSearch:Boolean,
                     private val itemCb: (MediaItem, ItemAction, Boolean) -> Unit)
-    : RecyclerView.Adapter<FolderItemViewHolder>() {
+    : androidx.recyclerview.widget.RecyclerView.Adapter<FolderItemViewHolder>() {
 
     private var items: List<MediaItem>? = null
     internal var nowPlaying: Int = -1
@@ -346,7 +346,7 @@ class FolderFragment : MediaFragment(), BaseFolderFragment {
     private var mediaActivity: MediaActivity? = null
     private lateinit var adapter: FolderAdapter
 
-    private lateinit var folderView: RecyclerView
+    private lateinit var folderView: androidx.recyclerview.widget.RecyclerView
     private lateinit var loadingProgress: ProgressBar
     private val handler = Handler()
 
@@ -443,7 +443,7 @@ class FolderFragment : MediaFragment(), BaseFolderFragment {
                               savedInstanceState: Bundle?): View? {
         val view = inflater.inflate(R.layout.fragment_folder, container, false)
         folderView = view.findViewById(R.id.folderView)
-        folderView.layoutManager = LinearLayoutManager(context)
+        folderView.layoutManager = androidx.recyclerview.widget.LinearLayoutManager(context)
         val isSearch = folderId.startsWith(AudioService.SEARCH_PREFIX) || folderId.startsWith(AudioService.RECENTLY_MODIFIED_PREFIX)
         adapter = FolderAdapter(context!!, isSearch) {item, action, currentlyPlaying ->
             mediaActivity?.onItemClicked(item, action, currentlyPlaying)

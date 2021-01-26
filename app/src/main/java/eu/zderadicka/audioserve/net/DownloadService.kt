@@ -5,8 +5,8 @@ import android.content.Context
 import android.content.Intent
 import android.os.*
 import android.preference.PreferenceManager
-import android.support.annotation.RequiresApi
-import android.support.v4.app.NotificationCompat
+import androidx.annotation.RequiresApi
+import androidx.core.app.NotificationCompat
 import android.support.v4.media.MediaBrowserCompat
 import android.util.Log
 import android.widget.RemoteViews
