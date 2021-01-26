@@ -13,4 +13,6 @@
 
     <color name="player_seek_bar">#80444B4E</color>
 
+    <color name="colorBlackWhite">@android:color/white</color>
+
 </resources>

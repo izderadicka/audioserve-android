@@ -15,9 +15,13 @@
         <item name="android:textColorPrimary">@android:color/black</item>
     </style>
 
-    <style name="AppTheme.PopupOverlay" parent="ThemeOverlay.AppCompat.Light" >
-        <item name="android:textColorPrimary">@android:color/primary_text_dark</item>
-        <item name="android:colorBackground">@color/colorBackgroundOverlay</item>
+    <style name="AppTheme.PopupOverlay" parent="ThemeOverlay.AppCompat.Dark" >
+    </style>
+
+    <style name="SleepAlertTitle" parent="">
+        <item name="android:textSize">32sp</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:textColor">@color/colorBlackWhite</item>
     </style>
 
 </resources>
