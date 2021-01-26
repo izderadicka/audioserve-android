@@ -49,6 +49,8 @@
         <item name="android:textColor">@color/colorAccent</item>
     </style>
 
+    <style name="NotifText" parent="TextAppearance.Compat.Notification"/>
+
     <style name="PlayerControlLabel">
         <item name="android:textColor">@android:color/white</item>
         <item name="android:textStyle">bold</item>
