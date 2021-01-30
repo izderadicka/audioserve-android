@@ -7,6 +7,7 @@
         <item name="colorPrimaryDark">@color/colorPrimaryDark</item>
         <item name="colorAccent">@color/colorAccent</item>
         <item name="android:navigationBarColor">@color/colorPrimaryDark</item>
+        <item name="android:alertDialogTheme">@style/ModDialog</item>
     </style>
 
     <style name="AppTheme.NoActionBar">
@@ -17,14 +18,18 @@
     <style name="AppTheme.AppBarOverlay" parent="ThemeOverlay.AppCompat.Dark.ActionBar" />
 
     <style name="AppTheme.PopupOverlay" parent="ThemeOverlay.AppCompat.Light" >
+    </style>
 
+    <style name="ModDialog" parent="Theme.AppCompat.DayNight.Dialog.Alert">
+        <item name="android:windowBackground">@color/colorDialogBackground</item>
+        <item name="android:textColor">@color/colorAccent</item>
     </style>
 
     <style name="NumberPickerText">
         <item name="android:textSize">22dp</item>
     </style>
 
-    <style name="SleepAlert" parent="Theme.AppCompat.DayNight.Dialog.Alert">
+    <style name="SleepAlert" parent="ModDialog">
 
         <item name="android:textSize">22sp</item>
         <item name="android:textColor">@color/colorAccent</item>
@@ -35,21 +40,20 @@
     <style name="SleepAlertTitle" parent="">
         <item name="android:textSize">32sp</item>
         <item name="android:textStyle">bold</item>
-        <item name="android:textColor">@color/colorPrimaryDark</item>
+        <item name="android:textColor">@color/colorAccent</item>
     </style>
 
-    <style name="NotifTitle" parent="@style/TextAppearance.Compat.Notification.Title">
+    <style name="NotifTitle" parent="">
         <item name="android:textSize">16sp</item>
         <item name="android:textStyle">bold</item>
     </style>
 
-    <style name="NotifCounter" parent="@style/TextAppearance.Compat.Notification.Title">
+    <style name="NotifCounter" parent="">
         <item name="android:textSize">32dp</item>
         <item name="android:textStyle">bold</item>
         <item name="android:textColor">@color/colorAccent</item>
     </style>
 
-    <style name="NotifText" parent="TextAppearance.Compat.Notification"/>
 
     <style name="PlayerControlLabel">
         <item name="android:textColor">@android:color/white</item>

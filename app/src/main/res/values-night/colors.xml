@@ -15,4 +15,6 @@
 
     <color name="colorBlackWhite">@android:color/white</color>
 
+    <color name="colorDialogBackground">#202020</color>
+
 </resources>

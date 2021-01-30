@@ -9,7 +9,6 @@
         android:id="@+id/downloadError"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:textAppearance="@style/TextAppearance.Compat.Notification.Title"
         android:textColor="@color/colorAccent"
         android:textSize="16sp"
         android:textStyle="bold"

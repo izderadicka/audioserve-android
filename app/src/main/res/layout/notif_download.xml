@@ -31,6 +31,5 @@
         android:layout_alignParentStart="true"
         android:layout_below="@+id/textView7"
         android:layout_marginStart="24dp"
-        android:textAppearance="@style/TextAppearance.Compat.Notification"
         tools:text="@string/download_notification_details" />
 </RelativeLayout>
