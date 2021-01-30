@@ -346,7 +346,7 @@ class FolderFragment : MediaFragment(), BaseFolderFragment {
     private var mediaActivity: MediaActivity? = null
     private lateinit var adapter: FolderAdapter
 
-    private lateinit var folderView: androidx.recyclerview.widget.RecyclerView
+    private var folderView: androidx.recyclerview.widget.RecyclerView? = null
     private lateinit var loadingProgress: ProgressBar
     private val handler = Handler()
 
@@ -394,7 +394,7 @@ class FolderFragment : MediaFragment(), BaseFolderFragment {
 
     override fun scrollToNowPlaying() {
         if (adapter.nowPlaying >= 0)
-            folderView.scrollToPosition(adapter.nowPlaying)
+            folderView?.scrollToPosition(adapter.nowPlaying)
     }
 
     private val subscribeCallback = object : MediaBrowserCompat.SubscriptionCallback() {
@@ -442,13 +442,14 @@ class FolderFragment : MediaFragment(), BaseFolderFragment {
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?,
                               savedInstanceState: Bundle?): View? {
         val view = inflater.inflate(R.layout.fragment_folder, container, false)
-        folderView = view.findViewById(R.id.folderView)
-        folderView.layoutManager = androidx.recyclerview.widget.LinearLayoutManager(context)
+        val folder: RecyclerView = view.findViewById(R.id.folderView)!!
+        folder.layoutManager = androidx.recyclerview.widget.LinearLayoutManager(context)
         val isSearch = folderId.startsWith(AudioService.SEARCH_PREFIX) || folderId.startsWith(AudioService.RECENTLY_MODIFIED_PREFIX)
         adapter = FolderAdapter(context!!, isSearch) {item, action, currentlyPlaying ->
             mediaActivity?.onItemClicked(item, action, currentlyPlaying)
         }
-        folderView.adapter = adapter
+        folder.adapter = adapter
+        folderView = folder
 
         if (context is MediaActivity && context is TopActivity) {
             mediaActivity = context as MediaActivity
@@ -495,16 +496,16 @@ class FolderFragment : MediaFragment(), BaseFolderFragment {
         loadingProgress.visibility = View.INVISIBLE
         // do not show loading immediatelly for cached and quick responces
         handler.postDelayed(showProgress, 500)
-        folderView.visibility = View.VISIBLE
+        folderView?.visibility = View.VISIBLE
     }
 
     private fun doneLoading(folderDetails: Bundle?, error: Boolean = false, empty: Boolean = false) {
         handler.removeCallbacks(showProgress)
         loadingProgress.visibility = View.INVISIBLE
-        folderView.visibility = View.VISIBLE
+        folderView?.visibility = View.VISIBLE
 
         if (!error && folderViewState!= null) {
-            folderView.getLayoutManager()?.onRestoreInstanceState(folderViewState)
+            folderView?.layoutManager?.onRestoreInstanceState(folderViewState)
             folderViewState = null
         }
 
@@ -525,7 +526,7 @@ class FolderFragment : MediaFragment(), BaseFolderFragment {
     }
 
     private fun getFolderViewState(): Parcelable? =
-        folderView.getLayoutManager()?.onSaveInstanceState()
+        folderView?.layoutManager?.onSaveInstanceState()
 
 
     override fun onViewStateRestored(savedInstanceState: Bundle?) {
