@@ -82,8 +82,7 @@
         app:layout_constraintStart_toEndOf="@+id/extesionView"
         app:layout_constraintTop_toBottomOf="@+id/folderItemName"
         app:srcCompat="@drawable/ic_pulse"
-        android:tint="@color/secondary_file_details"
-        />
+        app:tint="@color/secondary_file_details" />
 
     <ImageView
         android:id="@+id/cachedIcon"
@@ -94,5 +93,5 @@
         app:layout_constraintStart_toEndOf="@+id/transcodedIcon"
         app:layout_constraintTop_toBottomOf="@+id/folderItemName"
         app:srcCompat="@drawable/ic_offline_pin"
-        android:tint="@color/secondary_file_details"/>
+        app:tint="@color/secondary_file_details" />
 </androidx.constraintlayout.widget.ConstraintLayout>

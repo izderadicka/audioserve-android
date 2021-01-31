@@ -74,7 +74,7 @@ class RecentTest: ProviderTestCase2<BookmarksProvider>(BookmarksProvider::class.
         }
 
         val c = ctx.contentResolver.query(RecentContract.RecentEntry.CONTENT_URI, null,null,null,null)
-        assertEquals("Should have $MAX_RECENT_RECORDS rows", MAX_RECENT_RECORDS, c.count)
+        assertEquals("Should have $MAX_RECENT_RECORDS rows", MAX_RECENT_RECORDS, c!!.count)
         c.close()
     }
 
@@ -97,7 +97,7 @@ class RecentTest: ProviderTestCase2<BookmarksProvider>(BookmarksProvider::class.
         }
 
         val c = ctx.contentResolver.query(RecentContract.RecentEntry.CONTENT_URI, null,null,null,null)
-        assertEquals("Should have 10 rows", if (same) 1 else 10, c.count)
+        assertEquals("Should have 10 rows", if (same) 1 else 10, c!!.count)
         c.close()
 
     }

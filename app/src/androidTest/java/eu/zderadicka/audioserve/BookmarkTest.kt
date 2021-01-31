@@ -43,14 +43,14 @@ class BookmarkTest: ProviderTestCase2<BookmarksProvider>(BookmarksProvider::clas
 
         val c = ctx.contentResolver.query(BookmarkContract.BookmarkEntry.CONTENT_URI,
                 null,null,null,null)
-        Assert.assertEquals("Should have 1 rows", 1, c.count)
+        Assert.assertEquals("Should have 1 rows", 1, c!!.count)
         c.close()
 
         val res = ctx.contentResolver.delete(uri!!,null,null)
 
         val c2 = ctx.contentResolver.query(BookmarkContract.BookmarkEntry.CONTENT_URI,
                 null,null,null,null)
-        Assert.assertEquals("Should have 0 rows after delete", 0, c2.count)
+        Assert.assertEquals("Should have 0 rows after delete", 0, c2!!.count)
         c2.close()
 
     }
@@ -77,7 +77,7 @@ class BookmarkTest: ProviderTestCase2<BookmarksProvider>(BookmarksProvider::clas
 
         val c = ctx.contentResolver.query(BookmarkContract.BookmarkEntry.CONTENT_URI,
                 null,null,null,null)
-        Assert.assertEquals("Should have 1 rows", 1, c.count)
+        Assert.assertEquals("Should have 1 rows", 1, c!!.count)
         c.close()
 
 
@@ -103,7 +103,7 @@ class BookmarkTest: ProviderTestCase2<BookmarksProvider>(BookmarksProvider::clas
         ctx.contentResolver.insert(BookmarkContract.BookmarkEntry.CONTENT_URI, v2)
 
         val c = ctx.contentResolver.query(BookmarkContract.BookmarkEntry.CONTENT_URI,null,null,null,null)
-        Assert.assertEquals(1, c.count)
+        Assert.assertEquals(1, c!!.count)
         Assert.assertTrue(c.moveToNext())
         val ts = c?.run{ getLong(getColumnIndex(BookmarkContract.BookmarkEntry.COLUMN_TIMESTAMP))}
         Assert.assertEquals(2L,ts)

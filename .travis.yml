@@ -9,14 +9,9 @@ android:
   - tools
   - platform-tools
   - tools
-  - build-tools-27.0.3
   - android-28
   - android-24
-  - extra-google-google_play_services
   - sys-img-armeabi-v7a-android-24
-before_install:
-  - yes | sdkmanager "platforms;android-28"
-  - yes | sdkmanager "build-tools;28.0.3"
 before_cache:
 - rm -f  $HOME/.gradle/caches/modules-2/modules-2.lock
 - rm -fr $HOME/.gradle/caches/*/plugin-resolution/
@@ -34,7 +29,6 @@ deploy:
   provider: releases
   api_key:
     secure: f8yw+q4hWcKg4LwUFZNcAJ110HqpFIPipEoKPCvfB8Q+Ht97boYeJsgP+aIllKq9rssRvVrMscqCj9pcx6bdCRV5aFWR3ek4NaE+2gfQ4Qi8RHR85sZ+qcH9bzO0GRnf8NjX49kq3F6tzn+cc8HWzdUESwQxG0E/svw7dSTolhVqdeDE8/S89mDoGVcu0GxuFMvYbOiu8H0yyXcyimkrQsdWuZQxOKhlKJsDI6dJ3wPmupRDyqRt7m7Wjyvt9ismRI4g9y2EGzEzG207mRVvjs0Zea8lopee8LpKraBAUjQ/EVtrXWfzyS3CczHNztZViNMZXvhcpzuJsOaHYM8YdjN7zESesDoHDKXWczy+je8kU1N9QWhjJ7UqJolhnHo65w4LBnO6DWKrrQjvZ2bSXMhM6UPXgsoLSImMRB8/fDu2kcBtIkGGfXS/5BTLSq8/st1hggTqoCrfAnupMBshSSd6DFgmv/HM7L7/S51b/1Umy2C5hLTc72nIV5uIMxe4/yCB5C/oPmluK25rPcsKA8TXreAZRkyhsoILyp04H0JXGgBu2U6RW4ZNlQeA8MXOngLomQpbXZB3PsezymxMbUF4KVmNWm3F3+dNYTFcCpgQTQ6NatHK6/RVm6u7QO+kBrZKWXYOFq0oC74bjrq34JlRVXlAw8HRSthKRIyW1dc=
-  file: app/build/outputs/apk/debug/app-debug.apk
   file: app/build/outputs/apk/release/app-release.apk
   skip_cleanup: true
   on:

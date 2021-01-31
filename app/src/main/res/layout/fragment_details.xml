@@ -56,10 +56,10 @@
             android:layout_marginTop="8dp"
             android:contentDescription="@string/clock_image"
             android:src="@drawable/ic_menu_recent"
-            android:tint="#ffffff"
             app:layout_constraintBottom_toBottomOf="@+id/view2"
             app:layout_constraintStart_toStartOf="@+id/view2"
-            app:layout_constraintTop_toTopOf="@+id/view2" />
+            app:layout_constraintTop_toTopOf="@+id/view2"
+            app:tint="#ffffff" />
 
         <TextView
             android:id="@+id/totalTime"

@@ -63,7 +63,7 @@ open class BaseCacheTest {
     }
 
     val testFile:File by lazy {
-        val srcFileUrl = javaClass.classLoader.getResource("test.mp3")
+        val srcFileUrl = javaClass.classLoader!!.getResource("test.mp3")
         File(srcFileUrl.toURI())
     }
 
