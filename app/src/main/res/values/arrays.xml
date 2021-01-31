@@ -29,4 +29,16 @@
         <item>@string/transcoding_no</item>
     </string-array>
 
+    <string-array name="pref_night_theme_values">
+        <item>-1</item>
+        <item>1</item>
+        <item>2</item>
+    </string-array>
+
+    <string-array name="pref_night_theme_names">
+        <item>@string/pref_night_theme_system</item>
+        <item>@string/pref_night_theme_day</item>
+        <item>@string/pref_night_theme_night</item>
+    </string-array>
+
 </resources>

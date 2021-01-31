@@ -28,6 +28,7 @@ import android.content.*
 import android.content.pm.PackageManager
 import android.os.IBinder
 import android.preference.PreferenceManager
+import androidx.appcompat.app.AppCompatDelegate
 import androidx.appcompat.widget.SearchView
 import androidx.appcompat.widget.SwitchCompat
 import eu.zderadicka.audioserve.data.*
@@ -288,6 +289,11 @@ class MainActivity : AppCompatActivity(),
         val prefs = PreferenceManager.getDefaultSharedPreferences(this)
         val haveServer = !prefs.getString("pref_server_url", null).isNullOrBlank()
         val haveSecret = !prefs.getString(("pref_shared_secret"), null).isNullOrBlank()
+
+        prefs.getString("pref_night_theme", null)?.let{
+            val mode = it.toInt();
+            AppCompatDelegate.setDefaultNightMode(mode)
+        }
 
         //mask clicks on the sleep overlay
         sleepOverlayView.setOnClickListener {

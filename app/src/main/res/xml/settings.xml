@@ -131,11 +131,23 @@
 
     </PreferenceCategory>
 
+    <PreferenceCategory
+        android:key="prefs_appearance"
+        android:title="@string/pref_category_appearance">
 
+        <ListPreference
+            android:key="pref_night_theme"
+            android:title="@string/pref_night_theme_name"
+            android:entries="@array/pref_night_theme_names"
+            android:entryValues="@array/pref_night_theme_values"
+            android:defaultValue="-1"
+            />
+
+    </PreferenceCategory>
 
     <PreferenceCategory
         android:key="prefs_other"
-        android:title="OTHER"
+        android:title="@string/pref_category_other"
         >
         <EditTextPreference
             android:key="pref_web_search_prefix"

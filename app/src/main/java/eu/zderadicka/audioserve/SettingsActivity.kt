@@ -9,6 +9,7 @@ import android.os.Environment
 import android.preference.*
 import android.util.Log
 import android.widget.Toast
+import androidx.appcompat.app.AppCompatDelegate
 import eu.zderadicka.audioserve.net.ApiClient
 import eu.zderadicka.audioserve.net.CacheManager
 import eu.zderadicka.audioserve.net.MEDIA_CACHE_DIR
@@ -127,6 +128,13 @@ class SettingsFragment: PreferenceFragment(), SharedPreferences.OnSharedPreferen
             true
         }
 
+        findPreference("pref_night_theme").setOnPreferenceChangeListener{_, newValue ->
+            val mode = (newValue as String).toInt()
+            AppCompatDelegate.setDefaultNightMode(mode)
+            Toast.makeText(activity, "May need to exit and start application to apply", Toast.LENGTH_LONG).show()
+            true
+        }
+
         cacheLocationPref.setOnPreferenceChangeListener { preference, newValue ->
 
             val oldValue = preference.sharedPreferences.getString(preference.key, null)
@@ -182,7 +190,7 @@ class SettingsFragment: PreferenceFragment(), SharedPreferences.OnSharedPreferen
     }
 
     override fun onSharedPreferenceChanged(sharedPreferences: SharedPreferences?, key: String?) {
-        findPreference(key)?.let {updateSummary(it)}
+        findPreference(key)?.let { updateSummary(it) }
     }
 
     private fun updateSummary(pref: Preference) {
@@ -304,6 +312,15 @@ class SettingsFragment: PreferenceFragment(), SharedPreferences.OnSharedPreferen
                     pref.summary = getString(R.string.pref_group_summary_null)
                 } else {
                     pref.summary = getString(R.string.pref_group_summary_filled,v)
+                }
+            }
+
+            "pref_night_theme" -> {
+                val v =sps.getString(pref.key, null)?: return
+                when (v) {
+                    "-1" -> {pref.summary = "Using system wise setting for Day/Night theme"}
+                    "1" -> {pref.summary = "Always Day theme"}
+                    "2" -> {pref.summary = "Always Night theme"}
                 }
             }
 

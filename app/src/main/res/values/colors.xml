@@ -17,6 +17,6 @@
 
     <color name="colorBlackWhite">@android:color/black</color>
 
-    <color name="colorDialogBackground">#DADADA</color>
+    <color name="colorDialogBackground">#EAEAEA</color>
 
 </resources>
