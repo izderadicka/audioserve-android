@@ -13,7 +13,7 @@ android {
             storePassword 'dummy1'
         }
     }
-    compileSdkVersion 28
+    compileSdkVersion 29
     defaultConfig {
         applicationId "eu.zderadicka.audioserve"
         minSdkVersion 21
