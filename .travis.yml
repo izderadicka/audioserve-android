@@ -9,9 +9,13 @@ android:
   - tools
   - platform-tools
   - tools
-  - android-28
+  - build-tools-29.0.2
+  - android-29
   - android-24
   - sys-img-armeabi-v7a-android-24
+before_install:
+  - yes | sdkmanager "platforms;android-29"
+  - yes | sdkmanager "build-tools;29.0.2"
 before_cache:
 - rm -f  $HOME/.gradle/caches/modules-2/modules-2.lock
 - rm -fr $HOME/.gradle/caches/*/plugin-resolution/
