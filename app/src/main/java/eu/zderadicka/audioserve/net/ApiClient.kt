@@ -180,7 +180,6 @@ class ApiClient private constructor(val context: Context) {
             positionClient = null
         } else {
             positionClient = PositionClient(baseUrl, token!!, group)
-            positionClient?.open()
         }
 
     }
