@@ -171,24 +171,21 @@ class PositionClient(private val serverUrl: String, private val token: String, p
 
         override fun onOpen(webSocket: WebSocket, response: Response) {
             Log.d(LOG_TAG, "Socket opened")
+            handler.removeCallbacks(reopen)
             state = ClientState.Ready
 
-            pendingPosition?.apply{
-                resendQuery()
-            }
-
             pendingPosition?.apply {
-                sendPosition(filePath, position)
+                // TODO what will be best expiration time?
+                if ( (System.currentTimeMillis() - timestamp) < 5*60*1000) { // only send if it is resent
+                    sendPosition(filePath, position)
+                }
                 pendingPosition = null
             }
 
-            handler.removeCallbacks(reopen)
-
-            pendingQuery?.also {
-                val currentTime = System.currentTimeMillis()
-                if (currentTime - it.timeStamp < 2 * TIMEOUT_DURATION) resendQuery()
-                else finishPendingQuery(PositionClientError.Timeout)
+            pendingQuery?.apply{
+                resendQuery()
             }
+
         }
 
         override fun onFailure(webSocket: WebSocket, t: Throwable, response: Response?) {
@@ -241,6 +238,7 @@ class PositionClient(private val serverUrl: String, private val token: String, p
     }
 
     inner class PendingPosition(val filePath: String?, val position: Double) {
+        val timestamp: Long = System.currentTimeMillis()
         override fun toString(): String {
             return "PendingPosition filePath = $filePath, position = $position"
         }
