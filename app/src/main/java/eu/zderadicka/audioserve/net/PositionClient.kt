@@ -67,7 +67,7 @@ class PositionClient(private val serverUrl: String, private val token: String, p
 
     }
 
-    val ready: Boolean
+    private val ready: Boolean
         get() = state == ClientState.Ready
 
     private val reopen = Runnable {
@@ -97,7 +97,7 @@ class PositionClient(private val serverUrl: String, private val token: String, p
         socket = client.newWebSocket(req, listener)
     }
 
-    fun sendPosition(filePath: String?, position: Double) {
+    fun sendPosition(filePath: String?, position: Double, timeStamp: Long? = null) {
         if (!ready) {
             pendingPosition = PendingPosition(filePath, position)
             handler.post(reopen)
@@ -109,7 +109,7 @@ class PositionClient(private val serverUrl: String, private val token: String, p
             return
         }
         socket?.apply {
-            val msg = encodeMessage(filePath, position)
+            val msg = encodeMessage(filePath, position, timeStamp)
             send(msg)
         }
     }
@@ -148,7 +148,7 @@ class PositionClient(private val serverUrl: String, private val token: String, p
         }
     }
 
-    private fun encodeMessage(filePath: String, position: Double): String =
+    private fun encodeMessage(filePath: String, position: Double, timeStamp: Long?): String =
             lastFile.let {
                 fun fmt(p: Double) = "%.3f".format(java.util.Locale.US, p)
                 return if (it == filePath) {
@@ -156,7 +156,11 @@ class PositionClient(private val serverUrl: String, private val token: String, p
                 } else {
                     lastFile = filePath
                     val normedPath = mediaIdToPositionPath(filePath, group!!)
-                    "${fmt(position)}|${normedPath}"
+                    var m = "${fmt(position)}|${normedPath}"
+                    if (timeStamp != null) {
+                        m+= "|${timeStamp/1000}"
+                    }
+                    m
                 }
             }
 
@@ -176,8 +180,8 @@ class PositionClient(private val serverUrl: String, private val token: String, p
 
             pendingPosition?.apply {
                 // TODO what will be best expiration time?
-                if ( (System.currentTimeMillis() - timestamp) < 5*60*1000) { // only send if it is resent
-                    sendPosition(filePath, position)
+                if ( (System.currentTimeMillis() - timestamp) < 300_000_000) { // only send if it is resent
+                    sendPosition(filePath, position, timestamp)
                 }
                 pendingPosition = null
             }
@@ -247,7 +251,7 @@ class PositionClient(private val serverUrl: String, private val token: String, p
     inner class PendingQuery(
             val pendingReceive: PendingReceive,
             val query: String?,
-            val timeStamp: Long,
+            private val timeStamp: Long,
             var errors: Int = 0
     ) {
         override fun toString(): String {
