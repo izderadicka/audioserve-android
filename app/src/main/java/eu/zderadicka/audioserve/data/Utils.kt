@@ -284,7 +284,12 @@ fun splitPositionFolder(f: String): Pair<String,Int> {
 
 private val CHAPTER_RE = Regex("""\$\$[\d\-]+\$\$""")
 fun normTitle(t:String): String {
-   return CHAPTER_RE.replace(t, "")
+    var res = t
+    val idx = res.indexOf(">>")
+    if (idx >= 0) {
+        res = res.substring(idx+2)
+    }
+   return CHAPTER_RE.replace(res, "")
 }
 
 fun MediaBrowserCompat.MediaItem.isNotablyDifferentFrom(other: MediaBrowserCompat.MediaItem): Boolean =
