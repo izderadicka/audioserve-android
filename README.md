@@ -54,17 +54,16 @@ when working with the app without glasses.
 **c)** It's intended to play cached files - primary function is to achieve continuous 
 playback of an audiobook when connectivity is lost for short time periods (like
 when traveling in the underground etc.).  You can play offline from cache whole audiobook,
-but it's still the cache -  it's intended to contain maximally couple of recently used audiobooks, 
+but it's still in the cache -  it's intended to contain several of recently listned audiobooks, 
 but not your whole collection. So main mode of operation is online with occasionally going offline.
 As caching is mandatory, it has small side effect on the seeking within current file - it's 
 available only after the file is fully cached - this can be theoretically improved in the future,
 but it's not priority now.
 
-**d)** It's designed to work with audiobooks split to files by chapters, so typical chapter/files has
-duration between 10 - 90 minutes. Anything else will be suboptimal - too short files will not assure
-appropriate cache ahead ( as caching is done by files). Too big files (like m4b file containing whole
-audiobook) will be hard to navigate (as internal chapters are not supported), slow to transcode,
-plus there is hard limit of 250MB per file (for security reasons).
+**d)** It's designed to work with audiobooks split to files by chapters or audiobooks with chapters metadata(m4b or similar), 
+so typical chapter/file has duration between 10 - 90 minutes. Anything else will be suboptimal - too short files will not assure
+appropriate cache ahead (as caching is done by files). Too big files without chapters will be hard to navigate, slow to transcode,
+plus there is hard limit of 250MB per file/chapter (for security reasons - this limit is on android client side, server has not limit).
 
 
 
@@ -77,7 +76,7 @@ I provide built .apk file signed with dummy certificate on
 You can download to Android device and install it there 
 (provided you have allowed Unknown Sources in Security settings).
 
-Supported Android versions are from 5.0 Lollipop on ( but I'm testing only  on Oreo and Pie).
+Supported Android versions are from 5.0 Lollipop on (API level 21).
 
 You can also build it yourself with Android Studio - just checkout the project from github and
 open in Android Studio.
