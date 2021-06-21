@@ -1021,7 +1021,7 @@ mediaSessionConnector.setErrorMessageProvider(messageProvider);
         return if (Process.SYSTEM_UID == clientUid || Process.myUid() == clientUid) {
             BrowserRoot(MEDIA_ROOT_TAG, null)
         } else {
-            BrowserRoot(EMPTY_ROOT_TAG, null)
+            BrowserRoot(MEDIA_ROOT_TAG, null)
         }
     }
 
