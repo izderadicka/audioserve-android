@@ -1,0 +1,1 @@
+* Added dependencies to add to fdroid store

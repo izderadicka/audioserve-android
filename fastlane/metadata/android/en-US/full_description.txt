@@ -1,0 +1,24 @@
+Audioserve Client for Android
+
+audioserve client for Android written in Kotlin. Using Exoplayer and MediaController - MediaSession architecture.
+
+Available features
+
+  - Browses collections and folders
+  - Plays files in folder one after another
+  - Progressive playback - starts as soon as possible
+  - Advanced playback features - skip silence and playback speed and pitch (in pull up player bar)
+  - Caches ahead next n files (1 - 5 as per preferences)
+  - Aggressively caches server responses (use reload to force latest data)
+  - Downloads part of or whole folder to cache (swipe playable item to left to see download button)
+  - Offline mode - plays only from cache
+  - Remembers up to 100 recently listened positions
+  - Bookmarks (on folder or file)
+  - Search (for folder names)
+  - Folder details - with picture and text (if present in the folder) and summary
+  - Intenet search - search author, boook ... (uses folder name and optional prefix to search on google)
+  - Notifications - Media notification with controls, plus notification for other features (sleep timer, downloads)
+  - Supports Android lifecycle - rotations, back, stop activity etc...
+  - Supports Android audio focus (pauses when call comes in etc.)
+  - Advanced playback features - playback speed, skip silence, boost volume
+  - Advanced FastForward >> /Rewind << - when click skips + 30s/-15s, but when pressed for longer time plays with 3x / or "pseudo plays back" - skips back 4s, then plays 1s repeatably
