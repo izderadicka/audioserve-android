@@ -1,1 +1,1 @@
-audioserve client for Android written in Kotlin. Using Exoplayer and MediaController - MediaSession architecture.
+audioserve client for Android written in Kotlin.
